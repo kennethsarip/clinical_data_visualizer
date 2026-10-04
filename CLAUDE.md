@@ -529,7 +529,7 @@ Decided (user, 2026-10-04):
 - HTTP client: `httpx`, synchronous. FastAPI runs sync routes in a threadpool, and requests are sequential, so async adds complexity without a measured need. `httpx.MockTransport` gives fixture tests without an extra mocking dependency.
 - Record cap: `FETCH_CAP` env var, default 2000 (two pages).
 - Upstream errors: 30 s timeout; retry twice with backoff on 5xx and 429; then raise a typed `UpstreamError` (mapped to a status in Phase 3).
-- Counting rules, each disclosed in `meta`: a multi-phase record is its own category ("Phase 1/Phase 2", as ClinicalTrials.gov displays it) so phase sums reconcile; no phase -> "Not specified"; `NA` -> "Not applicable"; missing start date -> excluded from time series and counted; missing enrollment -> excluded from numeric charts and counted; countries deduped per trial (multi-valued, §8.5).
+- Counting rules, each disclosed in `meta`: a multi-phase record is its own category ("Phase 1/Phase 2", as ClinicalTrials.gov displays it) so phase sums reconcile; no phase -> "Not specified"; `NA` -> "Not Applicable" (the API label); missing start date -> excluded from time series and counted; missing enrollment -> excluded from numeric charts and counted; countries deduped per trial (multi-valued, §8.5).
 
 Steps, in order (1-2 shipped):
 3. **Migrations.** `migrations/001_cache.sql` (both tables plus a `schema_migrations` ledger) and `app/migrate.py`, which applies unapplied files in order inside a transaction. Running it twice is a no-op.
