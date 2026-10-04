@@ -4,11 +4,36 @@
 >
 > **The one thing to understand first:** the LLM never produces a number, count, date, NCT ID, excerpt or data row. It does exactly three things: plan the query, choose the visualization, and write prose. Retrieval, aggregation, citations and checks are deterministic Python, so every row traces back to cached API records by NCT ID (§7.2).
 >
-> **Design goal (from the assignment):** cover as many query types as possible with one coherent approach that supports multiple visualization types. Broader coverage and richer visualizations, especially meaningful network graphs, score higher than support for a single chart type. Here the coherent approach is one pipeline for every question: plan (intent, dimension, filters) -> registered aggregator -> row shape -> compatible viz type. New coverage means registering an aggregator, never adding a code path (§1 coverage matrix, §7.4).
+> **Design goal:** one coherent approach that covers as many query types as possible across multiple visualization types (Objectives, below).
 >
 > **Status:** Phase 1 is next (§14). Phase 0 shipped the skeleton, toolchain and CI. The repo is `github.com/kennethsarip/cheiron_task` (private, §12). Not in production, and no deploy is planned (§15).
 >
-> **Read before coding:** §6 Data model, §7 How things work, §11 Don't do, §14 Roadmap.
+> **Read before coding:** Objectives, §6 Data model, §7 How things work, §11 Don't do, §14 Roadmap.
+
+## Objectives
+
+Taken from the assignment document. Where a later section conflicts with this one, this one wins.
+
+**Primary goal:** a backend service that converts clinical-trial questions into structured visualization outputs backed by ClinicalTrials.gov API data.
+
+**The system must:**
+1. Interpret the user's question.
+2. Retrieve relevant data from ClinicalTrials.gov (the authoritative source; any endpoint or field may be used).
+3. Decide whether a visualization is needed and which type suits the question. The answer must be a visualization, so "not needed" surfaces as `clarification_needed` or `no_results` (§7.8), never as prose alone.
+4. Produce a visualization specification that answers the question.
+
+**Design goal (the build priority):** cover as many query types as possible with a **single coherent approach**, and support **multiple visualization types**. Richer visualizations (meaningful network graphs) and broader query coverage score higher than a single chart type, and coverage must come without one-off hacks.
+- The coherent approach: every question goes through one pipeline, plan (intent, dimension, filters) -> registered aggregator -> row shape -> compatible viz type. New coverage means registering an aggregator, never adding a code path (§1 coverage matrix, §7.4).
+- Target viz types: bar, grouped bar, time series, scatter, histogram, and network graph (entities: drugs, sponsors, conditions, investigators, sites).
+- **Breadth first.** Get every §1 question class and every viz type working end to end through that one pipeline before trying alternative approaches or refinements. Anything in §13.3 or §13.4 waits until coverage exists and an eval failure justifies it (§14).
+
+**Interfaces the reviewer reads:**
+- **Request schema** documented: field names, types, required/optional, validation. Only `query` is required; the optional fields are ours to define (§8.3).
+- **Response schema** documented so that **a frontend engineer can implement a renderer without guessing**. Required parts: `visualization` (`type`, `title`, `encoding`, `data`) and `meta` (units, sorting, time granularity, grouping choices, plus notes on assumptions, filters applied and query interpretation). No frontend is required; backend plus structured output is the focus. Both schemas live in `SCHEMAS.md` (§8.3).
+
+**Bonus, deep citations:** every datum (bar, time bucket, node, edge weight) references the trial records that produced it, each as `nct_id` plus an exact text excerpt from the API response, or a specific field/value (§7.5). The assignment calls this intentionally challenging: implement as much as the time box allows.
+
+**Deliverables and grading:** the zip contents and README sections are in §2 In scope; the grading weights are in §2. The README must also state which AI tools were used, how correctness was validated, and which parts were designed deliberately versus generated and adapted. Evidence of construction, testing and iteration is rewarded.
 >
 > **Definition of done:** `uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest`, all green. CI (`.github/workflows/ci.yml`) runs exactly these. `main` stays runnable.
 
@@ -132,6 +157,7 @@ Created in Phase 0. Every module except `main.py` and `config.py` holds only a d
 CLAUDE.md            # spec + working context (this file)
 README.md            # human run guide; doubles as the submission README (§2)
 BUILD_HISTORY.md     # shipped log + reasoning behind §13.2 decisions
+SCHEMAS.md           # SINGLE SOURCE: documented request/response contract, one example per viz type (§8.3)
 .env.example         # every env var, blank; parity with config.py is tested
 pyproject.toml       # SINGLE SOURCE: dependencies + ruff, mypy, pytest config
 uv.lock              # locked dependency versions (committed)
@@ -291,32 +317,11 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 - Internal IDs: OPEN.
 
 ### 8.3 Request and response
-**Request.** The optional fields are the assignment's candidate examples; the final set is OPEN. The API params are verified to work (§8.4), but each mapping is still a candidate.
-
-| Field | Type | Required | Candidate API param | Validation |
-|---|---|---|---|---|
-| query | string | yes | - | Non-empty; max length OPEN |
-| drug_name | string | no | `query.intr` | |
-| condition | string | no | `query.cond` | |
-| trial_phase | Phase | no | `filter.advanced=AREA[Phase]...` | Must be a §8.4 value |
-| sponsor | string | no | `query.spons` | |
-| country | string | no | `query.locn` | |
-| start_year, end_year | int | no | `filter.advanced=AREA[StartDate]RANGE[...]` | `start_year <= end_year` |
-
-**Response.** The shape comes from the assignment, plus `status` and `citations`:
-```json
-{"status": "ok",
- "visualization": {"type": "bar_chart", "title": "Trials by Phase for Pembrolizumab",
-   "encoding": {"x": {"field": "phase"}, "y": {"field": "trial_count"}},
-   "data": [{"phase": "Phase 3", "trial_count": 41,
-             "citations": [{"nct_id": "NCT01234567", "excerpt": "PHASE3"}]}]},
- "meta": {"filters": {"drug_name": "Pembrolizumab"}, "source": "clinicaltrials.gov", "assumptions": []}}
-```
-- `type` values from the assignment: `bar_chart`, `time_series`, `network_graph`. The strings for grouped bar, scatter and histogram are OPEN.
-- `encoding` channels: `x`, `y`, `series`. The node/edge shape for networks is OPEN.
-- `meta` must carry: filters (stated vs inferred), source, assumptions, units, sorting, time granularity, grouping, cap disclosure (fetched vs total), excluded-record counts and pruning. Exact keys are OPEN.
-- The contents of `visualization` when `status != ok` are OPEN.
-- Frontend: none is built (§2), so there are no routes, state model or UX rules. This section is the renderer contract.
+**`SCHEMAS.md` is the single source** for the request fields, the response envelope, the citation shape, one example per viz type, the `meta` keys and the non-`ok` responses. Read it before touching `schemas.py`, `viz.py` or `citations.py`. Items it tags PROPOSED are still OPEN here (§13.1). The invariants it must keep:
+- `type` values from the assignment: `bar_chart`, `time_series`, `network_graph`; other type strings are proposals.
+- `meta` carries filters (stated vs inferred), source, assumptions, units, sorting, time granularity, grouping, cap disclosure, excluded-record counts and pruning.
+- **Renderer contract bar:** a frontend engineer can implement a renderer without guessing (Objectives). For each viz type it states the `encoding` channels, every row field with its type and unit, the sort order, and how citations attach to rows, nodes and edges.
+- No frontend is built (§2). The README links to `SCHEMAS.md` and shows real examples from `examples/`.
 
 ### 8.4 ClinicalTrials.gov API facts (verified 2026-10-04, apiVersion 2.0.5)
 - Base URL `https://clinicaltrials.gov/api/v2`. `GET /studies` returns `{totalCount, studies, nextPageToken}`; `fields=` trims the payload.
@@ -341,7 +346,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 
 | Layer | Covers |
 |---|---|
-| Contract | Request validation (including contradictory years), response round-trip, `.env.example` <-> `config.py` parity in both directions |
+| Contract | Request validation (including contradictory years), response round-trip, `.env.example` <-> `config.py` parity in both directions, every JSON example in `SCHEMAS.md` validating against `schemas.py` |
 | Normalize | Each counting rule, on synthetic records shaped like the §6 evidence |
 | Aggregators | Each registered aggregator. Expected rows are computed by hand from the fixture, never copied from output |
 | Checks | Each §7.6 check, with one passing and one failing fixture |
@@ -495,6 +500,8 @@ The reasoning lives in `BUILD_HISTORY.md` under Decisions.
 
 ## 14. Roadmap (what is left to build)
 
+**Breadth-first rule:** each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them. Alternative approaches (§13.3, §13.4) are not tried until Phase 4 eval logs a failure that needs them (Objectives).
+
 **Ship-then-prune rule:** when a phase's "Done when" passes, delete the phase from here and add a 1-2 line entry to `BUILD_HISTORY.md` in the SAME commit.
 
 **Phase 1: Retrieval and cache.** Goal: a hand-written plan (no LLM yet) produces cached, normalized records.
@@ -504,7 +511,7 @@ The reasoning lives in `BUILD_HISTORY.md` under Decisions.
 
 **Phase 2: Aggregation, citations, checks.** Goal: deterministic, verified rows for every question class.
 - The registry; aggregators for time trend, distribution, comparison, geographic, and networks (sponsor-drug, drug-drug, condition-drug); `citations.py`; `checks.py`; spec assembly with a fixed viz choice.
-- Done when: every §1 coverage-matrix row has a registered aggregator (Numeric once its field is decided); every aggregator test passes against hand-computed rows; and every §7.6 check has a passing and a failing fixture.
+- Done when: every §1 coverage-matrix row has a registered aggregator (Numeric once its field is decided); every viz type (bar, grouped bar, time series, scatter, histogram, network) assembles a spec that passes the §7.6 checks; every aggregator test passes against hand-computed rows; and every §7.6 check has a passing and a failing fixture.
 
 **Phase 3: LLM planning and endpoint.** Goal: an end-to-end natural-language request returns a response with the right status.
 - First decide, asking the user: the OpenAI model (§13.1).
