@@ -6,6 +6,10 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ### Phase 1: Foundation (in progress)
 
+- **1.7 Cache** (2026-10-04): `TrialCache` in `app/cache.py` serves pages for a `params_key` written within `CACHE_TTL_HOURS`, otherwise fetches live. Pages and trial upserts are written in one transaction.
+- The key doesn't include the cap, so a cache hit must cover the current cap (`covers_cap`, shared with the client), or a larger cap would get a short copy.
+- A refetch upserts pages and drops any pages past the new last one; `records_by_id` matches NCT IDs exactly.
+- Live test (`pytest -m live`, excluded by default): pembrolizumab is fetched from the real API, then served from the cache with zero HTTP requests.
 - **1.6 API client** (2026-10-04): `app/ctgov.py` maps `RetrievalFilters` to verified params only. Phase and year range are AND-joined in `filter.advanced`; an open-ended range uses `MIN`/`MAX`.
 - `params_key` is the params sorted and URL-encoded, without `pageToken`. `fields=` trims records to the §6 paths. Pages follow `nextPageToken` at `pageSize` min(1000, cap).
 - Stops at `FETCH_CAP`; `FetchResult` keeps the verbatim pages for the cache and reports `fetched`, `total` (first page's `totalCount`) and `capped`.

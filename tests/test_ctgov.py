@@ -1,54 +1,12 @@
-from collections.abc import Callable
-from typing import Any
-
 import httpx
 import pytest
 
-from app.ctgov import CtgovClient, UpstreamError, build_params, params_key
+from app.ctgov import UpstreamError, build_params, params_key
 from app.schemas import RetrievalFilters
 from app.vocab import Phase, Status
+from tests.ctgov_fakes import fake_client, page, paged, scripted
 
-BASE_URL = "https://ctgov.test/api/v2"
 FIXED = {"fields", "pageSize", "countTotal"}
-
-Handler = Callable[[httpx.Request], httpx.Response]
-
-
-def _record(n: int) -> dict[str, Any]:
-    return {"protocolSection": {"identificationModule": {"nctId": f"NCT{n:08d}"}}}
-
-
-def _page(ids: list[int], token: str | None, total: int | None = None) -> dict[str, Any]:
-    body: dict[str, Any] = {"studies": [_record(n) for n in ids]}
-    if total is not None:
-        body["totalCount"] = total
-    if token is not None:
-        body["nextPageToken"] = token
-    return body
-
-
-def _client(
-    handler: Handler, cap: int = 2000
-) -> tuple[CtgovClient, list[httpx.Request], list[float]]:
-    requests: list[httpx.Request] = []
-    sleeps: list[float] = []
-
-    def recording(request: httpx.Request) -> httpx.Response:
-        requests.append(request)
-        return handler(request)
-
-    http = httpx.Client(base_url=BASE_URL, transport=httpx.MockTransport(recording))
-    return CtgovClient(http, fetch_cap=cap, sleep=sleeps.append), requests, sleeps
-
-
-def _paged(pages: dict[str | None, dict[str, Any]]) -> Handler:
-    """Serve pages keyed by the request's pageToken (None for the first page)."""
-    return lambda request: httpx.Response(200, json=pages[request.url.params.get("pageToken")])
-
-
-def _scripted(responses: list[httpx.Response]) -> Handler:
-    queue = iter(responses)
-    return lambda request: next(queue)
 
 
 # --- params (CLAUDE.md §8.4 verified params) ---
@@ -113,20 +71,20 @@ def test_params_key_url_encodes_values() -> None:
 
 
 def test_params_key_differs_per_filter_and_is_stable_per_filter() -> None:
-    client, _, _ = _client(_paged({}))
+    api, _, _ = fake_client(paged({}))
     a = RetrievalFilters(drug_name="Pembrolizumab")
     b = RetrievalFilters(drug_name="Nivolumab")
-    assert params_key(client.params_for(a)) == params_key(client.params_for(a.model_copy()))
-    assert params_key(client.params_for(a)) != params_key(client.params_for(b))
+    assert params_key(api.params_for(a)) == params_key(api.params_for(a.model_copy()))
+    assert params_key(api.params_for(a)) != params_key(api.params_for(b))
 
 
 # --- pagination and the cap (CLAUDE.md §7.3) ---
 
 
-def test_follows_next_page_tokens_until_the_last_page() -> None:
-    pages = {None: _page([1, 2], "t1", total=5), "t1": _page([3, 4], "t2"), "t2": _page([5], None)}
-    client, requests, _ = _client(_paged(pages))
-    result = client.fetch(RetrievalFilters(drug_name="x"))
+def test_follows_next_page_tokens_until_the_lastpage() -> None:
+    pages = {None: page([1, 2], "t1", total=5), "t1": page([3, 4], "t2"), "t2": page([5], None)}
+    api, requests, _ = fake_client(paged(pages))
+    result = api.fetch(RetrievalFilters(drug_name="x"))
     assert [r["protocolSection"]["identificationModule"]["nctId"] for r in result.records] == [
         f"NCT{n:08d}" for n in [1, 2, 3, 4, 5]
     ]
@@ -139,34 +97,34 @@ def test_follows_next_page_tokens_until_the_last_page() -> None:
 
 def test_stops_at_the_cap_and_discloses_the_total() -> None:
     pages = {
-        None: _page([1, 2], "t1", total=6),
-        "t1": _page([3, 4], "t2"),
-        "t2": _page([5, 6], None),
+        None: page([1, 2], "t1", total=6),
+        "t1": page([3, 4], "t2"),
+        "t2": page([5, 6], None),
     }
-    client, requests, _ = _client(_paged(pages), cap=3)
-    result = client.fetch(RetrievalFilters())
+    api, requests, _ = fake_client(paged(pages), cap=3)
+    result = api.fetch(RetrievalFilters())
     assert len(requests) == 2  # the third page is never requested
     assert (result.fetched, result.total, result.capped) == (3, 6, True)
     assert requests[0].url.params["pageSize"] == "3"
 
 
 def test_page_size_never_exceeds_the_api_maximum() -> None:
-    client, _, _ = _client(_paged({}), cap=5000)
-    assert client.params_for(RetrievalFilters())["pageSize"] == "1000"
+    api, _, _ = fake_client(paged({}), cap=5000)
+    assert api.params_for(RetrievalFilters())["pageSize"] == "1000"
 
 
-def test_zero_results_is_one_empty_page() -> None:
-    client, requests, _ = _client(_paged({None: _page([], None, total=0)}))
-    result = client.fetch(RetrievalFilters(drug_name="zzqqxx"))
+def test_zero_results_is_one_emptypage() -> None:
+    api, requests, _ = fake_client(paged({None: page([], None, total=0)}))
+    result = api.fetch(RetrievalFilters(drug_name="zzqqxx"))
     assert (len(requests), result.fetched, result.total, result.capped) == (1, 0, 0, False)
 
 
 def test_result_carries_the_params_key_and_verbatim_pages() -> None:
-    body = _page([1], None, total=1)
-    client, _, _ = _client(_paged({None: body}))
+    body = page([1], None, total=1)
+    api, _, _ = fake_client(paged({None: body}))
     filters = RetrievalFilters(drug_name="x")
-    result = client.fetch(filters)
-    assert result.params_key == params_key(client.params_for(filters))
+    result = api.fetch(filters)
+    assert result.params_key == params_key(api.params_for(filters))
     assert result.pages[0].body == body
 
 
@@ -174,25 +132,25 @@ def test_result_carries_the_params_key_and_verbatim_pages() -> None:
 
 
 def test_retries_5xx_and_429_with_backoff_then_succeeds() -> None:
-    ok = httpx.Response(200, json=_page([1], None, total=1))
-    client, requests, sleeps = _client(_scripted([httpx.Response(503), httpx.Response(429), ok]))
-    assert client.fetch(RetrievalFilters()).fetched == 1
+    ok = httpx.Response(200, json=page([1], None, total=1))
+    api, requests, sleeps = fake_client(scripted([httpx.Response(503), httpx.Response(429), ok]))
+    assert api.fetch(RetrievalFilters()).fetched == 1
     assert len(requests) == 3
     assert sleeps == [1.0, 2.0]
 
 
 def test_gives_up_after_two_retries() -> None:
-    client, requests, _ = _client(_scripted([httpx.Response(502)] * 3))
+    api, requests, _ = fake_client(scripted([httpx.Response(502)] * 3))
     with pytest.raises(UpstreamError, match="HTTP 502"):
-        client.fetch(RetrievalFilters())
+        api.fetch(RetrievalFilters())
     assert len(requests) == 3
 
 
 def test_client_error_is_not_retried_and_keeps_the_api_reason() -> None:
     reason = "Invalid value in parameter `overallStatus`: `OPEN`"
-    client, requests, _ = _client(_scripted([httpx.Response(400, text=reason)]))
+    api, requests, _ = fake_client(scripted([httpx.Response(400, text=reason)]))
     with pytest.raises(UpstreamError, match="HTTP 400.*overallStatus"):
-        client.fetch(RetrievalFilters())
+        api.fetch(RetrievalFilters())
     assert len(requests) == 1
 
 
@@ -200,9 +158,9 @@ def test_timeout_is_an_upstream_error() -> None:
     def timeout(request: httpx.Request) -> httpx.Response:
         raise httpx.ReadTimeout("timed out", request=request)
 
-    client, _, _ = _client(timeout)
+    api, _, _ = fake_client(timeout)
     with pytest.raises(UpstreamError, match="ReadTimeout"):
-        client.fetch(RetrievalFilters())
+        api.fetch(RetrievalFilters())
 
 
 @pytest.mark.parametrize(
@@ -216,6 +174,6 @@ def test_timeout_is_an_upstream_error() -> None:
     ids=["non-json", "non-object", "no-studies", "no-total"],
 )
 def test_malformed_body_is_an_upstream_error(response: httpx.Response) -> None:
-    client, _, _ = _client(_scripted([response]))
+    api, _, _ = fake_client(scripted([response]))
     with pytest.raises(UpstreamError):
-        client.fetch(RetrievalFilters())
+        api.fetch(RetrievalFilters())

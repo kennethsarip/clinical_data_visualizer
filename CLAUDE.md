@@ -198,7 +198,8 @@ frontend/            # Vite + React + TS app; renders specs from SCHEMAS.md (Pha
 | Run API | `uv run --env-file .env uvicorn app.main:app --reload` (docs at `http://127.0.0.1:8000/docs`) |
 | Lint | `uv run ruff check . && uv run ruff format --check .` (auto-fix: `uv run ruff check --fix . && uv run ruff format .`) |
 | Typecheck | `uv run mypy` |
-| Test | `uv run pytest` |
+| Test | `uv run pytest` (offline; needs the Compose Postgres) |
+| Live tests | `uv run pytest -m live` (real API; excluded from the default run) |
 | Add a dependency | `uv add <pkg>` (dev only: `uv add --dev <pkg>`); state why in the commit (§11) |
 | Start Postgres | `docker compose up -d` (Phase 1) |
 | Migrate | `uv run --env-file .env python -m app.migrate` (idempotent; needs only `DATABASE_URL`) |
@@ -516,7 +517,7 @@ The reasoning lives in `BUILD_HISTORY.md` under Decisions.
 
 **Shape:** a full-stack app. The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) renders its specs so results can be seen and demoed. The frontend reads only the documented contract (`SCHEMAS.md`), so it doubles as proof that the contract is renderable without guessing.
 
-**Next move:** Phase 1, step 1.7 (1.1-1.6 shipped, see `BUILD_HISTORY.md`).
+**Next move:** Phase 1, step 1.8 (1.1-1.7 shipped, see `BUILD_HISTORY.md`).
 
 **Rules**
 - **Breadth first:** each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them. Alternatives (§13.3, §13.4) wait until Phase 5 eval logs a failure that needs them (Objectives).
@@ -534,8 +535,7 @@ Decided (user, 2026-10-04):
 - Upstream errors: 30 s timeout; retry twice with backoff on 5xx and 429; then raise a typed `UpstreamError` (mapped to a status in Phase 3).
 - Counting rules, each disclosed in `meta`: a multi-phase record is its own category ("Phase 1/Phase 2", as ClinicalTrials.gov displays it) so phase sums reconcile; no phase -> "Not specified"; `NA` -> "Not Applicable" (the API label); missing start date -> excluded from time series and counted; missing enrollment -> excluded from numeric charts and counted; countries deduped per trial (multi-valued, §8.5).
 
-Steps, in order (1-6 shipped):
-7. **Cache.** `cache.py`: read pages by `params_key` within TTL, else fetch and write pages plus upserted `trials` rows in one transaction; look up records by `nct_id`.
+Steps, in order (1-7 shipped):
 8. **Normalize.** `normalize.py`: record -> the §6 normalized model, applying the counting rules and returning per-rule exclusion counts.
 
 Done when:

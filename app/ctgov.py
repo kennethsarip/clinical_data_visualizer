@@ -108,6 +108,34 @@ def params_key(params: dict[str, str]) -> str:
     return urlencode(sorted(params.items()))
 
 
+def covers_cap(pages: list[Page], fetch_cap: int) -> bool:
+    """True when the pages hold every matching record, or at least `fetch_cap` of them.
+
+    The cache uses this too: its key does not include the cap, so pages cached under a smaller
+    cap must not be served to a request with a larger one.
+    """
+    fetched = sum(len(_studies(page.body)) for page in pages)
+    return pages[-1].body.get("nextPageToken") is None or fetched >= fetch_cap
+
+
+def assemble_result(key: str, pages: list[Page], fetch_cap: int) -> FetchResult:
+    """Records from the pages in order, cut to the cap, with the first page's total."""
+    records = [record for page in pages for record in _studies(page.body)]
+    # Cutting only happens when the cap is not a multiple of the page size; `capped` discloses it.
+    return FetchResult(key, pages, records[:fetch_cap], _total_count(pages[0].body))
+
+
+def record_nct_id(record: dict[str, Any]) -> str:
+    """The NCT ID of one study record; a record without one is an upstream fault."""
+    try:
+        nct_id = record["protocolSection"]["identificationModule"]["nctId"]
+    except (KeyError, TypeError) as exc:
+        raise UpstreamError("ClinicalTrials.gov record has no nctId") from exc
+    if not isinstance(nct_id, str):
+        raise UpstreamError(f"ClinicalTrials.gov record has a non-string nctId: {nct_id!r}")
+    return nct_id
+
+
 class CtgovClient:
     """Fetches records page by page up to `fetch_cap`, retrying transient upstream errors."""
 
@@ -126,26 +154,21 @@ class CtgovClient:
         http = httpx.Client(base_url=settings.ctgov_base_url, timeout=TIMEOUT_SECONDS)
         return cls(http, settings.fetch_cap)
 
+    @property
+    def fetch_cap(self) -> int:
+        return self._fetch_cap
+
     def params_for(self, filters: RetrievalFilters) -> dict[str, str]:
         return build_params(filters, page_size=min(MAX_PAGE_SIZE, self._fetch_cap))
 
     def fetch(self, filters: RetrievalFilters) -> FetchResult:
         params = self.params_for(filters)
         pages: list[Page] = []
-        records: list[dict[str, Any]] = []
-        token: str | None = None
-        while True:
+        while not pages or not covers_cap(pages, self._fetch_cap):
+            token = pages[-1].body.get("nextPageToken") if pages else None
             page_params = params if token is None else {**params, "pageToken": token}
-            body = self._get_studies(page_params)
-            pages.append(Page(index=len(pages), body=body))
-            records.extend(_studies(body))
-            token = body.get("nextPageToken")
-            if token is None or len(records) >= self._fetch_cap:
-                break
-        total = _total_count(pages[0].body)
-        # Only reachable when the cap is not a multiple of the page size; disclosed via `capped`.
-        records = records[: self._fetch_cap]
-        return FetchResult(params_key(params), pages, records, total)
+            pages.append(Page(index=len(pages), body=self._get_studies(page_params)))
+        return assemble_result(params_key(params), pages, self._fetch_cap)
 
     def _get_studies(self, params: dict[str, str]) -> dict[str, Any]:
         for attempt in range(len(RETRY_DELAYS_SECONDS) + 1):

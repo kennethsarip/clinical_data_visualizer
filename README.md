@@ -38,6 +38,7 @@ The same commands run in CI:
 uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest
 ```
 
+Live tests against the real API are excluded by default; run them with `uv run pytest -m live`.
 The database tests need the Compose Postgres running. Each test uses a throwaway schema, so
 your cached data is never touched.
 
