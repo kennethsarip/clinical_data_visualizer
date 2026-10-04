@@ -6,6 +6,11 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ### Phase 1: Foundation (in progress)
 
+- **1.6 API client** (2026-10-04): `app/ctgov.py` maps `RetrievalFilters` to verified params only. Phase and year range are AND-joined in `filter.advanced`; an open-ended range uses `MIN`/`MAX`.
+- `params_key` is the params sorted and URL-encoded, without `pageToken`. `fields=` trims records to the §6 paths. Pages follow `nextPageToken` at `pageSize` min(1000, cap).
+- Stops at `FETCH_CAP`; `FetchResult` keeps the verbatim pages for the cache and reports `fetched`, `total` (first page's `totalCount`) and `capped`.
+- 30 s timeout; 5xx/429 retried twice (1 s, 2 s); 4xx, timeouts and malformed bodies raise `UpstreamError` immediately, keeping the API's reason text.
+- Live smoke run: pembrolizumab returned 2,000 of 2,968 (capped); a nonexistent drug returned 0 of 0.
 - **1.5 Retrieval filters** (2026-10-04): `RetrievalFilters` in `app/schemas.py` uses the SCHEMAS.md §1 request field names, so a stated filter appears in `meta.filters` under the same key.
 - Fields: drug, condition, sponsor and country (stripped, blank rejected); `trial_phase` and `overall_status` from the vocab enums; start and end year. `overall_status` is planner-only.
 - `start_year > end_year` is rejected (§7.6). Unknown fields are rejected, because a misspelled filter would otherwise be ignored and silently widen the search. The model is frozen.

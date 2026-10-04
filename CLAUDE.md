@@ -516,7 +516,7 @@ The reasoning lives in `BUILD_HISTORY.md` under Decisions.
 
 **Shape:** a full-stack app. The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) renders its specs so results can be seen and demoed. The frontend reads only the documented contract (`SCHEMAS.md`), so it doubles as proof that the contract is renderable without guessing.
 
-**Next move:** Phase 1, step 1.6 (1.1-1.5 shipped, see `BUILD_HISTORY.md`).
+**Next move:** Phase 1, step 1.7 (1.1-1.6 shipped, see `BUILD_HISTORY.md`).
 
 **Rules**
 - **Breadth first:** each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them. Alternatives (§13.3, §13.4) wait until Phase 5 eval logs a failure that needs them (Objectives).
@@ -534,8 +534,7 @@ Decided (user, 2026-10-04):
 - Upstream errors: 30 s timeout; retry twice with backoff on 5xx and 429; then raise a typed `UpstreamError` (mapped to a status in Phase 3).
 - Counting rules, each disclosed in `meta`: a multi-phase record is its own category ("Phase 1/Phase 2", as ClinicalTrials.gov displays it) so phase sums reconcile; no phase -> "Not specified"; `NA` -> "Not Applicable" (the API label); missing start date -> excluded from time series and counted; missing enrollment -> excluded from numeric charts and counted; countries deduped per trial (multi-valued, §8.5).
 
-Steps, in order (1-5 shipped):
-6. **API client.** `ctgov.py`: filters -> params (verified params only, §8.4); a canonical `params_key` (sorted, URL-encoded); `fields=` trimmed to the §6 source paths; `nextPageToken` pagination at `pageSize` 1000; stop at `FETCH_CAP`; `countTotal=true` so the result carries `fetched` and `total`.
+Steps, in order (1-6 shipped):
 7. **Cache.** `cache.py`: read pages by `params_key` within TTL, else fetch and write pages plus upserted `trials` rows in one transaction; look up records by `nct_id`.
 8. **Normalize.** `normalize.py`: record -> the §6 normalized model, applying the counting rules and returning per-rule exclusion counts.
 
