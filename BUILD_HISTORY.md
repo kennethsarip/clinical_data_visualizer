@@ -6,6 +6,9 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ### Phase 1: Foundation (in progress)
 
+- **1.5 Retrieval filters** (2026-10-04): `RetrievalFilters` in `app/schemas.py` uses the SCHEMAS.md §1 request field names, so a stated filter appears in `meta.filters` under the same key.
+- Fields: drug, condition, sponsor and country (stripped, blank rejected); `trial_phase` and `overall_status` from the vocab enums; start and end year. `overall_status` is planner-only.
+- `start_year > end_year` is rejected (§7.6). Unknown fields are rejected, because a misspelled filter would otherwise be ignored and silently widen the search. The model is frozen.
 - **1.4 Vocabulary** (2026-10-04): `app/vocab.py` holds Phase, Status, InterventionType, AgencyClass and StudyType as `StrEnum`s, re-verified against `GET /studies/enums`.
 - Labels are the API's own `legacyValue` strings; AgencyClass has none, so its labels are ours. No other module defines labels.
 - `label()` looks up labels per enum class, because members with equal values (`Status.UNKNOWN`, `AgencyClass.UNKNOWN`) collide in a flat dict.
