@@ -1,10 +1,20 @@
 # Build history
 
-The shipped log, newest first, with 1-2 lines per entry. The Decisions section holds the reasoning behind CLAUDE.md §13.2.
+The shipped log, newest phase first. Each shipped step gets a few 1-2 line bullets under its phase, moved here from CLAUDE.md §14 in the same commit. The Decisions section holds the reasoning behind CLAUDE.md §13.2.
 
 ## Shipped
 
-- 2026-10-04, Phase 0: repo skeleton per CLAUDE.md §4; uv + ruff + mypy (strict) + pytest on Python 3.12; GitHub Actions CI running the Definition of done; `app/config.py` with a two-way `.env.example` parity test.
+### Phase 1: Foundation (in progress)
+
+- **1.2 Dependencies** (2026-10-04): added `httpx` (sync API client; `MockTransport` serves test fixtures without a mocking library).
+- Added `psycopg[binary]` (psycopg3 driver for the Postgres cache and migrations; the binary wheel needs no local libpq).
+- **1.1 Infra** (2026-10-04): `docker-compose.yml` runs pinned `postgres:18.6-alpine` on 127.0.0.1, with a healthcheck and a named volume.
+- `config.py` + `.env.example` gained `CTGOV_BASE_URL`, `FETCH_CAP` (2000) and `CACHE_TTL_HOURS` (168); blank falls back to the default, invalid raises `ConfigError`.
+- CI runs a Postgres service container on the same image, for the cache and migration tests to come.
+
+### Phase 0: Skeleton
+
+- 2026-10-04: repo skeleton per CLAUDE.md §4; uv + ruff + mypy (strict) + pytest on Python 3.12; GitHub Actions CI running the Definition of done; `app/config.py` with a two-way `.env.example` parity test.
 
 ## Decisions
 

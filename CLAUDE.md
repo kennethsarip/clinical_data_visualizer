@@ -6,7 +6,7 @@
 >
 > **Design goal:** one coherent approach that covers as many query types as possible across multiple visualization types (Objectives, below).
 >
-> **Status:** Phase 1 (Foundation) is next (§14). The app is full stack: a FastAPI backend plus a Vite/React frontend that renders the specs. Phase 0 shipped the skeleton, toolchain and CI. The repo is `github.com/kennethsarip/cheiron_task` (private, §12). Not in production, and no deploy is planned (§15).
+> **Status:** Phase 1 (Foundation) is in progress (§14). The app is full stack: a FastAPI backend plus a Vite/React frontend that renders the specs. Phase 0 shipped the skeleton, toolchain and CI. The repo is `github.com/kennethsarip/cheiron_task` (private, §12). Not in production, and no deploy is planned (§15).
 >
 > **Read before coding:** Objectives, §6 Data model, §7 How things work, §11 Don't do, §14 Build plan.
 
@@ -513,13 +513,13 @@ The reasoning lives in `BUILD_HISTORY.md` under Decisions.
 
 **Shape:** a full-stack app. The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) renders its specs so results can be seen and demoed. The frontend reads only the documented contract (`SCHEMAS.md`), so it doubles as proof that the contract is renderable without guessing.
 
-**Next move:** Phase 1, step 1.1.
+**Next move:** Phase 1, step 1.3 (steps 1.1-1.2 shipped; see `BUILD_HISTORY.md`).
 
 **Rules**
 - **Breadth first:** each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them. Alternatives (§13.3, §13.4) wait until Phase 5 eval logs a failure that needs them (Objectives).
 - **Foundation before features:** a phase starts only when the previous phase's "Done when" passes, because each phase consumes the previous one's output (records -> rows -> responses -> rendered charts -> measured results).
 - **Decide first:** each phase's open decisions are settled, and recorded in §13.2 plus `BUILD_HISTORY.md`, before its code is written. Items marked PROPOSED are recommendations awaiting the user's yes.
-- **Ship-then-prune:** when a phase's "Done when" passes, delete it from here and add a 1-2 line entry to `BUILD_HISTORY.md` in the SAME commit. One branch per phase, merged when CI is green, `main` tagged (`phase-N`).
+- **Ship-then-prune:** when a step is done, delete it from its phase here and add a few 1-2 line bullets for it under that phase's heading in `BUILD_HISTORY.md`, in the SAME commit. Remaining steps keep their numbers. When a phase's "Done when" passes, delete the whole phase. One branch per phase, merged when CI is green, `main` tagged (`phase-N`).
 
 ### Phase 1: Foundation (infra, retrieval, cache, normalization)
 Goal: a hand-written plan (no LLM yet) produces cached, normalized records. Everything after this phase stands on these records.
@@ -531,9 +531,7 @@ Decided (user, 2026-10-04):
 - Upstream errors: 30 s timeout; retry twice with backoff on 5xx and 429; then raise a typed `UpstreamError` (mapped to a status in Phase 3).
 - Counting rules, each disclosed in `meta`: a multi-phase record is its own category ("Phase 1/Phase 2", as ClinicalTrials.gov displays it) so phase sums reconcile; no phase -> "Not specified"; `NA` -> "Not applicable"; missing start date -> excluded from time series and counted; missing enrollment -> excluded from numeric charts and counted; countries deduped per trial (multi-valued, §8.5).
 
-Steps, in order:
-1. **Infra.** `docker-compose.yml` with a pinned `postgres` image and a named volume; add `DATABASE_URL`, `CTGOV_BASE_URL`, `FETCH_CAP`, `CACHE_TTL_HOURS` to `config.py` and `.env.example` (the parity test enforces both). Add a Postgres service container to CI so DB tests run there too.
-2. **Dependencies.** `uv add httpx "psycopg[binary]"`, with the reasons in the commit.
+Steps, in order (1-2 shipped):
 3. **Migrations.** `migrations/001_cache.sql` (both tables plus a `schema_migrations` ledger) and `app/migrate.py`, which applies unapplied files in order inside a transaction. Running it twice is a no-op.
 4. **Vocabulary.** `vocab.py`: the §8.4 enums as `StrEnum`s plus display labels. Nothing else defines labels.
 5. **Retrieval filters.** In `schemas.py`, the filter subset of the plan (drug, condition, sponsor, country, phase, status, year range). Phase 3 adds the LLM-facing fields around it.
