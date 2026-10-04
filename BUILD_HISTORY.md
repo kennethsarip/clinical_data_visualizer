@@ -6,6 +6,11 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ### Phase 1: Foundation (in progress)
 
+- **1.4 Vocabulary** (2026-10-04): `app/vocab.py` holds Phase, Status, InterventionType, AgencyClass and StudyType as `StrEnum`s, re-verified against `GET /studies/enums`.
+- Labels are the API's own `legacyValue` strings; AgencyClass has none, so its labels are ours. No other module defines labels.
+- `label()` looks up labels per enum class, because members with equal values (`Status.UNKNOWN`, `AgencyClass.UNKNOWN`) collide in a flat dict.
+- `phase_label()` makes one category per phase combination ("Phase 1/Phase 2") and "Not specified" for no phase, so phase sums reconcile.
+- Tests take expected values from CLAUDE.md §8.4, not from the code.
 - **1.3 Migrations** (2026-10-04): `migrations/001_cache.sql` creates `api_pages` (PK `params_key`, `page_index`) and `trials` (PK `nct_id`, CHECK `^NCT[0-9]{8}$`), both jsonb, both with `fetched_at`.
 - `app/migrate.py` applies unapplied files in number order in one transaction, so a failing file changes nothing; misnamed or duplicate-numbered files are rejected.
 - The `schema_migrations` ledger is created by the runner rather than by 001, because it must exist before the runner can tell which files are unapplied.
