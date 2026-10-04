@@ -17,6 +17,7 @@ citations from each data point back to the trials that produced it.
 uv sync
 cp .env.example .env   # fill in the Required values; Optional ones may stay blank
 docker compose up -d   # local Postgres 18 on 127.0.0.1:5432
+uv run --env-file .env python -m app.migrate   # create the cache tables; safe to rerun
 ```
 
 `DATABASE_URL` for the Compose database is `postgresql://cheiron:cheiron@127.0.0.1:5432/cheiron`.
@@ -36,6 +37,9 @@ The same commands run in CI:
 ```bash
 uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest
 ```
+
+The database tests need the Compose Postgres running. Each test uses a throwaway schema, so
+your cached data is never touched.
 
 ## Still to write
 

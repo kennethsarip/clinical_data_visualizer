@@ -46,3 +46,12 @@ def load_settings(environ: Mapping[str, str] | None = None) -> Settings:
         return Settings.model_validate(values)
     except ValidationError as exc:
         raise ConfigError(f"Invalid env var values: {exc}") from exc
+
+
+def load_database_url(environ: Mapping[str, str] | None = None) -> str:
+    """Only DATABASE_URL, for tools such as the migrator that never call the LLM."""
+    env = os.environ if environ is None else environ
+    url = env.get("DATABASE_URL")
+    if not url:
+        raise ConfigError("Missing env vars: DATABASE_URL. See .env.example.")
+    return url

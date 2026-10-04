@@ -201,7 +201,7 @@ frontend/            # Vite + React + TS app; renders specs from SCHEMAS.md (Pha
 | Test | `uv run pytest` |
 | Add a dependency | `uv add <pkg>` (dev only: `uv add --dev <pkg>`); state why in the commit (§11) |
 | Start Postgres | `docker compose up -d` (Phase 1) |
-| Migrate | `uv run --env-file .env python -m app.migrate` (Phase 1) |
+| Migrate | `uv run --env-file .env python -m app.migrate` (idempotent; needs only `DATABASE_URL`) |
 | Frontend | `cd frontend && npm install && npm run dev` (Phase 4) |
 | Eval run | TBD (Phase 5) |
 | Deploy | n/a (§15) |
@@ -366,6 +366,8 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 
 **Adding a test:** put the fixture in `tests/` and keep it small and synthetic. Derive the expected output from the source of truth (the API docs, §6 or the assignment), not from current behavior.
 
+**Red first:** write the test before the code (or with the fix stashed), run it, and confirm it fails for the expected reason (an assertion, not an import error or typo). Only then implement and rerun to green. A test never seen failing is unverified.
+
 ## 10. Conventions
 
 - **Naming:** snake_case JSON keys (`trial_count`, `nct_id`), matching the assignment examples. Use glossary words only.
@@ -400,6 +402,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 **Testing and honesty**
 - Don't skip, disable or weaken a failing test to move on. If something is knowingly broken, mark it strict-xfail with the reason.
 - Author expected outputs from the source of truth, never from current behaviour. A test generated from current output certifies its bugs.
+- Don't trust a test you haven't seen fail; confirm red before green (§9).
 - Don't mark work done if a step was skipped or a test failed. Report what and why.
 
 **Docs and token efficiency**
@@ -513,7 +516,7 @@ The reasoning lives in `BUILD_HISTORY.md` under Decisions.
 
 **Shape:** a full-stack app. The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) renders its specs so results can be seen and demoed. The frontend reads only the documented contract (`SCHEMAS.md`), so it doubles as proof that the contract is renderable without guessing.
 
-**Next move:** Phase 1, step 1.3 (steps 1.1-1.2 shipped; see `BUILD_HISTORY.md`).
+**Next move:** Phase 1, step 1.5 (1.1-1.3 shipped, see `BUILD_HISTORY.md`; 1.4 is committed but not yet moved there).
 
 **Rules**
 - **Breadth first:** each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them. Alternatives (§13.3, §13.4) wait until Phase 5 eval logs a failure that needs them (Objectives).
@@ -531,8 +534,7 @@ Decided (user, 2026-10-04):
 - Upstream errors: 30 s timeout; retry twice with backoff on 5xx and 429; then raise a typed `UpstreamError` (mapped to a status in Phase 3).
 - Counting rules, each disclosed in `meta`: a multi-phase record is its own category ("Phase 1/Phase 2", as ClinicalTrials.gov displays it) so phase sums reconcile; no phase -> "Not specified"; `NA` -> "Not Applicable" (the API label); missing start date -> excluded from time series and counted; missing enrollment -> excluded from numeric charts and counted; countries deduped per trial (multi-valued, §8.5).
 
-Steps, in order (1-2 shipped):
-3. **Migrations.** `migrations/001_cache.sql` (both tables plus a `schema_migrations` ledger) and `app/migrate.py`, which applies unapplied files in order inside a transaction. Running it twice is a no-op.
+Steps, in order (1-3 shipped):
 4. **Vocabulary.** `vocab.py`: the §8.4 enums as `StrEnum`s plus display labels. Nothing else defines labels.
 5. **Retrieval filters.** In `schemas.py`, the filter subset of the plan (drug, condition, sponsor, country, phase, status, year range). Phase 3 adds the LLM-facing fields around it.
 6. **API client.** `ctgov.py`: filters -> params (verified params only, §8.4); a canonical `params_key` (sorted, URL-encoded); `fields=` trimmed to the §6 source paths; `nextPageToken` pagination at `pageSize` 1000; stop at `FETCH_CAP`; `countTotal=true` so the result carries `fetched` and `total`.

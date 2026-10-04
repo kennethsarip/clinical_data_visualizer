@@ -2,7 +2,13 @@ from pathlib import Path
 
 import pytest
 
-from app.config import ConfigError, env_var_names, load_settings, required_env_var_names
+from app.config import (
+    ConfigError,
+    env_var_names,
+    load_database_url,
+    load_settings,
+    required_env_var_names,
+)
 
 ENV_EXAMPLE = Path(__file__).resolve().parent.parent / ".env.example"
 
@@ -73,3 +79,13 @@ def test_optional_vars_override_defaults() -> None:
 def test_invalid_fetch_cap_is_a_config_error(value: str) -> None:
     with pytest.raises(ConfigError, match="fetch_cap"):
         load_settings({**FULL_ENV, "FETCH_CAP": value})
+
+
+def test_load_database_url_needs_only_that_var() -> None:
+    assert load_database_url({"DATABASE_URL": "postgresql://x"}) == "postgresql://x"
+
+
+@pytest.mark.parametrize("env", [{}, {"DATABASE_URL": ""}])
+def test_load_database_url_rejects_missing_or_blank(env: dict[str, str]) -> None:
+    with pytest.raises(ConfigError, match="DATABASE_URL"):
+        load_database_url(env)

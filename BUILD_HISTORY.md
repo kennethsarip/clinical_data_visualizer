@@ -6,6 +6,11 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ### Phase 1: Foundation (in progress)
 
+- **1.3 Migrations** (2026-10-04): `migrations/001_cache.sql` creates `api_pages` (PK `params_key`, `page_index`) and `trials` (PK `nct_id`, CHECK `^NCT[0-9]{8}$`), both jsonb, both with `fetched_at`.
+- `app/migrate.py` applies unapplied files in number order in one transaction, so a failing file changes nothing; misnamed or duplicate-numbered files are rejected.
+- The `schema_migrations` ledger is created by the runner rather than by 001, because it must exist before the runner can tell which files are unapplied.
+- `config.load_database_url()` reads only `DATABASE_URL`, so migrating doesn't need an LLM setting that hasn't been decided yet.
+- Tests run in a throwaway schema per test (`tests/conftest.py`), so they never touch the dev cache. They cover order, idempotence, rollback and the table constraints.
 - **1.2 Dependencies** (2026-10-04): added `httpx` (sync API client; `MockTransport` serves test fixtures without a mocking library).
 - Added `psycopg[binary]` (psycopg3 driver for the Postgres cache and migrations; the binary wheel needs no local libpq).
 - **1.1 Infra** (2026-10-04): `docker-compose.yml` runs pinned `postgres:18.6-alpine` on 127.0.0.1, with a healthcheck and a named volume.
