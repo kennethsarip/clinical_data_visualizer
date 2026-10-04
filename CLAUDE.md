@@ -1,14 +1,14 @@
 # CLAUDE.md: ClinicalTrials.gov Query-to-Visualization Agent
 
-> **What it does:** a Python/FastAPI backend. It takes a natural-language clinical-trials question plus optional structured filters and returns a visualization spec (`type`, `title`, `encoding`, `data`, `meta`) that a frontend can render. The spec is computed from ClinicalTrials.gov Data API records, and every row cites the trials that produced it. This is a take-home for the PhnyX Lab (Cheiron) agent-engineering internship, with a ~24 h time box, delivered as a zip (§2).
+> **What it does:** a Python/FastAPI backend, with a React frontend that renders its output. It takes a natural-language clinical-trials question plus optional structured filters and returns a visualization spec (`type`, `title`, `encoding`, `data`, `meta`) that a frontend can render. The spec is computed from ClinicalTrials.gov Data API records, and every row cites the trials that produced it. This is a take-home for the PhnyX Lab (Cheiron) agent-engineering internship, with a ~24 h time box, delivered as a zip (§2).
 >
 > **The one thing to understand first:** the LLM never produces a number, count, date, NCT ID, excerpt or data row. It does exactly three things: plan the query, choose the visualization, and write prose. Retrieval, aggregation, citations and checks are deterministic Python, so every row traces back to cached API records by NCT ID (§7.2).
 >
 > **Design goal:** one coherent approach that covers as many query types as possible across multiple visualization types (Objectives, below).
 >
-> **Status:** Phase 1 is next (§14). Phase 0 shipped the skeleton, toolchain and CI. The repo is `github.com/kennethsarip/cheiron_task` (private, §12). Not in production, and no deploy is planned (§15).
+> **Status:** Phase 1 (Foundation) is next (§14). The app is full stack: a FastAPI backend plus a Vite/React frontend that renders the specs. Phase 0 shipped the skeleton, toolchain and CI. The repo is `github.com/kennethsarip/cheiron_task` (private, §12). Not in production, and no deploy is planned (§15).
 >
-> **Read before coding:** Objectives, §6 Data model, §7 How things work, §11 Don't do, §14 Roadmap.
+> **Read before coding:** Objectives, §6 Data model, §7 How things work, §11 Don't do, §14 Build plan.
 
 ## Objectives
 
@@ -29,7 +29,7 @@ Taken from the assignment document. Where a later section conflicts with this on
 
 **Interfaces the reviewer reads:**
 - **Request schema** documented: field names, types, required/optional, validation. Only `query` is required; the optional fields are ours to define (§8.3).
-- **Response schema** documented so that **a frontend engineer can implement a renderer without guessing**. Required parts: `visualization` (`type`, `title`, `encoding`, `data`) and `meta` (units, sorting, time granularity, grouping choices, plus notes on assumptions, filters applied and query interpretation). No frontend is required; backend plus structured output is the focus. Both schemas live in `SCHEMAS.md` (§8.3).
+- **Response schema** documented so that **a frontend engineer can implement a renderer without guessing**. Required parts: `visualization` (`type`, `title`, `encoding`, `data`) and `meta` (units, sorting, time granularity, grouping choices, plus notes on assumptions, filters applied and query interpretation). No frontend is required; backend plus structured output is the focus. Both schemas live in `SCHEMAS.md` (§8.3). We build a frontend anyway (§14 Phase 4) as the demo bonus, and it renders only from that contract.
 
 **Bonus, deep citations:** every datum (bar, time bucket, node, edge weight) references the trial records that produced it, each as `nct_id` plus an exact text excerpt from the API response, or a specific field/value (§7.5). The assignment calls this intentionally challenging: implement as much as the time box allows.
 
@@ -119,11 +119,12 @@ Happy path (LLM steps marked):
 - Deterministic aggregation for every question class (§1). Viz types: bar, grouped bar, time series, scatter, histogram and network graph.
 - Deep citations on every row, including network edges.
 - Explicit statuses and handling of the edge cases in §7.8.
+- A Vite + React + TypeScript frontend that renders every viz type from the documented contract, with citation and `meta` panels (§14 Phase 4).
 - An eval set of ~20-25 questions with a baseline run and an after run, both kept (§9).
 - The submission zip: code; the README (how to run, schemas, design decisions and tradeoffs, limitations and what more time would improve, AI tools used, how correctness was validated, and what was designed deliberately versus generated and adapted); and 3-5 example runs with the actual JSON outputs.
 
 **Out of scope**
-- A frontend renderer (optional bonus, §13.4).
+- Frontend features beyond rendering a response: accounts, saved queries, routing, styling polish.
 - Every rejected alternative in §13.3: vector or semantic retrieval (embeddings, rerankers, ANN indexes), LLM-generated aggregates, agent frameworks (LangChain, LlamaIndex, Haystack, CrewAI, AutoGen), multi-agent or iterative retrieval, a local pre-cached corpus, and knowledge graphs or GraphRAG.
 - Data sources other than ClinicalTrials.gov (PubMed, FDA documents, guidelines, internal documents).
 - Synonym or controlled-vocabulary resolution of inputs (deferred, §13.4).
@@ -135,23 +136,25 @@ Happy path (LLM steps marked):
 |---|---|---|
 | Language | Python >=3.12 | Dev interpreter pinned to 3.12 in `.python-version`; the floor is set for reviewer compatibility |
 | API framework | FastAPI | Request and response models use Pydantic, FastAPI's model layer |
-| Database | Postgres | Response cache only. Schema TBD (§6) |
+| Database | Postgres, run with Docker Compose | Response cache only: `api_pages` + `trials` (§6) |
 | Data source | ClinicalTrials.gov Data API v2 | The authoritative source. No API key needed (verified 2026-10-04). Facts in §8.4 |
 | LLM | OpenAI | The company supplied the key. Model is OPEN (§13.1). Used only for planning, viz selection and prose (§7.2) |
 | Orchestration | Hand-rolled Python | No agent frameworks; they abstract away the exact decisions being graded |
 | Vector DB | None | Typed API fields answer these questions exactly (§13.3) |
-| HTTP client, DB driver, migrations | TBD | Chosen in Phase 1 (§13.1) |
+| HTTP client | httpx (sync) | Requests are sequential, so async adds complexity without need; `MockTransport` serves test fixtures |
+| DB driver, migrations | psycopg3; numbered SQL files in `migrations/` applied by `app/migrate.py` | Two tables do not justify an ORM |
+| Frontend | Vite + React + TypeScript; Vega-Lite (`react-vega`) for charts, Cytoscape.js for networks | `frontend/`; types generated from the OpenAPI schema (§14 Phase 4) |
 | Package manager | uv | `uv.lock` is committed; reviewers run `uv sync` |
 | Lint / format / typecheck / test | ruff / ruff format / mypy (strict, pydantic plugin) / pytest | All configured in `pyproject.toml` |
 | CI | GitHub Actions | Runs the Definition of done on every push to `main` and every PR |
 
-**Architecture:** client -> FastAPI app -> {LLM API (plan, viz choice, prose); ClinicalTrials.gov API through the Postgres cache}. Secrets (`OPENAI_API_KEY`, `DATABASE_URL`) live only in `.env` and are read through `app/config.py`. Auth model: TBD (§13.1).
+**Architecture:** browser (React app, Vite proxy in dev) -> FastAPI app -> {LLM API (plan, viz choice, prose); ClinicalTrials.gov API through the Postgres cache}. Secrets (`OPENAI_API_KEY`, `DATABASE_URL`) live only in `.env` and are read through `app/config.py`. Auth model: TBD (§13.1).
 
 **Hard rules:** no agent frameworks; no embeddings for record retrieval; every LLM output is parsed and schema-validated before any code uses it.
 
 ## 4. Repository structure
 
-Created in Phase 0. Every module except `main.py` and `config.py` holds only a docstring until its phase. Keep this tree in sync.
+Created in Phase 0. Every module except `main.py` and `config.py` holds only a docstring until its phase; `app/migrate.py`, `docker-compose.yml` and `frontend/` arrive in their phases (§14). Keep this tree in sync.
 
 ```
 CLAUDE.md            # spec + working context (this file)
@@ -183,6 +186,8 @@ migrations/          # SINGLE SOURCE of DB schema truth
 tests/               # unit + contract tests; small synthetic fixtures (§9)
 eval/                # eval questions, runner, baseline + after results (§9)
 examples/            # 3-5 real request/response JSON pairs from the running system
+docker-compose.yml   # local Postgres (Phase 1)
+frontend/            # Vite + React + TS app; renders specs from SCHEMAS.md (Phase 4)
 ```
 
 ## 5. Commands
@@ -195,15 +200,17 @@ examples/            # 3-5 real request/response JSON pairs from the running sys
 | Typecheck | `uv run mypy` |
 | Test | `uv run pytest` |
 | Add a dependency | `uv add <pkg>` (dev only: `uv add --dev <pkg>`); state why in the commit (§11) |
-| Migrate | TBD with the cache schema (§13.1) |
-| Eval run | TBD (Phase 4) |
+| Start Postgres | `docker compose up -d` (Phase 1) |
+| Migrate | `uv run --env-file .env python -m app.migrate` (Phase 1) |
+| Frontend | `cd frontend && npm install && npm run dev` (Phase 4) |
+| Eval run | TBD (Phase 5) |
 | Deploy | n/a (§15) |
 
 API probe (works now): `curl -s 'https://clinicaltrials.gov/api/v2/studies?query.intr=pembrolizumab&pageSize=1&countTotal=true&fields=NCTId'`
 
 ## 6. Data model
 
-**Schema truth:** `migrations/`, once it exists. The cache tables are OPEN, because the data model is hard to reverse (§13.1). Any cache schema must meet these requirements:
+**Schema truth:** `migrations/`, once it exists. Decided: `api_pages` (`params_key`, `page_index`, `total_count`, verbatim `body` jsonb, `fetched_at` timestamptz; PK on the first two) and `trials` (`nct_id` PK, verbatim `record` jsonb, `fetched_at`), with TTL from `CACHE_TTL_HOURS` (default 168). The schema meets these requirements:
 - Store each API response verbatim, because excerpts are checked as substrings of their record (§7.6).
 - Key the cache on the exact API params, so an identical request reuses identical records. Example runs and eval runs depend on this.
 - Keep `nct_id` per record for exact lookup.
@@ -321,7 +328,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 - `type` values from the assignment: `bar_chart`, `time_series`, `network_graph`; other type strings are proposals.
 - `meta` carries filters (stated vs inferred), source, assumptions, units, sorting, time granularity, grouping, cap disclosure, excluded-record counts and pruning.
 - **Renderer contract bar:** a frontend engineer can implement a renderer without guessing (Objectives). For each viz type it states the `encoding` channels, every row field with its type and unit, the sort order, and how citations attach to rows, nodes and edges.
-- No frontend is built (§2). The README links to `SCHEMAS.md` and shows real examples from `examples/`.
+- The frontend (§14 Phase 4) consumes only this contract. The README links to `SCHEMAS.md` and shows real examples from `examples/`.
 
 ### 8.4 ClinicalTrials.gov API facts (verified 2026-10-04, apiVersion 2.0.5)
 - Base URL `https://clinicaltrials.gov/api/v2`. `GET /studies` returns `{totalCount, studies, nextPageToken}`; `fields=` trims the payload.
@@ -342,7 +349,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 
 ## 9. Testing
 
-**Safety net:** the unit and contract tests make up the Definition of done and must not need the network or the LLM. The eval harness is separate and runs live.
+**Safety net:** the unit and contract tests make up the Definition of done and must not need the network or the LLM. Cache and migration tests need the local Postgres (Docker Compose; a service container in CI). The eval harness is separate and runs live.
 
 | Layer | Covers |
 |---|---|
@@ -352,6 +359,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 | Checks | Each §7.6 check, with one passing and one failing fixture |
 | API client | Param building, pagination and the cap, against small recorded fixtures |
 | Planner / viz | Parsing and validation of LLM output with a stubbed LLM, including malformed output |
+| Frontend | Each viz renderer against the `SCHEMAS.md` examples; status views (Vitest; Phase 4) |
 | Eval | 20-25 questions: every §1 class plus ambiguous input, a zero-result combination, a nonexistent entity, a contradictory date range, multi-phase or missing-field records, and a very broad condition. For each question, record the intent, viz type, record count, check pass/fail, latency and failure mode |
 
 **Eval protocol:** run the baseline, fix the largest failure class, rerun, and keep both result sets in `eval/`.
@@ -438,12 +446,11 @@ Items marked **ask first** are hard to reverse; ask the user before choosing the
 
 | Item | What needs deciding |
 |---|---|
-| Cache schema (**ask first**) | Tables, JSON storage type, TTL, timestamp type, how Postgres runs locally (§6) |
 | Internal ID scheme (**ask first**) | IDs for requests and eval runs (§8.2) |
 | Auth model (**ask first**) | Who may call the endpoint |
 | Hosting (**ask first**) | Whether to host at all (§15) |
 | LLM model (**ask first**) | The provider is OpenAI (§3); the model name goes in `OPENAI_MODEL` |
-| Phase 1 libraries | HTTP client, Postgres driver, migrations tool. Add each with `uv add` and a stated reason (§11) |
+| Frontend tooling | npm; OpenAPI-generated types (§14 Phase 4) |
 | Response contract | Endpoint path, HTTP code per `status`, `visualization` when `status != ok`, `meta` keys, viz type strings, network node/edge shape (§8.3) |
 | Request fields | Final set and max lengths (§8.3) |
 | Source documents | Save the assignment prompt and project brief in the repo; they are the source of truth for tests and README claims |
@@ -476,6 +483,10 @@ The reasoning lives in `BUILD_HISTORY.md` under Decisions.
 - Statuses: `ok`, `clarification_needed`, `no_results`, `degraded`.
 - A spec gets one repair from the same rows, then `degraded`.
 - Gap years are zero-filled; capped samples and pruning are disclosed; contradictory inputs are rejected.
+- Phase 1 retrieval: httpx (sync); `FETCH_CAP` default 2000; 30 s timeout with 2 retries on 5xx/429; counting rules as listed in §14 Phase 1.
+- Local Postgres via Docker Compose; psycopg3 + numbered SQL migrations; cache tables `api_pages` + `trials` with a TTL env var (§6).
+- Full stack: a Vite + React + TS frontend renders the specs (Vega-Lite, Cytoscape.js).
+- Request/response contract documented in `SCHEMAS.md`, validated against `schemas.py` by a test.
 
 ### 13.3 Descoped deliberately
 | Alternative | Why rejected |
@@ -489,7 +500,7 @@ The reasoning lives in `BUILD_HISTORY.md` under Decisions.
 
 ### 13.4 Deferred
 - Synonym resolution of inputs. Trigger: an eval run logs a zero-result query that a synonym would have fixed. The API already expands drug synonyms (§7.3).
-- Frontend demo, deployed endpoint or demo video (optional bonus).
+- Deployed endpoint or demo video (optional bonus). The frontend is now in scope (§14 Phase 4).
 
 ### 13.5 Decided by assumption
 | Assumption | Falsified if |
@@ -498,33 +509,110 @@ The reasoning lives in `BUILD_HISTORY.md` under Decisions.
 | Listing "vector databases" in the stack does not require using one; a documented rejection shows judgment | The assignment or interviewer says one is required |
 | A capped sample with a disclosed total is useful for broad queries | Eval shows the sample's distribution differs materially from per-bucket totals |
 
-## 14. Roadmap (what is left to build)
+## 14. Build plan (what is left to build)
 
-**Breadth-first rule:** each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them. Alternative approaches (§13.3, §13.4) are not tried until Phase 4 eval logs a failure that needs them (Objectives).
+**Shape:** a full-stack app. The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) renders its specs so results can be seen and demoed. The frontend reads only the documented contract (`SCHEMAS.md`), so it doubles as proof that the contract is renderable without guessing.
 
-**Ship-then-prune rule:** when a phase's "Done when" passes, delete the phase from here and add a 1-2 line entry to `BUILD_HISTORY.md` in the SAME commit.
+**Next move:** Phase 1, step 1.1.
 
-**Phase 1: Retrieval and cache.** Goal: a hand-written plan (no LLM yet) produces cached, normalized records.
-- First decide, asking the user: the cache schema, local Postgres setup and Phase 1 libraries (§13.1).
-- `ctgov.py` (params, pagination, cap, `countTotal`), the cache migration, `cache.py`, and `normalize.py` with the counting rules.
-- Done when: fixture tests for params, pagination, cap and normalization pass; a live pembrolizumab fetch returns records; and an identical second call is served from the cache.
+**Rules**
+- **Breadth first:** each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them. Alternatives (§13.3, §13.4) wait until Phase 5 eval logs a failure that needs them (Objectives).
+- **Foundation before features:** a phase starts only when the previous phase's "Done when" passes, because each phase consumes the previous one's output (records -> rows -> responses -> rendered charts -> measured results).
+- **Decide first:** each phase's open decisions are settled, and recorded in §13.2 plus `BUILD_HISTORY.md`, before its code is written. Items marked PROPOSED are recommendations awaiting the user's yes.
+- **Ship-then-prune:** when a phase's "Done when" passes, delete it from here and add a 1-2 line entry to `BUILD_HISTORY.md` in the SAME commit. One branch per phase, merged when CI is green, `main` tagged (`phase-N`).
 
-**Phase 2: Aggregation, citations, checks.** Goal: deterministic, verified rows for every question class.
-- The registry; aggregators for time trend, distribution, comparison, geographic, and networks (sponsor-drug, drug-drug, condition-drug); `citations.py`; `checks.py`; spec assembly with a fixed viz choice.
-- Done when: every §1 coverage-matrix row has a registered aggregator (Numeric once its field is decided); every viz type (bar, grouped bar, time series, scatter, histogram, network) assembles a spec that passes the §7.6 checks; every aggregator test passes against hand-computed rows; and every §7.6 check has a passing and a failing fixture.
+### Phase 1: Foundation (infra, retrieval, cache, normalization)
+Goal: a hand-written plan (no LLM yet) produces cached, normalized records. Everything after this phase stands on these records.
 
-**Phase 3: LLM planning and endpoint.** Goal: an end-to-end natural-language request returns a response with the right status.
-- First decide, asking the user: the OpenAI model (§13.1).
-- `llm.py`, `planner.py`, the LLM half of `viz.py`, repair-once, status selection, the endpoint.
-- Done when: one query per §1 class returns `ok` with all checks passing, and each §7.8 case returns its specified behavior.
+Decided (user, 2026-10-04):
+- Docker Compose Postgres; psycopg3 with numbered SQL migrations; `api_pages` + `trials` cache tables (§6); `CACHE_TTL_HOURS` default 168.
+- HTTP client: `httpx`, synchronous. FastAPI runs sync routes in a threadpool, and requests are sequential, so async adds complexity without a measured need. `httpx.MockTransport` gives fixture tests without an extra mocking dependency.
+- Record cap: `FETCH_CAP` env var, default 2000 (two pages).
+- Upstream errors: 30 s timeout; retry twice with backoff on 5xx and 429; then raise a typed `UpstreamError` (mapped to a status in Phase 3).
+- Counting rules, each disclosed in `meta`: a multi-phase record is its own category ("Phase 1/Phase 2", as ClinicalTrials.gov displays it) so phase sums reconcile; no phase -> "Not specified"; `NA` -> "Not applicable"; missing start date -> excluded from time series and counted; missing enrollment -> excluded from numeric charts and counted; countries deduped per trial (multi-valued, §8.5).
 
-**Phase 4: Eval and iteration.** Goal: measured evidence of iteration.
-- The 20-25 question set and runner (§9); a baseline run; a fix for the largest failure class; a rerun.
+Steps, in order:
+1. **Infra.** `docker-compose.yml` with a pinned `postgres` image and a named volume; add `DATABASE_URL`, `CTGOV_BASE_URL`, `FETCH_CAP`, `CACHE_TTL_HOURS` to `config.py` and `.env.example` (the parity test enforces both). Add a Postgres service container to CI so DB tests run there too.
+2. **Dependencies.** `uv add httpx "psycopg[binary]"`, with the reasons in the commit.
+3. **Migrations.** `migrations/001_cache.sql` (both tables plus a `schema_migrations` ledger) and `app/migrate.py`, which applies unapplied files in order inside a transaction. Running it twice is a no-op.
+4. **Vocabulary.** `vocab.py`: the §8.4 enums as `StrEnum`s plus display labels. Nothing else defines labels.
+5. **Retrieval filters.** In `schemas.py`, the filter subset of the plan (drug, condition, sponsor, country, phase, status, year range). Phase 3 adds the LLM-facing fields around it.
+6. **API client.** `ctgov.py`: filters -> params (verified params only, §8.4); a canonical `params_key` (sorted, URL-encoded); `fields=` trimmed to the §6 source paths; `nextPageToken` pagination at `pageSize` 1000; stop at `FETCH_CAP`; `countTotal=true` so the result carries `fetched` and `total`.
+7. **Cache.** `cache.py`: read pages by `params_key` within TTL, else fetch and write pages plus upserted `trials` rows in one transaction; look up records by `nct_id`.
+8. **Normalize.** `normalize.py`: record -> the §6 normalized model, applying the counting rules and returning per-rule exclusion counts.
+
+Done when:
+- Fixture tests pass for param building, `params_key` stability, pagination, the cap, retries, migrations (idempotent) and each counting rule (fixtures shaped like the §6 evidence).
+- A live test (`pytest -m live`, excluded from the default run) fetches pembrolizumab, gets records, and serves an identical second call from the cache with zero HTTP requests.
+
+### Phase 2: Aggregation, citations, checks (deterministic core)
+Goal: verified rows and complete specs for every question class and every viz type, with no LLM involved.
+
+Decide first:
+- The `drug` definition (types DRUG + BIOLOGICAL; drop placebo and non-drug items by a listed rule; disclose the count) and network node normalization (case-fold, strip dosage/salt suffixes; synonym merging stays deferred, §13.4).
+- Network pruning defaults: minimum edge weight 2, top 50 nodes by degree, disclosed in `meta.pruning`.
+- Scatter and histogram fields (proposal: enrollment vs start year; enrollment histogram with fixed bin edges).
+- Citation cap per row (proposal: 25, disclosed when `trial_count` exceeds it) and the excerpt field per dimension.
+- Lock the PROPOSED items in `SCHEMAS.md` (type strings, network shape, `meta` keys, non-`ok` bodies).
+
+Steps, in order:
+1. **Response models.** `schemas.py` response models matching `SCHEMAS.md`, plus the contract test that validates every JSON example in `SCHEMAS.md`.
+2. **Registry.** `aggregators/registry.py`: an `Aggregator` protocol declaring intent, dimension, output columns, row shape and excerpt source; registration by `(intent, dimension)`; lookup failure is a typed error.
+3. **Aggregators**, one module each, each emitting rows with NCT ID sets:
+   - time trend by start year (zero-filled);
+   - distribution by phase, status, intervention type and sponsor class;
+   - geographic by country;
+   - comparison: any categorical dimension across 2+ cohorts (one API query per cohort);
+   - numeric: enrollment scatter and histogram;
+   - networks: sponsor-drug, drug-drug and condition-drug.
+4. **Citations.** `citations.py`: `{nct_id, excerpt, field}` per row, node and edge, read from cached records only.
+5. **Checks.** `checks.py`: every §7.6 BLOCK check plus the WARN disclosures.
+6. **Spec assembly.** `viz.py` (deterministic half): row shape -> allowed viz types, a fixed default type per shape, and spec plus `meta` assembly.
+
+Done when: every §1 row has a registered aggregator; all six viz types assemble specs that pass every check; each aggregator test matches rows computed by hand; and each check has a passing and a failing fixture.
+
+### Phase 3: LLM planning and the endpoint (end to end)
+Goal: a natural-language request returns the right status and a checked spec over HTTP.
+
+Decide first (ask the user): the OpenAI model; one LLM call or two; the endpoint path (proposal `POST /api/visualize`); the HTTP code per status (proposal: 200 for all four statuses, 422 for request validation, 502 for upstream or LLM failure); the clarification anchor rule; stated vs inferred filters; not-found vs zero results (§13.1).
+
+Steps, in order:
+1. **LLM client.** `llm.py`: an OpenAI structured-output call returning validated Pydantic models; malformed output raises a typed error; `uv add openai`.
+2. **Planner.** `planner.py`: the prompt lists the intent and dimension enums and the registered aggregators, so the planner can only choose what exists. Validate the plan, then apply the anchor rule.
+3. **Viz choice and prose.** The LLM half of `viz.py`: choose the type from the allowed set and write the title and notes; never data.
+4. **Pipeline.** `pipeline.py`: the §1 steps, repair-once, and typed error -> status mapping in one place.
+5. **Endpoint.** `main.py`: one route that calls the pipeline; no branching.
+
+Done when: one query per §1 class returns `ok` with all checks passing; each §7.8 case returns its specified behavior; the planner and viz tests pass against a stubbed LLM, including malformed output.
+
+### Phase 4: Frontend (render every viz type)
+Goal: a single-page app where a user asks a question, sees the chart, and inspects the trials behind any datum.
+
+Decide first: npm as the package manager (PROPOSED); TypeScript types generated from FastAPI's OpenAPI schema with `openapi-typescript` (PROPOSED), so `schemas.py` stays the single source of truth.
+
+Steps, in order:
+1. **Scaffold.** `frontend/` with Vite + React + TypeScript (strict). ESLint, `tsc --noEmit`, Vitest. The Vite dev server proxies `/api` to `127.0.0.1:8000`, so no CORS config is needed.
+2. **Types and client.** Generate `frontend/src/api/types.ts` from `/openapi.json`; a small `fetch` client.
+3. **Query form.** `query` plus the optional filter fields; client-side checks mirror the request validation, and the server stays authoritative.
+4. **Status views.** Distinct views for `clarification_needed` (names the missing anchor), `no_results` (lists the filters applied), `degraded` (shows the errors) and loading.
+5. **Renderer dispatch.** One map from `type` to renderer. Vega-Lite (`react-vega`) renders bar, grouped bar, time series, scatter and histogram by translating `encoding` + `data`; Cytoscape.js renders `network_graph`. Each renderer reads only `encoding` field names and never hardcodes a column.
+6. **Citations panel.** Clicking a bar, point, node or edge lists its citations, each with an excerpt and a link to `https://clinicaltrials.gov/study/<nct_id>`.
+7. **Meta panel.** Shows stated vs inferred filters, assumptions, the capped-sample disclosure ("fetched N of M"), exclusions and pruning.
+
+Done when:
+- A Vitest test renders every `SCHEMAS.md` example per viz type without error.
+- Every status view is reachable from the running backend.
+- `npm run lint && npm run typecheck && npm test` passes and is added to the Definition of done and CI.
+
+### Phase 5: Eval and iteration
+Goal: measured evidence of iteration.
+- The 20-25 question set and runner (§9); a baseline run; a fix for the largest failure class; a rerun. The frontend is used to eyeball each chart the runner flags.
 - Done when: both result sets are saved in `eval/` with per-question metrics, and the README cites only comparisons that were actually run.
 
-**Phase 5: Submission.** Goal: the zip.
-- README sections (§2 In scope), 3-5 example runs captured from the live system into `examples/`, a zip built from a clean checkout.
-- Done when: the zip, unpacked fresh, installs and runs per the README and contains the code, README and examples.
+### Phase 6: Submission
+Goal: the zip.
+- README sections (§2 In scope) linking `SCHEMAS.md`; 3-5 example runs captured from the live system into `examples/`; frontend screenshots; a zip built from a clean checkout.
+- Done when: the zip, unpacked fresh, runs per the README (`docker compose up -d`, migrate, backend, frontend) and contains the code, README, SCHEMAS.md and examples.
 
 ## 15. Production & ops
 
