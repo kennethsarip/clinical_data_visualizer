@@ -9,6 +9,7 @@ import pytest
 from app.cache import TrialCache
 from app.ctgov import TIMEOUT_SECONDS, CtgovClient
 from app.migrate import apply_migrations
+from app.normalize import normalize_records
 from app.schemas import RetrievalFilters
 
 pytestmark = pytest.mark.live
@@ -42,3 +43,7 @@ def test_pembrolizumab_is_fetched_once_then_served_from_the_cache(db: psycopg.Co
     assert transport.requests == requests_after_first
     assert second.records == first.records
     assert second.total == first.total
+
+    # Every live record must parse: a shape error here means the API changed (§6).
+    batch = normalize_records(second.records)
+    assert len(batch.trials) == second.fetched
