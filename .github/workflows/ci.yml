@@ -9,6 +9,23 @@ on:
 jobs:
   quality-gate:
     runs-on: ubuntu-latest
+    services:
+      # Same pinned image as docker-compose.yml, for the cache and migration tests (CLAUDE.md §9).
+      postgres:
+        image: postgres:18.6-alpine
+        env:
+          POSTGRES_USER: cheiron
+          POSTGRES_PASSWORD: cheiron
+          POSTGRES_DB: cheiron
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cheiron -d cheiron"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
+    env:
+      DATABASE_URL: postgresql://cheiron:cheiron@127.0.0.1:5432/cheiron
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.2.0  # no moving major tag is published
