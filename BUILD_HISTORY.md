@@ -4,6 +4,13 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ## Shipped
 
+### Phase 6: Query understanding and retrieval (in progress)
+
+- **6.0 Questions and a pre-fix run** (2026-10-05): four questions (breast cancer phases in Japan; lung cancer per year in "Korea"; "Beijing, Japan"; pediatric asthma), expectations written from the Phase 6 plan. The runner gains an off-filter metric: every charted trial re-read from its raw record against the exact filters (phase, status, start-year range, country), outside `normalize` and `checks.py`; a question with any off-filter trial fails as `off_filter`. Red-first; two older runner tests served records that did not meet their own filter and were corrected.
+  - `eval/results/pre_phase6.json` (commit `e6e9bee`): 29/34. Japan charts 9 of 336 trials with no Japanese site, exactly the §8.4 probe. "Korea" is copied verbatim (stated, not the inferred "South Korea") and all 1,011 charted trials fail an exact country match. "Beijing, Japan" is charted with country "Beijing, Japan" (242 trials, none matching). Pediatric asthma is charted as asthma by phase, `ok`. Off-filter 1,262 of 88,382 charted trials, all from these three.
+  - Unrelated finding: `cmp_sponsor_class_two_conditions` was planned as `comparison.condition` (4/4 earlier runs, then 1 miss here and 1 in 6 live planner reruns). A planner instability, not a retrieval bug; left for an eval-driven fix.
+  - The three questions waiting on steps 2-3 are strict-xfail in the live planner and pipeline tests (`tests/eval_pending.py`).
+
 ### Phase 5: Eval and iteration (done 2026-10-05; merged in PR #6 and tagged `phase-5`)
 
 - **Done when, checked** (2026-10-05): baseline and after runs are saved in `eval/results/` with per-question metrics (5.3). The README does not yet cite them; its comparisons are written in Phases 7 and 9 from these saved runs only.

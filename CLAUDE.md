@@ -384,7 +384,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 | Live pipeline | `tests/test_live_pipeline.py` (`-m live`, Compose Postgres): every plannable eval question end to end (real LLM, API and cache) against its expected status, analysis, viz type, not-found names and cap |
 | Live LLM | `tests/test_live_llm.py` (`-m live`): OpenAI accepts the strict schema `llm.strict_json_schema` generates and the reply validates. `tests/test_live_planner.py`: the real planner against every eval expectation, one test per question. `tests/test_live_prose.py`: an LLM title without fallback for every `ok` eval question |
 | Live core | `tests/test_live_core.py` (`-m live`): every registered aggregator plus citations on real records; checks provenance, retrieved IDs, excerpts, §8.5 reconciliation and network edges. Extended by each later step |
-| Eval | `eval/questions.json` (30 questions, loaded by `eval/questions.py`, coherence-tested by `tests/test_eval_questions.py`): every §1 class plus ambiguous input, a zero-result combination, a nonexistent entity, a contradictory date range, multi-phase or missing-field records, and a very broad condition. For each question, record the intent, viz type, record count, check pass/fail, latency and failure mode |
+| Eval | `eval/questions.json` (34 questions, loaded by `eval/questions.py`, coherence-tested by `tests/test_eval_questions.py`): every §1 class plus ambiguous input, a zero-result combination, a nonexistent entity, a contradictory date range, multi-phase or missing-field records, and a very broad condition, and the Phase 6 retrieval cases (a country, a country variant, two values for one filter, a constraint no filter expresses). For each question, record the intent, viz type, record count, check pass/fail, latency, failure mode, and off-filter trials (charted trials failing an exact filter, re-read from raw records outside `checks.py`). Questions waiting on a later step are strict-xfail in the live tests (`tests/eval_pending.py`) |
 
 **Eval protocol:** run the baseline, fix the largest failure class, rerun, and keep both result sets in `eval/`.
 
@@ -503,7 +503,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4, done) makes results visible for the demo.
 
-**Next move:** Phase 6 step 0 (questions and a pre-fix run) before any other Phase 6 code.
+**Next move:** Phase 6 step 1 (filter UI).
 
 Phases 6-9 were planned with the user on 2026-10-05 (reasons in `BUILD_HISTORY.md` → Decisions): fix query understanding and retrieval first, because a citation cannot rescue a trial that should never have been retrieved; then verify every step and show the result to the user; then the network showcase; then submission.
 
@@ -515,7 +515,6 @@ Phases 6-9 were planned with the user on 2026-10-05 (reasons in `BUILD_HISTORY.m
 
 ### Phase 6: Query understanding and retrieval
 Goal: every constraint in the question is either applied exactly or disclosed as not applied, and every charted trial meets the filters applied. Evidence: the country filter is a text search (§8.4), so "breast cancer trials in Japan" charts 9 trials sited only in China, and every §7.6 check passes.
-0. **Questions and a pre-fix run.** Add eval questions: breast cancer phases in Japan; a "Korea" country variant; two values for one filter ("trials in Beijing, Japan"); a constraint no filter expresses ("pediatric asthma trials by phase"). Write the expectations from the behavior decided here, never from output. Add an off-filter metric to the runner, computed from the fetched records independently of `checks.py`. Save a run on the current code (`eval/results/pre_phase6.json`) before any other Phase 6 code; this stands in for "before the baseline", which had already run.
 1. **Filter UI.** Remove the Filters panel; the question box is the only input, and filtering comes from the question alone. Read-only chips above the chart show the applied filters, inferred ones marked, so hidden filtering stays visible. The optional request fields stay in the API (the request schema is graded; tests and the eval use them).
 2. **Canonical countries.** `country` becomes one of ClinicalTrials.gov's 226 country names (§8.4), mirrored in `vocab.py` with a live parity test and enforced by the plan schema, so "Korea", "USA" or "한국" map to one name and the §7.3 verbatim test discloses the mapping as inferred.
 3. **Constraint accounting.** The plan lists every constraint in the question, quoted verbatim, as applied or not applied; Python checks that each quote is a substring of `query`. Two values for one filter -> `clarification_needed` naming both; a constraint no filter expresses (a city, an age group) -> `clarification_needed` with a suggested rephrase, written by the same plan call, that the frontend offers as one click. Contract change (SCHEMAS.md §4-5). The LLM can still leave a constraint out; the step-0 questions measure that.
