@@ -91,26 +91,26 @@ class Citation(_Contract):
     field: str  # record path under protocolSection
 
 
-class _Provenance(_Contract):
+class Provenance(_Contract):
     trial_count: Count
     nct_ids: list[NctId]
     citations: list[Citation]
 
 
-class Row(_Provenance):
+class Row(Provenance):
     """One chart row. Its dimension fields vary by aggregator, so extra fields are allowed."""
 
     model_config = ConfigDict(extra="allow", frozen=True)
 
 
-class Node(_Provenance):
+class Node(Provenance):
     id: str
     label: str
     entity_type: Literal["drug", "sponsor", "condition"]
     is_anchor: bool
 
 
-class Edge(_Provenance):
+class Edge(Provenance):
     source: str
     target: str
 

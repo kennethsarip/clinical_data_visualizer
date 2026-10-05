@@ -450,7 +450,7 @@ Items marked **ask first** are hard to reverse; ask the user before choosing the
 | Auth model (**ask first**) | Who may call the endpoint |
 | Request fields | Final set; `query` max length (filter text fields are capped at 200, §8.3) |
 | Source documents | Save the assignment prompt and project brief in the repo; they are the source of truth for tests and README claims |
-| Plan schema | Intent and dimension enums; comparison cohorts as `cohorts: [{label, filters}]`, one API query per cohort (proposal, Phase 3) |
+| Plan schema | The rest of the plan around the `Intent` and `Dimension` enums (now in `aggregators/registry.py`); comparison cohorts as `cohorts: [{label, filters}]`, one API query per cohort (proposal, Phase 3) |
 | Date basis and granularity | Start date vs first-posted date for "trials per year"; year vs finer buckets |
 | Per-bucket totals | Alternative to the capped sample: exact per-bucket totals via `countTotal=true` queries, with citations from the sample (§13.5) |
 
@@ -488,7 +488,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) makes results visible for the demo.
 
-**Next move:** Phase 2 step 2 (registry) on `phase-2-core`. Step 1 shipped (see `BUILD_HISTORY.md`).
+**Next move:** Phase 2 step 3 (entities) on `phase-2-core`. Steps 1-2 shipped (see `BUILD_HISTORY.md`).
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
@@ -500,16 +500,15 @@ The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) m
 Goal: verified rows and complete specs for every question class and every viz type, with no LLM involved. All decisions are made (§6, §7.4, §7.5, SCHEMAS.md).
 
 Steps, in order (each red first, §9):
-2. **Registry.** `aggregators/registry.py`: an `Aggregator` protocol declaring intent, dimension, output columns, row shape and excerpt source; registration by `(intent, dimension)`; a lookup miss raises a typed error.
 3. **Entities.** `entities.py`: the §6 drug rule (with its exclusion counts) and the §6 name normalization, each tested on names shaped like the §6 evidence.
-4. **Aggregators**, one module each, built on one shared count-by-key helper; each emits rows with `nct_ids`; expected rows computed by hand:
+4. **Aggregators**, one module each, built on one shared count-by-key helper, registered into `REGISTRY`; each emits `AggRow`s with `nct_ids` and per-trial evidence (the record value that placed the trial in the row); expected rows computed by hand:
    - time trend by start year (zero-filled);
    - distribution by phase, status, intervention type and sponsor class; top-N drugs, sponsors and conditions;
    - geographic by country;
    - comparison: any categorical dimension across 2+ cohorts;
    - numeric: enrollment scatter (start date vs log enrollment) and histogram (fixed bins), both split by `enrollment_type`;
    - networks: one co-occurrence aggregator registered for sponsor-drug, drug-drug and condition-drug, with §7.4 pruning, fallback and `is_anchor`.
-5. **Citations.** `citations.py`: `nct_ids` + field path + cap -> `{nct_id, excerpt, field}` per row, node and edge, from cached records only; null excerpts for absent fields; the `trials` lookup.
+5. **Citations.** `citations.py`: each row's evidence -> `{nct_id, excerpt, field}` per row, node and edge, ordered and capped (§7.5); null excerpts for absent fields; the `trials` lookup. Evidence comes from normalized cached records, and the excerpt check verifies it against the raw record.
 6. **Checks.** `checks.py`: every §7.6 BLOCK check plus the WARN disclosures.
 7. **Spec assembly.** `viz.py` (deterministic part): the §7.4 shape -> type table, encoding with channel types, and spec plus `meta` assembly.
 

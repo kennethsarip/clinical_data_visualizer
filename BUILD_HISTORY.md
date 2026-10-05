@@ -6,6 +6,11 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ### Phase 2: Aggregation, citations, checks (in progress on `phase-2-core`)
 
+- **2.2 Registry** (2026-10-04): `app/aggregators/registry.py` defines `Intent`, `Dimension` and `RowShape`, the `Aggregator` protocol (intent, dimension, shape, columns, excerpt fields, `aggregate`) and the output types (`AggRow` with per-trial `Evidence`; `Aggregation`; `GraphAggregation` with pruning).
+- `Registry` dispatches on (intent, dimension). An unknown pair raises `UnknownAggregatorError`, and a duplicate pair raises `DuplicateAggregatorError`. `keys()` is sorted, because the Phase 3 planner schema is generated from it.
+- Registration rejects declaration bugs: a shape outside the §1 matrix for its intent, no columns or excerpt fields, or a column that would shadow `trial_count`, `nct_ids` or `citations`.
+- Aggregators carry per-trial evidence because only they know which value placed a trial in a row (e.g. which intervention name normalized to a node). `citations.py` orders and caps that evidence, and the excerpt check verifies it against the raw record.
+- Tests were seen red against a no-op registry.
 - **2.1 Response models** (2026-10-04): `app/schemas.py` implements the locked SCHEMAS.md. Responses form a union keyed on `status`, so an `ok` response must carry a spec and a non-`ok` one must carry `visualization: null` and empty `trials`. Each status has its own `meta` model, and nullable `ok` keys are still required.
 - Models check structure only. Rules that compare values (encoding fields exist, `trial_count == len(nct_ids)`, excerpts) stay in `checks.py`, so each rule has one home.
 - The request and the plan filters share one base model, so the year-order rule and the field names cannot drift apart. `meta.filters` keys are a `Literal` that a test keeps equal to the plan's filter fields.
