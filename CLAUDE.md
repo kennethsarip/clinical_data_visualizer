@@ -309,6 +309,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 | reconciliation | `trial_count == len(nct_ids)` on every row, and row counts reconcile with record counts per §8.5. No invented sums |
 | assumptions | `assumptions` is non-empty whenever any filter was inferred |
 | title | The title contains no number that is not in the filters (§7.2) |
+| disclosures | The WARN items are disclosed consistently: `sample.capped` matches `fetched < total`; `pruning` is set for a network and only for a network; `top_n` bounds the categories shown |
 
 **WARN** (disclosed in `meta`; the response stays `ok`): cap hit, records excluded by a counting rule, network pruned.
 
@@ -489,7 +490,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) makes results visible for the demo.
 
-**Next move:** Phase 2 step 6 (checks) on `phase-2-core`. Steps 1-5 shipped (see `BUILD_HISTORY.md`).
+**Next move:** Phase 2 step 7 (spec assembly) on `phase-2-core`. Steps 1-6 shipped (see `BUILD_HISTORY.md`).
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
@@ -501,8 +502,7 @@ The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) m
 Goal: verified rows and complete specs for every question class and every viz type, with no LLM involved. All decisions are made (§6, §7.4, §7.5, SCHEMAS.md).
 
 Steps, in order (each red first, §9):
-6. **Checks.** `checks.py`: every §7.6 BLOCK check plus the WARN disclosures. Then switch `tests/test_live_core.py` from its whole-record excerpt match to the field-level excerpt check.
-7. **Spec assembly.** `viz.py` (deterministic part): the §7.4 shape -> type table, encoding with channel types, and spec plus `meta` assembly.
+7. **Spec assembly.** `viz.py` (deterministic part; the §7.4 shape -> type table already exists): encoding with channel types, and spec plus `meta` assembly. Then extend `tests/test_live_core.py` to assemble every aggregator's response and run `run_checks` on it.
 
 Done when: every §1 row has a registered aggregator; all six viz types assemble specs that pass every check; each aggregator test matches rows computed by hand; and each check has a passing and a failing fixture.
 

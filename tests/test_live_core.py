@@ -2,12 +2,11 @@
 
 Runs every registered aggregator and the citation step on live ClinicalTrials.gov data and checks
 the invariants that must hold whatever the data: provenance is consistent, every cited trial was
-retrieved, every excerpt occurs in its trial's raw record, single-valued dimensions reconcile
-(§8.5) and network edges join kept nodes. The offline tests prove exact rows on synthetic data;
-this proves the same code survives real, messy records.
+retrieved, every excerpt occurs in its cited field of the raw record, single-valued dimensions
+reconcile (§8.5) and network edges join kept nodes. The offline tests prove exact rows on
+synthetic data; this proves the same code survives real, messy records.
 """
 
-import json
 import os
 from collections.abc import Iterator
 from typing import Any
@@ -25,6 +24,7 @@ from app.aggregators.registry import (
     GraphAggregation,
     Intent,
 )
+from app.checks import excerpt_matches
 from app.citations import provenance, trial_summaries
 from app.ctgov import TIMEOUT_SECONDS, CtgovClient, record_nct_id
 from app.normalize import normalize_records
@@ -38,7 +38,7 @@ SINGLE_VALUED = {Dimension.PHASE, Dimension.OVERALL_STATUS, Dimension.SPONSOR_CL
 class Live:
     def __init__(self, client: CtgovClient, filters: RetrievalFilters, label: str | None) -> None:
         result = client.fetch(filters)
-        self.raw = {record_nct_id(r): json.dumps(r, ensure_ascii=False) for r in result.records}
+        self.raw = {record_nct_id(r): r for r in result.records}
         self.cohort = CohortTrials(label, normalize_records(result.records), filters)
 
 
@@ -64,10 +64,8 @@ def _check_rows(rows: tuple[AggRow, ...], sources: list[Live]) -> None:
         assert set(result.nct_ids) <= raw.keys()
         for citation in result.citations:
             assert citation.nct_id in result.nct_ids
-            if citation.excerpt is not None:
-                # JSON-escape the excerpt the same way the record text is escaped.
-                needle = json.dumps(citation.excerpt, ensure_ascii=False)[1:-1]
-                assert needle in raw[citation.nct_id], (citation, row.values)
+            # Field-level: the excerpt must be in the cited field, not just anywhere in the record.
+            assert excerpt_matches(raw[citation.nct_id], citation), (citation, row.values)
 
 
 @pytest.mark.parametrize(

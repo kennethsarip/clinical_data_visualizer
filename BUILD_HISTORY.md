@@ -6,6 +6,13 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ### Phase 2: Aggregation, citations, checks (in progress on `phase-2-core`)
 
+- **2.6 Checks** (2026-10-04): `app/checks.py` `run_checks(response, CheckContext(shape, records))` returns `CheckError`s from nine checks: schema, encoding, shape, citation ids, excerpts, reconciliation, assumptions, title and disclosures. They read only the response, the declared shape and the raw cached records.
+- Excerpts are matched at their `field` path, descending through lists such as `locations[].country`; a null excerpt must mean the field is absent. Reconciliation enforces `trial_count == len(nct_ids)`, no duplicate IDs, and, for phase, status, sponsor class and start year, rows summing to fetched minus excluded per cohort. The title check allows only numbers that occur in filter values or cohort labels.
+- `disclosures` is new: §7.6's WARN items keep a response `ok` only if `meta` discloses them consistently (capped vs fetched/total, pruning for networks only, top-N bounding the categories), so it is added to the §7.6 table.
+- Messages are capped at 5 per check plus a "... and N more", so a broken aggregator yields a readable `meta.errors`.
+- The passing fixtures are the SCHEMAS.md bar and network examples with matching raw records, so the documented contract passes the checks. Every check has a failing fixture. Seen red (22 failures) against a placeholder.
+- `viz.VIZ_TYPE` (the shape -> type table) shipped early, because the shape check needs it.
+- The live core test now uses the same field-level `excerpt_matches`: 23 passed, so every live excerpt sits in the field it cites.
 - **2.5 Citations** (2026-10-04): `app/citations.py` turns each row's evidence into `trial_count`, `nct_ids` (sorted descending) and `citations` for the first 25 of those trials. The cap counts trials, so a multi-phase trial keeps both of its phase citations. Null excerpts pass through.
 - `trial_summaries` builds the `trials` lookup (title, status label, phase label, start date). A row trial with no evidence, or a lookup ID outside the retrieved records, raises `CitationError`, since either is a bug, never a user error.
 - Seen red against placeholders (7 failures).

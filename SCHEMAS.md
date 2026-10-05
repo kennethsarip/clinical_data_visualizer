@@ -255,7 +255,7 @@ The full `meta` of an `ok` response is in §3.1.
 | grouping | when `ok` | `{dimension, series}`; `series` is `null` when there is none |
 | sample | when `ok` | One entry per cohort (`cohort: null` when there is one): `capped: true` means the chart covers `fetched` of `total` trials |
 | citation_cap | when `ok` | Maximum trials cited per row (25); `nct_ids` is never capped |
-| excluded | when `ok` | `[{rule, count}]`: trials a counting rule acted on. Most rules leave the trial out (`missing start date`, `no drug intervention`, `unreadable record`); `placebo` and `non-drug intervention` count trials that had such an intervention dropped but may still appear through their other drugs |
+| excluded | when `ok` | `[{rule, count}]`: trials a counting rule acted on. In a comparison each rule ends with its cohort, `"<rule> (<cohort>)"`. Most rules leave the trial out (`missing start date`, `no drug intervention`, `unreadable record`); `placebo` and `non-drug intervention` count trials that had such an intervention dropped but may still appear through their other drugs |
 | top_n | when `ok` | `null`, or `{limit, categories_total}` for a top-N bar chart |
 | pruning | when `ok` | `null` unless network: `{min_edge_weight, top_n_nodes, fallback_used, nodes_removed, edges_removed}` |
 | notes | always | LLM-written prose about the interpretation |
