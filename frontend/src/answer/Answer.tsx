@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import type { components } from '../api/types'
 import type { Selection } from '../charts/rendererProps'
 import { ChartCard } from './ChartCard'
+import { FilterChips } from './FilterChips'
 import { HowAnswered } from './HowAnswered'
 import { selectedRow, trialCitations } from './selection'
 import { SourcesPanel, type PanelTab } from './SourcesPanel'
@@ -27,6 +28,7 @@ export function Answer({ response }: { response: OkResponse }) {
   return (
     <div className="answer">
       <div className="answer-main">
+        <FilterChips filters={response.meta.filters} label="Filters applied" />
         <ChartCard
           response={response}
           highlighted={highlighted}

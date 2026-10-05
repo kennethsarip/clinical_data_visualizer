@@ -1,25 +1,10 @@
-import { flushSync } from 'react-dom'
-import {
-  useId,
-  useImperativeHandle,
-  useState,
-  type FormEvent,
-  type KeyboardEvent,
-  type Ref,
-} from 'react'
+import { useId, useImperativeHandle, useRef, useState, type FormEvent, type KeyboardEvent, type Ref } from 'react'
 import type { VisualizeRequest } from '../api/client'
-import { PHASE_OPTIONS } from '../vocab'
-import {
-  EMPTY_FORM,
-  activeFilterCount,
-  toRequest,
-  type FormErrors,
-  type SearchFormValues,
-} from './request'
+import { toRequest, type FormErrors } from './request'
 
 export interface SearchFormHandle {
-  /** Open the filter row and focus one field, e.g. the anchor a clarification asked for. */
-  openFilter: (field: TextField) => void
+  /** Put the cursor back in the question, e.g. after a clarification asks for more detail. */
+  focusQuery: () => void
 }
 
 interface Props {
@@ -28,39 +13,24 @@ interface Props {
   ref?: Ref<SearchFormHandle>
 }
 
-export type TextField = Exclude<keyof SearchFormValues, 'query' | 'trial_phase'>
-
-const TEXT_FIELDS: readonly { field: TextField; label: string; placeholder: string }[] = [
-  { field: 'drug_name', label: 'Drug', placeholder: 'e.g. pembrolizumab' },
-  { field: 'condition', label: 'Condition', placeholder: 'e.g. melanoma' },
-  { field: 'sponsor', label: 'Sponsor', placeholder: 'e.g. Pfizer' },
-  { field: 'country', label: 'Country', placeholder: 'e.g. Germany' },
-  { field: 'start_year', label: 'Start year', placeholder: 'e.g. 2015' },
-  { field: 'end_year', label: 'End year', placeholder: 'e.g. 2024' },
-]
-
 export function SearchForm({ busy, onSubmit, ref }: Props) {
-  const [values, setValues] = useState<SearchFormValues>(EMPTY_FORM)
+  const [query, setQuery] = useState('')
   const [errors, setErrors] = useState<FormErrors>({})
-  const [filtersOpen, setFiltersOpen] = useState(false)
-  const id = useId()
-  const filterCount = activeFilterCount(values)
+  const box = useRef<HTMLTextAreaElement>(null)
+  const errorId = `${useId()}-query-error`
 
   useImperativeHandle(ref, () => ({
-    openFilter(field) {
-      // Render the filter row now: the input does not exist while it is collapsed.
-      flushSync(() => setFiltersOpen(true))
-      document.getElementById(`${id}-${field}`)?.focus()
+    focusQuery() {
+      const element = box.current
+      if (!element) return
+      element.focus()
+      element.setSelectionRange(element.value.length, element.value.length)
     },
   }))
 
-  function set<K extends keyof SearchFormValues>(field: K, value: SearchFormValues[K]) {
-    setValues((current) => ({ ...current, [field]: value }))
-    setErrors((current) => ({ ...current, [field]: undefined }))
-  }
-
-  function submit(next: SearchFormValues) {
-    const result = toRequest(next)
+  function submit() {
+    if (busy) return
+    const result = toRequest(query)
     if (!result.ok) {
       setErrors(result.errors)
       return
@@ -71,18 +41,15 @@ export function SearchForm({ busy, onSubmit, ref }: Props) {
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    if (!busy) submit(values)
+    submit()
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
       event.preventDefault()
-      if (!busy) submit(values)
+      submit()
     }
   }
-
-  const errorId = (field: keyof SearchFormValues) => `${id}-${field}-error`
-  const describedBy = (field: keyof SearchFormValues) => (errors[field] ? errorId(field) : undefined)
 
   return (
     <div className="search">
@@ -90,27 +57,21 @@ export function SearchForm({ busy, onSubmit, ref }: Props) {
         <div className="card-body">
           <div className="query-row">
             <textarea
+              ref={box}
               className="query-box"
               rows={2}
               aria-label="Ask about clinical trials"
               aria-invalid={Boolean(errors.query)}
-              aria-describedby={describedBy('query')}
+              aria-describedby={errors.query ? errorId : undefined}
               placeholder="e.g. How has the number of pembrolizumab trials changed since 2015?"
-              value={values.query}
-              onChange={(event) => set('query', event.target.value)}
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value)
+                setErrors({})
+              }}
               onKeyDown={handleKeyDown}
             />
             <div className="search-actions">
-              <button
-                type="button"
-                className="button-ghost"
-                aria-expanded={filtersOpen}
-                aria-controls={`${id}-filters`}
-                onClick={() => setFiltersOpen((open) => !open)}
-              >
-                Filters
-                {filterCount > 0 && <span className="count-badge">{filterCount}</span>}
-              </button>
               <button type="submit" className="button-send" aria-label="Visualize" disabled={busy}>
                 <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
                   <path
@@ -126,56 +87,10 @@ export function SearchForm({ busy, onSubmit, ref }: Props) {
             </div>
           </div>
           {errors.query && (
-            <p className="field-error" id={errorId('query')}>
+            <p className="field-error" id={errorId}>
               {errors.query}
             </p>
           )}
-
-          {filtersOpen && (
-            <div className="filters" id={`${id}-filters`}>
-              {TEXT_FIELDS.map(({ field, label, placeholder }) => (
-                <div className="field" key={field}>
-                  <label className="field-label" htmlFor={`${id}-${field}`}>
-                    {label}
-                  </label>
-                  <input
-                    id={`${id}-${field}`}
-                    className="input"
-                    inputMode={field.endsWith('_year') ? 'numeric' : undefined}
-                    placeholder={placeholder}
-                    value={values[field]}
-                    aria-invalid={Boolean(errors[field])}
-                    aria-describedby={describedBy(field)}
-                    onChange={(event) => set(field, event.target.value)}
-                  />
-                  {errors[field] && (
-                    <span className="field-error" id={errorId(field)}>
-                      {errors[field]}
-                    </span>
-                  )}
-                </div>
-              ))}
-              <div className="field">
-                <label className="field-label" htmlFor={`${id}-trial_phase`}>
-                  Phase
-                </label>
-                <select
-                  id={`${id}-trial_phase`}
-                  className="input"
-                  value={values.trial_phase}
-                  onChange={(event) => set('trial_phase', event.target.value as SearchFormValues['trial_phase'])}
-                >
-                  <option value="">Any phase</option>
-                  {PHASE_OPTIONS.map(({ value, label }) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          )}
-
         </div>
       </form>
     </div>

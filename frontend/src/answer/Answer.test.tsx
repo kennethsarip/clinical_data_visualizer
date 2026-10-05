@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { RendererProps } from '../charts/rendererProps'
@@ -22,6 +22,22 @@ afterEach(() => vi.unstubAllGlobals())
 const BAR = exampleWith((r) => r.status === 'ok' && r.visualization?.type === 'bar_chart')
 
 describe('Answer', () => {
+  it('shows the filters applied above the chart, read-only, inferred ones marked', () => {
+    const response = structuredClone(BAR) as never as { meta: { filters: object } }
+    response.meta.filters = { stated: { drug_name: 'Pembrolizumab' }, inferred: { country: 'South Korea' } }
+    render(<Answer response={response as never} />)
+    const chips = screen.getByRole('list', { name: 'Filters applied' })
+    expect(within(chips).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      'Drug: Pembrolizumab',
+      'Country: South Korea inferred',
+    ])
+    expect(within(chips).queryByRole('button')).not.toBeInTheDocument()
+    expect(within(chips).queryByRole('textbox')).not.toBeInTheDocument()
+    const chart = screen.getByRole('heading', { name: 'Trials by Phase for Pembrolizumab' })
+    expect(chips.compareDocumentPosition(chart) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+
   it('shows the chart title and every source', async () => {
     render(<Answer response={BAR as never} />)
     expect(screen.getByRole('heading', { name: 'Trials by Phase for Pembrolizumab' })).toBeInTheDocument()

@@ -44,7 +44,7 @@ describe('App', () => {
     }
   })
 
-  it('shows loading, then the clarification; adding an anchor opens and focuses that filter', async () => {
+  it('shows loading, then the clarification; editing returns focus to the question, kept', async () => {
     let resolve!: (r: Response) => void
     vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>((r) => (resolve = r))))
     const user = userEvent.setup()
@@ -57,9 +57,10 @@ describe('App', () => {
     await screen.findByRole('heading', { name: 'More detail needed' })
     expect(screen.queryByText('Working on it')).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Add a condition' }))
-    expect(screen.getByRole('button', { name: /filters/i })).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getByLabelText('Condition')).toHaveFocus()
+    await user.click(screen.getByRole('button', { name: 'Edit the question' }))
+    const box = screen.getByRole('textbox', { name: /ask about clinical trials/i })
+    expect(box).toHaveFocus()
+    expect(box).toHaveValue('show me trials')
   })
 
   it('cancel returns to idle without an error', async () => {

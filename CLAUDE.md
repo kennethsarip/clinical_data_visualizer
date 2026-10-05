@@ -503,7 +503,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4, done) makes results visible for the demo.
 
-**Next move:** Phase 6 step 1 (filter UI).
+**Next move:** Phase 6 step 2 (canonical countries).
 
 Phases 6-9 were planned with the user on 2026-10-05 (reasons in `BUILD_HISTORY.md` → Decisions): fix query understanding and retrieval first, because a citation cannot rescue a trial that should never have been retrieved; then verify every step and show the result to the user; then the network showcase; then submission.
 
@@ -515,7 +515,6 @@ Phases 6-9 were planned with the user on 2026-10-05 (reasons in `BUILD_HISTORY.m
 
 ### Phase 6: Query understanding and retrieval
 Goal: every constraint in the question is either applied exactly or disclosed as not applied, and every charted trial meets the filters applied. Evidence: the country filter is a text search (§8.4), so "breast cancer trials in Japan" charts 9 trials sited only in China, and every §7.6 check passes.
-1. **Filter UI.** Remove the Filters panel; the question box is the only input, and filtering comes from the question alone. Read-only chips above the chart show the applied filters, inferred ones marked, so hidden filtering stays visible. The optional request fields stay in the API (the request schema is graded; tests and the eval use them).
 2. **Canonical countries.** `country` becomes one of ClinicalTrials.gov's 226 country names (§8.4), mirrored in `vocab.py` with a live parity test and enforced by the plan schema, so "Korea", "USA" or "한국" map to one name and the §7.3 verbatim test discloses the mapping as inferred.
 3. **Constraint accounting.** The plan lists every constraint in the question, quoted verbatim, as applied or not applied; Python checks that each quote is a substring of `query`. Two values for one filter -> `clarification_needed` naming both; a constraint no filter expresses (a city, an age group) -> `clarification_needed` with a suggested rephrase, written by the same plan call, that the frontend offers as one click. Contract change (SCHEMAS.md §4-5). The LLM can still leave a constraint out; the step-0 questions measure that.
 4. **Retrieval conformance, then the fix.** A check that every record meets each filter sent (phase, status, start-year range, country) and that every filter in `meta` traces to a sent param. Write it red-first against the Japan question, then send country as `filter.advanced=AREA[LocationCountry]<name>`. Off-filter trials are dropped and counted in `meta.excluded`; over 5% of a batch -> `degraded`, since the param mapping is probably wrong. Remove the §7.3 known-gap note.

@@ -10,30 +10,25 @@ const meta = (r: VisualizeResponse) => r.meta as unknown as Meta
 
 function show(result: ApiResult<VisualizeResponse>) {
   const onRetry = vi.fn()
-  const onAddAnchor = vi.fn()
-  const { container } = render(<StatusView result={result} onRetry={onRetry} onAddAnchor={onAddAnchor} />)
-  return { onRetry, onAddAnchor, container }
+  const onEditQuestion = vi.fn()
+  const { container } = render(<StatusView result={result} onRetry={onRetry} onEditQuestion={onEditQuestion} />)
+  return { onRetry, onEditQuestion, container }
 }
 
 const ok = (data: VisualizeResponse): ApiResult<VisualizeResponse> => ({ kind: 'ok', data })
 
 describe('StatusView, from the SCHEMAS.md §5 examples', () => {
-  it('clarification: shows the note and one add-chip per missing anchor', async () => {
+  it('clarification: shows the note and sends the user back to the question', async () => {
     const response = exampleWith((r) => r.status === 'clarification_needed')
-    const { onAddAnchor } = show(ok(response))
+    const { onEditQuestion } = show(ok(response))
     expect(screen.getByRole('heading', { name: 'More detail needed' })).toBeInTheDocument()
     expect(screen.getByText('Name a drug, condition or sponsor to chart.')).toBeInTheDocument()
-    const chips = screen.getByRole('group', { name: /add what the question is about/i })
-    expect(within(chips).getAllByRole('button').map((b) => b.textContent)).toEqual([
-      'Add a drug',
-      'Add a condition',
-      'Add a sponsor',
-    ])
-    await userEvent.click(within(chips).getByRole('button', { name: 'Add a condition' }))
-    expect(onAddAnchor).toHaveBeenCalledExactlyOnceWith('condition')
+    expect(screen.queryByRole('button', { name: /^Add a/ })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Edit the question' }))
+    expect(onEditQuestion).toHaveBeenCalledOnce()
   })
 
-  it('clarification with nothing missing: shows the reason and no add-chips', () => {
+  it('clarification with nothing missing: shows the reason and the edit button', () => {
     const base = exampleWith((r) => r.status === 'clarification_needed')
     const response = {
       ...base,
@@ -41,7 +36,7 @@ describe('StatusView, from the SCHEMAS.md §5 examples', () => {
     } as unknown as VisualizeResponse
     show(ok(response))
     expect(screen.getByText('Compare at most 4 drugs, conditions or sponsors at once.')).toBeInTheDocument()
-    expect(screen.queryByRole('group', { name: /add what the question is about/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Edit the question' })).toBeInTheDocument()
   })
 
   it('no results with every entity found: lists the filters applied', () => {
