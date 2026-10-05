@@ -1241,6 +1241,17 @@
             "title": "Conditions",
             "type": "array"
           },
+          "official_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Official Title"
+          },
           "overall_status": {
             "title": "Overall Status",
             "type": "string"
@@ -1267,6 +1278,7 @@
         },
         "required": [
           "brief_title",
+          "official_title",
           "overall_status",
           "phase",
           "start_date",
@@ -1841,6 +1853,10 @@
     {
       "name": "coverage",
       "rule": "Every datum cites as many distinct trials as it holds, up to the citation cap."
+    },
+    {
+      "name": "summaries",
+      "rule": "Every trial card field equals the value in the trial's own record."
     },
     {
       "name": "accounting",

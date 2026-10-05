@@ -239,6 +239,7 @@ VisualizationSpec = Annotated[
 
 class TrialSummary(_Contract):
     brief_title: str
+    official_title: str | None  # verbatim; the card's description line (None: not registered)
     overall_status: str  # display label
     phase: str  # display label, e.g. "Phase 1/Phase 2"
     start_date: str | None  # as registered

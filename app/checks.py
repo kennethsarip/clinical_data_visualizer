@@ -56,6 +56,8 @@ from app.schemas import (
     RetrievalFilters,
 )
 from app.viz import VIZ_TYPE, exclusions, stray_numbers
+from app.vocab import Phase, Status, phase_label
+from app.vocab import label as display_label
 
 # Dimensions where every trial lands in exactly one row, so rows must sum to the trials charted
 # (§8.5). Multi-valued ones (country, drug, ...) may sum higher, and top-N drops categories.
@@ -486,6 +488,46 @@ def _network_support(spec: NetworkVisualization) -> list[str]:
     return messages
 
 
+def _summaries(response: OkResponse, context: CheckContext) -> list[str]:
+    """Phase 7 step 4: every field of every trial card equals its raw record value (labels for
+    codes, verbatim otherwise), read straight from the record, so a card cannot describe a
+    different trial than the one cited."""
+    messages = []
+    for nct_id, summary in response.trials.items():
+        record = context.records.get(nct_id)
+        if record is None:
+            continue  # the citation ids check reports a trial that was never retrieved
+        expected = _summary_from_raw(record.get("protocolSection", {}))
+        shown = summary.model_dump()
+        for field, value in expected.items():
+            if shown[field] != value:
+                messages.append(f"{nct_id} card shows {field}={shown[field]!r}, record {value!r}")
+    return messages
+
+
+def _summary_from_raw(section: Mapping[str, Any]) -> dict[str, Any]:
+    ident = section.get("identificationModule", {})
+    status = section.get("statusModule", {})
+    code = status.get("overallStatus")
+    phases = section.get("designModule", {}).get("phases", [])
+    try:
+        status_label = display_label(Status(code))
+        phase = phase_label([Phase(p) for p in phases])
+    except ValueError:
+        status_label, phase = f"unknown {code}", f"unknown {phases}"
+    return {
+        "brief_title": ident.get("briefTitle"),
+        "official_title": ident.get("officialTitle"),
+        "overall_status": status_label,
+        "phase": phase,
+        "start_date": status.get("startDateStruct", {}).get("date"),
+        "sponsor_name": section.get("sponsorCollaboratorsModule", {})
+        .get("leadSponsor", {})
+        .get("name"),
+        "conditions": list(section.get("conditionsModule", {}).get("conditions", [])),
+    }
+
+
 def _coverage(response: OkResponse, context: CheckContext) -> list[str]:
     """Every row, node and edge cites min(trial_count, citation_cap) distinct trials (§7.5)."""
     cap = response.meta.citation_cap
@@ -618,6 +660,7 @@ CHECKS: tuple[tuple[str, Check], ...] = (
     ("conformance", _conformance),
     ("membership", _membership),
     ("coverage", _coverage),
+    ("summaries", _summaries),
     ("accounting", _accounting),
     ("recount", _recount),
 )
@@ -638,6 +681,7 @@ CHECK_RULES: Mapping[str, str] = {
     "conformance": "Every charted trial meets each exact filter; the filters shown are those sent.",
     "membership": "Each trial's own record puts it in its datum, and no matching trial is missing.",
     "coverage": "Every datum cites as many distinct trials as it holds, up to the citation cap.",
+    "summaries": "Every trial card field equals the value in the trial's own record.",
     "accounting": "Every retrieved trial is on the chart or listed under the reason it is not.",
     "recount": "Every datum and exclusion is rebuilt from the raw records and matches.",
 }

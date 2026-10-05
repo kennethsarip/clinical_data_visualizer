@@ -16,14 +16,9 @@ from app.checks import CheckContext, run_checks
 from app.ctgov import build_params
 from app.schemas import RESPONSE_ADAPTER, OkResponse, RetrievalFilters
 from tests.factories import make_trial, raw_record
-from tests.test_checks import _bar
+from tests.test_checks import _bar, _with, bar_records
 
-PHASES = {
-    "NCT00000001": ["PHASE3"],
-    "NCT00000002": ["PHASE3"],
-    "NCT00000003": ["PHASE1", "PHASE2"],
-    "NCT00000004": [],
-}
+PHASES = ["NCT00000001", "NCT00000002", "NCT00000003", "NCT00000004"]
 Payload = dict[str, Any]
 Records = dict[str, dict[str, Any]]
 
@@ -43,7 +38,7 @@ def invented_nct_id(p: Payload, r: Records) -> None:
 
 def wrong_bucket_citation(p: Payload, r: Records) -> None:
     # A Phase 2 trial on the Phase 3 bar, cited with its real value "PHASE2".
-    r["NCT00000001"] = raw_record(make_trial("NCT00000001", phases=["PHASE2"]))
+    r["NCT00000001"] = _with("NCT00000001", designModule={"phases": ["PHASE2"]})
     _rows(p)[1]["citations"][1]["excerpt"] = "PHASE2"
 
 
@@ -63,8 +58,10 @@ def unaccounted_trial(p: Payload, r: Records) -> None:
 def off_filter_trial(p: Payload, r: Records) -> None:
     p["meta"]["filters"]["stated"]["country"] = "Japan"
     for n in PHASES:
-        r[n] = raw_record(make_trial(n, phases=PHASES[n], countries=["Japan"]))
-    r["NCT00000002"] = raw_record(make_trial("NCT00000002", phases=["PHASE3"], countries=["China"]))
+        r[n] = _with(n, contactsLocationsModule={"locations": [{"country": "Japan"}]})
+    r["NCT00000002"] = _with(
+        "NCT00000002", contactsLocationsModule={"locations": [{"country": "China"}]}
+    )
 
 
 def stray_title_number(p: Payload, r: Records) -> None:
@@ -84,6 +81,18 @@ def unknown_encoding_field(p: Payload, r: Records) -> None:
     p["visualization"]["encoding"]["x"]["field"] = "stage"
 
 
+def uncited_datum(p: Payload, r: Records) -> None:
+    _rows(p)[1]["citations"] = _rows(p)[1]["citations"][:1]  # holds 2 trials, cites 1
+
+
+def wrong_card_description(p: Payload, r: Records) -> None:
+    p["trials"]["NCT00000001"]["official_title"] = "A Phase 3 Study of Nivolumab"
+
+
+def miscounted_exclusion(p: Payload, r: Records) -> None:
+    p["meta"]["excluded"] = [{"rule": "no locations", "count": 2, "nct_ids": ["NCT00000004"]}]
+
+
 Fault = Callable[[Payload, Records], None]
 FAULTS: list[tuple[Fault, str]] = [
     (invented_nct_id, "citation ids"),
@@ -96,12 +105,15 @@ FAULTS: list[tuple[Fault, str]] = [
     (undisclosed_inferred_filter, "assumptions"),
     (false_cap_disclosure, "disclosures"),
     (unknown_encoding_field, "encoding"),
+    (uncited_datum, "coverage"),
+    (wrong_card_description, "summaries"),
+    (miscounted_exclusion, "accounting"),
 ]
 
 
 def _failed(fault: Fault | None) -> set[str]:
     payload = _bar()
-    records = {n: raw_record(make_trial(n, phases=p)) for n, p in PHASES.items()}
+    records = bar_records()
     if fault:
         fault(payload, records)
     response = RESPONSE_ADAPTER.validate_python(payload)

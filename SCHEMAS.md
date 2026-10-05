@@ -119,13 +119,13 @@ One row per category. Sort: count descending, ties alphabetical; phase uses its 
      {"phase": "Not specified", "trial_count": 1, "nct_ids": ["NCT00000004"],
       "citations": [{"nct_id": "NCT00000004", "excerpt": null, "field": "designModule.phases"}]}]},
  "trials": {
-   "NCT00000001": {"brief_title": "Pembrolizumab in Advanced Melanoma", "overall_status": "Completed", "phase": "Phase 3", "start_date": "2015-03",
+   "NCT00000001": {"brief_title": "Pembrolizumab in Advanced Melanoma", "official_title": "A Phase 3, Randomized Study of Pembrolizumab in Participants With Advanced Melanoma", "overall_status": "Completed", "phase": "Phase 3", "start_date": "2015-03",
                    "sponsor_name": "Merck Sharp & Dohme LLC", "conditions": ["Melanoma"]},
-   "NCT00000002": {"brief_title": "Pembrolizumab Versus Chemotherapy in NSCLC", "overall_status": "Active, not recruiting", "phase": "Phase 3", "start_date": "2016-07-12",
+   "NCT00000002": {"brief_title": "Pembrolizumab Versus Chemotherapy in NSCLC", "official_title": null, "overall_status": "Active, not recruiting", "phase": "Phase 3", "start_date": "2016-07-12",
                    "sponsor_name": "Merck Sharp & Dohme LLC", "conditions": ["Non-small Cell Lung Cancer"]},
-   "NCT00000003": {"brief_title": "Pembrolizumab Plus Lenvatinib in Solid Tumors", "overall_status": "Recruiting", "phase": "Phase 1/Phase 2", "start_date": "2019-01",
+   "NCT00000003": {"brief_title": "Pembrolizumab Plus Lenvatinib in Solid Tumors", "official_title": null, "overall_status": "Recruiting", "phase": "Phase 1/Phase 2", "start_date": "2019-01",
                    "sponsor_name": "Eisai Inc.", "conditions": ["Solid Tumor", "Endometrial Cancer"]},
-   "NCT00000004": {"brief_title": "Real-World Outcomes of Pembrolizumab", "overall_status": "Completed", "phase": "Not specified", "start_date": "2018-05",
+   "NCT00000004": {"brief_title": "Real-World Outcomes of Pembrolizumab", "official_title": null, "overall_status": "Completed", "phase": "Not specified", "start_date": "2018-05",
                    "sponsor_name": "University of Texas MD Anderson Cancer Center", "conditions": ["Melanoma", "Lung Cancer"]}},
  "meta": {
    "source": "clinicaltrials.gov",

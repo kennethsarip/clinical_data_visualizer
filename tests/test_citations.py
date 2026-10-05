@@ -69,10 +69,12 @@ def test_a_trial_without_evidence_is_a_bug_not_an_uncited_row() -> None:
 
 def test_trial_summaries_use_display_labels_and_registered_names() -> None:
     # Sponsor and conditions stay as registered, unnormalized: they label a source card.
-    summaries = trial_summaries(FIXTURE, ["NCT00000002", "NCT00000003"])
+    titled = FIXTURE[1].model_copy(update={"official_title": "A Phase 1/2 Study of MK-3475"})
+    summaries = trial_summaries([titled, *FIXTURE[2:]], ["NCT00000002", "NCT00000003"])
     assert summaries == {
         "NCT00000002": TrialSummary(
             brief_title="Trial NCT00000002",
+            official_title="A Phase 1/2 Study of MK-3475",  # verbatim (Phase 7 step 4)
             overall_status="Completed",
             phase="Phase 1/Phase 2",
             start_date="2017-06-01",
@@ -81,6 +83,7 @@ def test_trial_summaries_use_display_labels_and_registered_names() -> None:
         ),
         "NCT00000003": TrialSummary(
             brief_title="Trial NCT00000003",
+            official_title=None,  # not every record registers one
             overall_status="Completed",
             phase="Not specified",
             start_date=None,

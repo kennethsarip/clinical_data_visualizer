@@ -7,8 +7,11 @@ documented contract is also proven to pass the checks. Each failing fixture brea
 import copy
 import json
 import re
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
+
+import pytest
 
 from app.aggregators.common import PHASE
 from app.aggregators.registry import RowShape
@@ -16,6 +19,7 @@ from app.checks import CheckContext, run_checks
 from app.ctgov import build_params
 from app.schemas import RESPONSE_ADAPTER, OkResponse, RetrievalFilters
 from app.viz import VIZ_TYPE
+from app.vocab import PHASE_LABELS, PHASE_NOT_SPECIFIED, STATUS_LABELS
 from tests.factories import make_trial, raw_record
 
 SCHEMAS_MD = Path(__file__).resolve().parents[1] / "SCHEMAS.md"
@@ -31,21 +35,53 @@ def _record(nct_id: str, **modules: Any) -> dict[str, Any]:
     return {"protocolSection": {"identificationModule": {"nctId": nct_id}, **modules}}
 
 
-BAR_RECORDS = {
-    "NCT00000001": _record("NCT00000001", designModule={"phases": ["PHASE3"]}),
-    "NCT00000002": _record("NCT00000002", designModule={"phases": ["PHASE3"]}),
-    "NCT00000003": _record("NCT00000003", designModule={"phases": ["PHASE1", "PHASE2"]}),
-    "NCT00000004": _record("NCT00000004", designModule={"studyType": "OBSERVATIONAL"}),
-}
+def _codes(labels: Mapping[Any, str], label: str) -> list[str]:
+    inverse = {v: str(k) for k, v in labels.items()}
+    return [] if label == PHASE_NOT_SPECIFIED else [inverse[part] for part in label.split("/")]
+
+
+def bar_records(phases: Mapping[str, list[str]] | None = None) -> dict[str, dict[str, Any]]:
+    """Complete raw records written to match the SCHEMAS.md bar example's `trials` map, so its
+    summaries hold against them; `phases` overrides a trial's registered phases."""
+    records = {}
+    for nct_id, summary in BAR["trials"].items():
+        status = _codes(STATUS_LABELS, summary["overall_status"])[0]
+        trial = make_trial(
+            nct_id,
+            brief_title=summary["brief_title"],
+            official_title=summary["official_title"],
+            overall_status=status,
+            phases=(phases or {}).get(nct_id, _codes(PHASE_LABELS, summary["phase"])),
+            start_date=summary["start_date"],
+            sponsor_name=summary["sponsor_name"],
+            conditions=summary["conditions"],
+        )
+        records[nct_id] = raw_record(trial)
+    return records
+
+
+BAR_RECORDS = bar_records()
+
+
+def _with(nct_id: str, **modules: dict[str, Any]) -> dict[str, Any]:
+    """A bar record with some modules' keys replaced, everything else (the card fields) kept."""
+    record = copy.deepcopy(BAR_RECORDS[nct_id])
+    section = record["protocolSection"]
+    for name, values in modules.items():
+        section[name] = section.get(name, {}) | values
+    return record
+
+
 NETWORK_RECORDS = {
-    "NCT00000007": _record(
-        "NCT00000007",
-        armsInterventionsModule={
-            "interventions": [
-                {"type": "BIOLOGICAL", "name": "Pembrolizumab (MK-3475)"},
-                {"type": "DRUG", "name": "Ipilimumab"},
-            ]
-        },
+    "NCT00000007": raw_record(
+        make_trial(
+            "NCT00000007",
+            [("BIOLOGICAL", "Pembrolizumab (MK-3475)"), ("DRUG", "Ipilimumab")],
+            brief_title="t",
+            overall_status="COMPLETED",
+            phases=["PHASE2"],
+            sponsor_name="s",
+        )
     )
 }
 
@@ -60,6 +96,7 @@ def _network() -> dict[str, Any]:
     response["trials"] = {
         "NCT00000007": {
             "brief_title": "t",
+            "official_title": None,
             "overall_status": "Completed",
             "phase": "Phase 2",
             "start_date": None,
@@ -167,9 +204,7 @@ def test_time_series_x_must_strictly_ascend() -> None:
     payload["meta"]["grouping"] = {"dimension": "start_year", "series": None}
     payload["meta"]["sample"] = [{"cohort": None, "fetched": 1, "total": 1, "capped": False}]
     payload["meta"]["filters"]["stated"]["start_year"] = 2015  # the title says "since 2015"
-    records = {
-        "NCT00000001": _record("NCT00000001", statusModule={"startDateStruct": {"date": "2015-03"}})
-    }
+    records = {"NCT00000001": _with("NCT00000001")}
     assert _checks(_errors(payload, RowShape.TEMPORAL, records)) == {"shape"}
 
 
@@ -238,9 +273,8 @@ def test_excerpt_inside_a_list_of_objects_passes() -> None:
         "field": "contactsLocationsModule.locations.country",
     }
     records = dict(BAR_RECORDS)
-    records["NCT00000002"] = _record(
+    records["NCT00000002"] = _with(
         "NCT00000002",
-        designModule={"phases": ["PHASE3"]},
         contactsLocationsModule={"locations": [{"country": "France"}, {"country": "Germany"}]},
     )
     assert _errors(payload, records=records) == []
@@ -254,9 +288,7 @@ def test_numeric_excerpt_matches_the_integer_value() -> None:
         "field": "designModule.enrollmentInfo.count",
     }
     records = dict(BAR_RECORDS)
-    records["NCT00000002"] = _record(
-        "NCT00000002", designModule={"phases": ["PHASE3"], "enrollmentInfo": {"count": 120}}
-    )
+    records["NCT00000002"] = _with("NCT00000002", designModule={"enrollmentInfo": {"count": 120}})
     assert _errors(payload, records=records) == []
 
 
@@ -357,7 +389,7 @@ PHASE_TRIALS = {
 def _membership_errors(
     payload: dict[str, Any], phases: dict[str, list[str]] | None = None
 ) -> list[tuple[str, str]]:
-    records = {n: raw_record(make_trial(n, phases=p)) for n, p in (phases or PHASE_TRIALS).items()}
+    records = bar_records(phases or PHASE_TRIALS)
     response = RESPONSE_ADAPTER.validate_python(payload)
     assert isinstance(response, OkResponse)
     context = CheckContext(RowShape.CATEGORICAL, records, categorizer=PHASE)
@@ -375,7 +407,8 @@ def test_a_trial_on_the_wrong_bar_cited_with_its_own_value_fails_membership() ->
     phase3 = payload["visualization"]["data"][1]
     phase3["citations"][1]["excerpt"] = "PHASE2"
     errors = _membership_errors(payload, PHASE_TRIALS | {"NCT00000001": ["PHASE2"]})
-    assert _checks(errors) == {"membership"}
+    # Its card (Phase 3) now disagrees with its record too; the excerpt check still sees nothing.
+    assert _checks(errors) == {"membership", "summaries"}
     assert any("NCT00000001" in m and "Phase 3" in m for _, m in errors)
 
 
@@ -452,6 +485,61 @@ def test_an_exclusion_count_must_equal_its_ids() -> None:
     assert "accounting" in _checks(_errors(payload))
 
 
+# --- summaries (Phase 7 step 4): every trial card field equals its raw record value ---
+
+
+def _summary_errors(change: dict[str, Any]) -> set[str]:
+    payload = _bar()
+    payload["trials"]["NCT00000001"] |= change
+    records = dict(BAR_RECORDS)
+    summary = payload["trials"]["NCT00000001"]
+    records["NCT00000001"] = _record(
+        "NCT00000001",
+        identificationModule={
+            "nctId": "NCT00000001",
+            "briefTitle": "Pembrolizumab vs Chemotherapy in Melanoma",
+            "officialTitle": "A Phase 3 Study of Pembrolizumab",
+        },
+        designModule={"phases": ["PHASE3"]},
+        statusModule={"overallStatus": "COMPLETED", "startDateStruct": {"date": "2016-01"}},
+        sponsorCollaboratorsModule={"leadSponsor": {"name": "Merck Sharp & Dohme LLC"}},
+        conditionsModule={"conditions": ["Melanoma"]},
+    )
+    payload["trials"]["NCT00000001"] = summary
+    return _checks(_errors(payload, records=records))
+
+
+GOOD_SUMMARY = {
+    "brief_title": "Pembrolizumab vs Chemotherapy in Melanoma",
+    "official_title": "A Phase 3 Study of Pembrolizumab",
+    "overall_status": "Completed",
+    "phase": "Phase 3",
+    "start_date": "2016-01",
+    "sponsor_name": "Merck Sharp & Dohme LLC",
+    "conditions": ["Melanoma"],
+}
+
+
+def test_a_summary_matching_its_record_passes() -> None:
+    assert "summaries" not in _summary_errors(GOOD_SUMMARY)
+
+
+@pytest.mark.parametrize(
+    "field,wrong",
+    [
+        ("official_title", "A Phase 3 Study of Nivolumab"),
+        ("brief_title", "Something else"),
+        ("overall_status", "Recruiting"),
+        ("phase", "Phase 2"),
+        ("start_date", "2015-01"),
+        ("sponsor_name", "Pfizer"),
+        ("conditions", ["Lung Cancer"]),
+    ],
+)
+def test_a_summary_field_that_differs_from_its_record_fails(field: str, wrong: object) -> None:
+    assert "summaries" in _summary_errors(GOOD_SUMMARY | {field: wrong})
+
+
 # --- title ---
 
 
@@ -467,11 +555,8 @@ def test_title_numbers_from_the_filters_pass() -> None:
     payload = _bar()
     payload["meta"]["filters"]["stated"] = {"drug_name": "MK-3475", "start_year": 2015}
     payload["visualization"]["title"] = "MK-3475 Trials by Phase since 2015"
-    started = {"statusModule": {"startDateStruct": {"date": "2016-03"}}}
-    records = {
-        n: {"protocolSection": r["protocolSection"] | started} for n, r in BAR_RECORDS.items()
-    }
-    assert _errors(payload, records=records) == []
+    # Every bar trial starts in 2015 or later, so the start-year filter holds.
+    assert _errors(payload) == []
 
 
 # --- disclosures (the §7.6 WARN items must be disclosed consistently) ---
@@ -532,9 +617,8 @@ def test_free_text_excerpt_may_be_a_substring() -> None:
         "field": "armsInterventionsModule.interventions.name",
     }
     records = dict(BAR_RECORDS)
-    records["NCT00000002"] = _record(
+    records["NCT00000002"] = _with(
         "NCT00000002",
-        designModule={"phases": ["PHASE3"]},
         armsInterventionsModule={"interventions": [{"name": "Pembrolizumab 200 mg IV"}]},
     )
     assert _errors(payload, records=records) == []

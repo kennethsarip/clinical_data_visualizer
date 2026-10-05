@@ -455,6 +455,8 @@ export interface components {
             brief_title: string;
             /** Conditions */
             conditions: string[];
+            /** Official Title */
+            official_title: string | null;
             /** Overall Status */
             overall_status: string;
             /** Phase */
