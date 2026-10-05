@@ -4,6 +4,10 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ## Shipped
 
+### Phase 4: Frontend (in progress)
+
+- **4.0 Reference pass** (2026-10-04): read the two product screenshots in `docs/product_frontend/` and settled the interaction patterns taken from them and the visual elements left out (Decisions below), plus two contract additions (Phase 4 step 1).
+
 ### Phase 3: LLM planning and the endpoint (done 2026-10-04; tagged `phase-3`)
 
 - **Done when, met:** one query per §1 class returns `ok` with every check passing and each §7.8 case returns its behavior (live end to end, 29/29 eval questions); planner tests pass against a stubbed LLM, including malformed output.
@@ -192,3 +196,4 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
   - Errors split by cause: plan invalid twice or spec failing after repair -> 200 `degraded`; LLM or ClinicalTrials.gov down -> 502, so a frontend can tell "try again" from "rephrase".
   - Date basis closed as start date by year, which Phase 2 already implements; `query` capped at 1,000 characters to bound prompt size.
   - The eval question set moves to Phase 3 step 0, so expected plans exist before the planner prompt and act as its red-first acceptance tests.
+- **Product reference pass (2026-10-04).** Taken from the cited-answer product: a right panel with References and Viewer tabs; numbered source cards with metadata chips; an answer element that, when activated, filters its sources; a viewer that opens the source record with the cited passage highlighted plus an "open original" link; export. Adapted: our answer is a chart, so a datum replaces the inline citation marker, and we add reverse highlight (card -> rows), which a text answer cannot offer. Not copied: palette, highlight colour, dotted underlines, floating section pills, typeface, source-icon row, DOCX export. The Viewer is backed by a cached-record endpoint rather than a browser fetch to ClinicalTrials.gov, so it shows the exact record the excerpt check ran against; rows are upserted, so the Viewer re-checks each excerpt and flags a changed record. `sponsor_name` and `conditions` join the trial summary so cards answer "who runs this, and what does it study" (~100 KB on a 2,000-trial response).

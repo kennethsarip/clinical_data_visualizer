@@ -494,7 +494,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) makes results visible for the demo.
 
-**Next move:** Phase 4 step 0 (reference pass over the product screenshots), then step 1 (scaffold).
+**Next move:** Phase 4 step 1 (contract additions: trial summary fields and `GET /api/trials/{nct_id}`).
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
@@ -507,20 +507,26 @@ Goal: a search-first app where a user asks a question, sees the chart as the ans
 
 **Decided** (user, 2026-10-04): a two-column answer view, with the chart (~65%) and the "How this was answered" drawer under it on the left and the sources panel on the right; one column on narrow screens. Plain CSS with design tokens on `:root` plus dark mode, with no CSS framework or component library. Loading shows a spinner, the elapsed time and a cancel button (`AbortController`); no server-sent progress, because that would change the backend contract.
 
+**Decided from the reference pass** (user, 2026-10-04; patterns in `BUILD_HISTORY.md` → Decisions): a right panel with **Sources | Viewer** tabs; numbered source cards; a datum tooltip of "N trials, click to see sources"; reverse highlight (hovering a card highlights every row whose `nct_ids` holds that trial); a Viewer showing the cached record with the cited field highlighted; export as chart SVG/PNG plus response JSON. Two of these change the backend contract (step 1).
+
 Steps, in order:
-0. **Reference pass.** Read the screenshots and list in `BUILD_HISTORY.md` → Decisions the interaction patterns taken from them and the visual elements deliberately not copied.
-1. **Scaffold.** `frontend/` with Vite + React + TypeScript (strict), npm. ESLint, `tsc --noEmit`, Vitest. The Vite dev server proxies `/api` to `127.0.0.1:8000`, so no CORS config is needed.
-2. **Types and client.** Dump the OpenAPI schema from the app object (no running server) and generate `frontend/src/api/types.ts` from it with `openapi-typescript`; a small `fetch` client. CI regenerates the types and fails on a diff, so `schemas.py` stays the single source.
-3. **Search page.** One large query box, example-question chips (one per §1 class, which also shows coverage), and the optional filters in a collapsible row; client-side checks mirror request validation, and the server stays authoritative.
-4. **Status views.** `clarification_needed` (the missing anchor, with suggestion chips), `no_results` and not found (the filters applied), `degraded` (the errors), and loading (spinner, elapsed time, cancel). HTTP errors as well: 422 shows the field errors, and 502 says a dependency is down and offers a retry. No response ever renders as a blank page.
-5. **Renderer dispatch.** One map from `type` to renderer. Vega-Lite renders the five chart types by translating `encoding` (fields, channel types, scale) + `data`; Cytoscape.js renders `network_graph`, de-emphasizing `is_anchor` nodes. Renderers read only `encoding` and never hardcode a column.
-6. **Sources panel.** Lists the cited trials from `trials` (NCT ID, title, status, link to `https://clinicaltrials.gov/study/<nct_id>`). Clicking a bar, point, node or edge filters it to that datum's trials and shows each excerpt with its field. This is where deep citations become visible.
-7. **"How this was answered" drawer.** Interpretation, stated vs inferred filters, assumptions, "fetched N of M", citation cap, exclusions, pruning, and the checks that passed.
-8. **Raw JSON toggle.** A "Response JSON" tab beside the chart that shows the exact response, so a reviewer can check the spec and citations against `SCHEMAS.md`.
+1. **Contract additions (backend, before the types are generated).** Changes `SCHEMAS.md`, `schemas.py` and the tests in one commit:
+   - Trial summary gains `sponsor_name` (lead sponsor, as registered) and `conditions` (list, as registered), for the card chips.
+   - `GET /api/trials/{nct_id}` returns `{nct_id, record, fetched_at}`, with the verbatim record from the `trials` cache table, served regardless of TTL. 404 if not cached, 422 if the ID fails `^NCT\d{8}$`. It never calls the API, so the Viewer shows the record the excerpt check ran against. Caveat: `trials` rows are upserted, so a later fetch can replace the record. The Viewer re-checks each excerpt at its `field` and, on a mismatch, says "record updated since this answer" rather than highlighting the wrong text.
+2. **Scaffold.** `frontend/` with Vite + React + TypeScript (strict), npm. ESLint, `tsc --noEmit`, Vitest. The Vite dev server proxies `/api` to `127.0.0.1:8000`, so no CORS config is needed.
+3. **Types and client.** Dump the OpenAPI schema from the app object (no running server) and generate `frontend/src/api/types.ts` from it with `openapi-typescript`; a small `fetch` client. CI regenerates the types and fails on a diff, so `schemas.py` stays the single source.
+4. **Search page.** One large query box, example-question chips (one per §1 class, which also shows coverage), and the optional filters in a collapsible row; client-side checks mirror request validation, and the server stays authoritative.
+5. **Status views.** `clarification_needed` (the missing anchor, with suggestion chips), `no_results` and not found (the filters applied), `degraded` (the errors), and loading (spinner, elapsed time, cancel). HTTP errors as well: 422 shows the field errors, and 502 says a dependency is down and offers a retry. No response ever renders as a blank page.
+6. **Renderer dispatch.** One map from `type` to renderer. Vega-Lite renders the five chart types by translating `encoding` (fields, channel types, scale) + `data`; Cytoscape.js renders `network_graph`, de-emphasizing `is_anchor` nodes. Renderers read only `encoding` and never hardcode a column. Each renderer takes a `highlighted` NCT ID set (for reverse highlight) and exposes SVG/PNG export (Vega `view.toSVG()`/`toImageURL()`, Cytoscape `png()`).
+7. **Sources panel, Sources tab.** Numbered cards for the cited trials from `trials`: NCT ID, title, and status, phase, start date, sponsor and condition chips. Clicking a bar, point, node or edge filters the list to that datum's trials and shows each excerpt with its field; hovering a card highlights the rows that trial contributes to. This is where deep citations become visible.
+8. **Sources panel, Viewer tab.** Clicking a card opens its record from `GET /api/trials/{nct_id}` with the cited fields highlighted and scrolled into view, plus "Open on ClinicalTrials.gov" (`https://clinicaltrials.gov/study/<nct_id>`). It shows a mismatch notice when the cached record has changed (step 1).
+9. **"How this was answered" drawer.** Interpretation, stated vs inferred filters, assumptions, "fetched N of M", citation cap, exclusions, pruning, and the checks that passed.
+10. **Raw JSON toggle and export.** A "Response JSON" tab beside the chart that shows the exact response, so a reviewer can check the spec and citations against `SCHEMAS.md`, with copy and download buttons; chart SVG/PNG download sits in the chart header.
 
 Done when:
 - A Vitest test renders every `SCHEMAS.md` example per viz type without error.
 - Every status view, plus the 422 and 502 views, is reachable from the running backend.
+- Clicking a datum, then a card, opens the Viewer with that trial's excerpt highlighted in its cached record, for every viz type.
 - `npm run lint && npm run typecheck && npm test` passes and is added to the Definition of done and CI, along with the type-drift check.
 
 ### Phase 5: Eval and iteration
