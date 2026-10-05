@@ -22,6 +22,7 @@ from app.schemas import (
     VisualizeRequest,
 )
 from eval.questions import EvalQuestion, load_questions
+from tests.eval_pending import eval_params
 
 pytestmark = pytest.mark.live
 
@@ -29,7 +30,7 @@ TODAY = date(2026, 10, 4)
 PLANNED = [q for q in load_questions() if q.expected.http == 200]
 
 
-@pytest.mark.parametrize("question", PLANNED, ids=[q.id for q in PLANNED])
+@pytest.mark.parametrize("question", eval_params(PLANNED))
 def test_pipeline_meets_the_eval_expectation(
     question: EvalQuestion, db: psycopg.Connection
 ) -> None:

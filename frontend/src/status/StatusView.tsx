@@ -1,25 +1,19 @@
 import type { ReactNode } from 'react'
 import type { ApiResult, FieldError, VisualizeResponse } from '../api/client'
 import type { components } from '../api/types'
-import { filterLabel, formatFilterValue } from '../vocab'
+import { FilterChips } from '../answer/FilterChips'
+import { filterLabel } from '../vocab'
 
 type Schemas = components['schemas']
-export type Anchor = Schemas['ClarificationMeta']['missing'][number]
-
 interface Props {
   result: ApiResult<VisualizeResponse>
   onRetry: () => void
-  onAddAnchor: (anchor: Anchor) => void
-}
-
-const ANCHOR_TEXT: Record<Anchor, string> = {
-  drug_name: 'Add a drug',
-  condition: 'Add a condition',
-  sponsor: 'Add a sponsor',
+  onEditQuestion: () => void
+  onAsk: (query: string) => void
 }
 
 /** Every outcome except a chart: non-`ok` statuses (SCHEMAS.md §5) and HTTP errors. */
-export function StatusView({ result, onRetry, onAddAnchor }: Props) {
+export function StatusView({ result, onRetry, onEditQuestion, onAsk }: Props) {
   if (result.kind === 'invalid') return <Invalid errors={result.errors} />
   if (result.kind === 'unavailable') {
     return (
@@ -39,7 +33,7 @@ export function StatusView({ result, onRetry, onAddAnchor }: Props) {
   const response = result.data
   switch (response.status) {
     case 'clarification_needed':
-      return <Clarification meta={response.meta} onAddAnchor={onAddAnchor} />
+      return <Clarification meta={response.meta} onEditQuestion={onEditQuestion} onAsk={onAsk} />
     case 'no_results':
       return <NoResults meta={response.meta} />
     case 'degraded':
@@ -49,19 +43,38 @@ export function StatusView({ result, onRetry, onAddAnchor }: Props) {
   }
 }
 
-function Clarification({ meta, onAddAnchor }: { meta: Schemas['ClarificationMeta']; onAddAnchor: Props['onAddAnchor'] }) {
+function Clarification({
+  meta,
+  onEditQuestion,
+  onAsk,
+}: {
+  meta: Schemas['ClarificationMeta']
+  onEditQuestion: () => void
+  onAsk: (query: string) => void
+}) {
+  // The question box is the only input, so the answer to a clarification is a rephrased question:
+  // the planner's suggestion in one click (SCHEMAS.md §5), or the user's own edit.
+  const suggestion = meta.suggested_query
   return (
     <Panel title="More detail needed">
       <Notes notes={meta.notes} />
-      {meta.missing.length > 0 && (
-        <div className="suggestions" role="group" aria-label="Add what the question is about">
-          {meta.missing.map((anchor) => (
-            <button key={anchor} type="button" className="example-chip" onClick={() => onAddAnchor(anchor)}>
-              {ANCHOR_TEXT[anchor]}
-            </button>
+      {meta.unapplied.length > 0 && (
+        <ul className="pill-list" aria-label="Not applied">
+          {meta.unapplied.map(({ quote }) => (
+            <li key={quote}>{quote}</li>
           ))}
-        </div>
+        </ul>
       )}
+      <div className="clarify-actions">
+        {suggestion && (
+          <button type="button" className="button-primary" onClick={() => onAsk(suggestion)}>
+            Ask: {suggestion}
+          </button>
+        )}
+        <button type="button" className="example-chip" onClick={onEditQuestion}>
+          Edit the question
+        </button>
+      </div>
     </Panel>
   )
 }
@@ -81,7 +94,7 @@ function NoResults({ meta }: { meta: Schemas['NoResultsMeta'] }) {
   }
   return (
     <Panel title="No matching trials">
-      <AppliedFilters filters={meta.filters} />
+      <FilterChips filters={meta.filters} label="Filters applied" />
       <Notes notes={meta.notes} />
     </Panel>
   )
@@ -113,20 +126,6 @@ function Invalid({ errors }: { errors: FieldError[] }) {
         })}
       </ul>
     </Panel>
-  )
-}
-
-function AppliedFilters({ filters }: { filters: Schemas['Filters'] }) {
-  const entries = [...Object.entries(filters.stated), ...Object.entries(filters.inferred)] as [string, string | number][]
-  if (entries.length === 0) return null
-  return (
-    <ul className="pill-list" aria-label="Filters applied">
-      {entries.map(([key, value]) => (
-        <li key={key}>
-          {filterLabel(key)}: {formatFilterValue(key, value)}
-        </li>
-      ))}
-    </ul>
   )
 }
 

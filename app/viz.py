@@ -325,7 +325,9 @@ def _series(aggregator: Aggregator) -> str | None:
 
 
 def _sample(cohort: CohortTrials) -> SampleEntry:
-    fetched = len(cohort.batch.trials) + len(cohort.batch.unreadable)
+    fetched = (
+        len(cohort.batch.trials) + len(cohort.batch.unreadable) + sum(cohort.off_filter.values())
+    )
     # totalCount is read from the first page; trials registered while later pages are fetched
     # can push `fetched` past it, and a total below what was fetched is never true.
     total = max(cohort.total, fetched)
@@ -337,10 +339,13 @@ def _excluded(
 ) -> list[Exclusion]:
     counts = dict(result.excluded)
     for c in cohorts:
+        set_aside = dict(c.off_filter)
         if c.batch.unreadable:
+            set_aside[UNREADABLE_RULE] = len(c.batch.unreadable)
+        for rule, n in set_aside.items():
             # A comparison names the cohort, as the aggregator does for its own rules.
-            rule = UNREADABLE_RULE if len(cohorts) == 1 else f"{UNREADABLE_RULE} ({c.label})"
-            counts[rule] = counts.get(rule, 0) + len(c.batch.unreadable)
+            key = rule if len(cohorts) == 1 else f"{rule} ({c.label})"
+            counts[key] = counts.get(key, 0) + n
     return [Exclusion(rule=rule, count=n) for rule, n in counts.items() if n]
 
 

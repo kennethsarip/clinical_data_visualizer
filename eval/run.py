@@ -78,11 +78,13 @@ def _report(run: RunResult) -> str:
     s = run.summary
     lines = [f"\n{s.passed}/{s.questions} passed ({run.meta.model}, {run.meta.git_commit})"]
     lines += [f"  {cls}: {p}/{n}" for cls, (p, n) in sorted(s.by_class.items())]
+    lines.append(f"  hallucination probes held: {s.probes[0]}/{s.probes[1]}")
     lines += [f"  failure {mode}: {count}" for mode, count in sorted(s.failure_modes.items())]
     lines.append(f"  repaired {s.repaired}, prose fallbacks {s.prose_fallbacks}")
     lines.append(f"  latency median {s.latency_p50_s:.1f} s, max {s.latency_max_s:.1f} s")
     lines.append(f"  items fully cited {s.items_fully_cited}/{s.items}")
     lines.append(f"  excerpts passed {s.excerpts_passed}/{s.citations}")
+    lines.append(f"  off-filter trials {s.off_filter_trials}/{s.off_filter_trials_checked}")
     return "\n".join(lines) + "\n"
 
 

@@ -9,7 +9,7 @@ The §7.6 WARN items (capped sample, counting-rule exclusions, network pruning) 
 `ok` because `meta` discloses them. The `disclosures` check makes sure it does, consistently.
 """
 
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -25,6 +25,7 @@ from app.aggregators.common import (
     F_STATUS,
 )
 from app.aggregators.registry import RowShape
+from app.ctgov import build_params
 from app.schemas import (
     RESPONSE_ADAPTER,
     ChartVisualization,
@@ -33,6 +34,7 @@ from app.schemas import (
     NetworkVisualization,
     OkResponse,
     Provenance,
+    RetrievalFilters,
 )
 from app.viz import VIZ_TYPE, stray_numbers
 
@@ -63,6 +65,9 @@ EXACT_FIELDS = frozenset(
 class CheckContext:
     shape: RowShape  # declared by the aggregator that produced the rows
     records: Mapping[str, dict[str, Any]]  # nct_id -> raw cached record, the retrieved set
+    # The API params each cohort was fetched with. The pipeline always passes them; None (unit
+    # tests of other checks) skips only the "filters equal the params sent" half of conformance.
+    sent: Sequence[Mapping[str, str]] | None = None
 
 
 Check = Callable[[OkResponse, CheckContext], list[str]]
@@ -292,6 +297,80 @@ def _disclosures(response: OkResponse, context: CheckContext) -> list[str]:
     return messages
 
 
+# Record paths of the exact filters, read raw so a normalize bug cannot hide an off-filter trial.
+F_COUNTRY = "contactsLocationsModule.locations.country"
+# Params every search sends whatever its filters; they say nothing about what was filtered.
+HOUSEKEEPING_PARAMS = frozenset({"fields", "pageSize", "countTotal", "pageToken"})
+
+
+def _conformance(response: OkResponse, context: CheckContext) -> list[str]:
+    """Phase 6 step 4: every charted trial meets each exact filter in `meta` (its raw record, with
+    the API's meaning, §8.4), and the filters `meta` shows are exactly the params that were sent."""
+    filters = response.meta.filters
+    shared = {**filters.stated, **filters.inferred}
+    messages = []
+    charted = sorted({n for item in _provenance(response) for n in item.nct_ids}, reverse=True)
+    for nct_id in charted:
+        record = context.records.get(nct_id)
+        if record is None:
+            continue  # the citation ids check reports a trial that was never retrieved
+        section = record.get("protocolSection", {})
+        for key, value in shared.items():
+            if not _meets_raw(section, key, value):
+                messages.append(f"{nct_id} is outside the {key} filter ({value})")
+    if context.sent is not None:
+        messages += _sent_mismatches(response, context.sent)
+    return messages
+
+
+def _meets_raw(section: Mapping[str, Any], key: str, value: str | int) -> bool:
+    if key == "trial_phase":
+        return str(value) in _values_at(section, F_PHASES.split("."))
+    if key == "overall_status":
+        return str(value) in _values_at(section, F_STATUS.split("."))
+    if key == "country":
+        return str(value) in _values_at(section, F_COUNTRY.split("."))
+    if key in ("start_year", "end_year"):
+        dates = _values_at(section, F_START_DATE.split("."))
+        if not dates:
+            return False
+        year = int(dates[0][:4])
+        return year >= int(value) if key == "start_year" else year <= int(value)
+    return True  # entity filters are searches (§7.3), not exact
+
+
+def _sent_mismatches(response: OkResponse, sent: Sequence[Mapping[str, str]]) -> list[str]:
+    filters = response.meta.filters
+    cohorts = response.meta.interpretation.cohorts
+    shown = [c.filters for c in cohorts] if cohorts else [{**filters.stated, **filters.inferred}]
+    if len(shown) != len(sent):
+        return [f"meta describes {len(shown)} searches but {len(sent)} were sent"]
+    messages = []
+    for values, params in zip(shown, sent, strict=True):
+        expected = _param_terms(build_params(RetrievalFilters.model_validate(values), 1))
+        actual = _param_terms(params)
+        messages += [
+            f"meta shows {k}={v!r}, which was not sent" for k, v in sorted(expected - actual)
+        ]
+        messages += [
+            f"sent {k}={v!r}, which meta does not show" for k, v in sorted(actual - expected)
+        ]
+    return messages
+
+
+def _param_terms(params: Mapping[str, str]) -> set[tuple[str, str]]:
+    """Params as comparable terms: `filter.advanced` is split into its AND-ed terms."""
+    terms = set()
+    for key, value in params.items():
+        if key in HOUSEKEEPING_PARAMS:
+            continue
+        if key == "filter.advanced":
+            terms |= {(key, term) for term in value.split(" AND ")}
+        else:
+            terms.add((key, value))
+    return terms
+
+
 CHECKS: tuple[tuple[str, Check], ...] = (
     ("schema", _schema),
     ("encoding", _encoding),
@@ -302,6 +381,7 @@ CHECKS: tuple[tuple[str, Check], ...] = (
     ("assumptions", _assumptions),
     ("title", _title),
     ("disclosures", _disclosures),
+    ("conformance", _conformance),
 )
 
 
@@ -317,4 +397,5 @@ CHECK_RULES: Mapping[str, str] = {
     "assumptions": "Every inferred filter is disclosed as an assumption.",
     "title": "The title contains no number that is not in the filters.",
     "disclosures": "Sample caps, pruning and top-N limits are disclosed consistently.",
+    "conformance": "Every charted trial meets each exact filter; the filters shown are those sent.",
 }

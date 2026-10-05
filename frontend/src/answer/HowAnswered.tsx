@@ -1,6 +1,7 @@
 import type { components } from '../api/types'
 import { count, humanize, trials } from '../format'
 import { CHECKS, filterLabel, formatFilterValue } from '../vocab'
+import { FilterChips } from './FilterChips'
 
 type Schemas = components['schemas']
 type OkMeta = Schemas['OkMeta']
@@ -32,7 +33,11 @@ export function HowAnswered({ meta }: { meta: OkMeta }) {
         </Section>
 
         <Section title="Filters">
-          <FilterChips filters={meta.filters} hasCohorts={Boolean(meta.interpretation.cohorts)} />
+          {Object.keys(meta.filters.stated).length + Object.keys(meta.filters.inferred).length > 0 ? (
+            <FilterChips filters={meta.filters} />
+          ) : (
+            <p>{meta.interpretation.cohorts ? "No filters beyond each cohort's own." : 'No filters: every trial matching the question.'}</p>
+          )}
         </Section>
 
         {meta.assumptions.length > 0 && (
@@ -110,31 +115,6 @@ function Section({ title, wide, children }: { title: string; wide?: boolean; chi
       <h4>{title}</h4>
       {children}
     </section>
-  )
-}
-
-function FilterChips({ filters, hasCohorts }: { filters: Schemas['Filters']; hasCohorts: boolean }) {
-  const stated = Object.entries(filters.stated) as [string, string | number][]
-  const inferred = Object.entries(filters.inferred) as [string, string | number][]
-  if (stated.length + inferred.length === 0) {
-    return <p>{hasCohorts ? "No filters beyond each cohort's own." : 'No filters: every trial matching the question.'}</p>
-  }
-  return (
-    <ul className="pill-list">
-      {stated.map(([key, value]) => (
-        <li key={`s-${key}`}>
-          {filterLabel(key)}: {formatFilterValue(key, value)}
-        </li>
-      ))}
-      {inferred.map(([key, value]) => (
-        <li key={`i-${key}`} className="pill-inferred">
-          <span>
-            {filterLabel(key)}: {formatFilterValue(key, value)}
-          </span>{' '}
-          <em>inferred</em>
-        </li>
-      ))}
-    </ul>
   )
 }
 

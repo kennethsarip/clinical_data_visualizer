@@ -13,6 +13,7 @@ from app.llm import LLMClient
 from app.planner import Clarification, QueryPlan, plan_request
 from app.schemas import FilterKey, VisualizeRequest
 from eval.questions import EvalQuestion, load_questions
+from tests.eval_pending import eval_params
 
 pytestmark = pytest.mark.live
 
@@ -29,7 +30,7 @@ def _fold(values: Mapping[FilterKey, str | int]) -> dict[str, str]:
     return {k: str(v).casefold() for k, v in values.items()}
 
 
-@pytest.mark.parametrize("question", PLANNED, ids=[q.id for q in PLANNED])
+@pytest.mark.parametrize("question", eval_params(PLANNED))
 def test_planner_meets_the_eval_expectation(question: EvalQuestion, llm: LLMClient) -> None:
     e = question.expected
     result = plan_request(VisualizeRequest.model_validate(question.request), llm, today=TODAY)

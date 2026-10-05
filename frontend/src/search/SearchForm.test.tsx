@@ -40,35 +40,10 @@ describe('SearchForm', () => {
     expect(screen.queryByRole('group', { name: /example questions/i })).not.toBeInTheDocument()
   })
 
-  it('keeps filters collapsed until opened, then sends them and counts them', async () => {
-    const { onSubmit, user, query } = setup()
-    const toggle = screen.getByRole('button', { name: /filters/i })
-    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+  it('has no filter fields: filtering comes from the question alone', () => {
+    setup()
+    expect(screen.queryByRole('button', { name: /filters/i })).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Condition')).not.toBeInTheDocument()
-    await user.click(toggle)
-    expect(toggle).toHaveAttribute('aria-expanded', 'true')
-    await user.type(screen.getByLabelText('Condition'), 'Melanoma')
-    await user.selectOptions(screen.getByLabelText('Phase'), 'Phase 3')
-    expect(toggle).toHaveTextContent('2')
-    await user.type(query, 'sponsor classes')
-    await user.click(screen.getByRole('button', { name: 'Visualize' }))
-    expect(onSubmit).toHaveBeenCalledExactlyOnceWith({
-      query: 'sponsor classes',
-      condition: 'Melanoma',
-      trial_phase: 'PHASE3',
-    })
-  })
-
-  it('shows a contradictory year range next to the end year', async () => {
-    const { onSubmit, user, query } = setup()
-    await user.click(screen.getByRole('button', { name: /filters/i }))
-    await user.type(screen.getByLabelText('Start year'), '2022')
-    await user.type(screen.getByLabelText('End year'), '2018')
-    await user.type(query, 'melanoma per year{Enter}')
-    expect(onSubmit).not.toHaveBeenCalled()
-    expect(screen.getByLabelText('End year')).toHaveAccessibleDescription(
-      'End year must not be before the start year.',
-    )
   })
 
   it('disables submitting while a request is running', () => {

@@ -260,7 +260,10 @@ def test_time_trend_range_covers_data_outside_the_stated_years() -> None:
     years = [r.model_dump()["start_year"] for r in response.visualization.data]  # type: ignore[union-attr]
     assert years == [2015, 2016, 2017, 2018]
     shape = REGISTRY.get(Intent.TIME_TREND, Dimension.START_YEAR).shape
-    assert run_checks(response, CheckContext(shape=shape, records=RECORDS)) == []
+    # The pipeline drops such off-filter trials before aggregating (Phase 6 step 4); charted
+    # anyway, they fail only the conformance check.
+    errors = run_checks(response, CheckContext(shape=shape, records=RECORDS))
+    assert {e.check for e in errors} == {"conformance"}
 
 
 def test_total_below_fetched_is_raised_to_fetched() -> None:

@@ -5,6 +5,7 @@ from enum import StrEnum
 import pytest
 
 from app.vocab import (
+    COUNTRIES,
     PHASE_NOT_SPECIFIED,
     AgencyClass,
     EnrollmentType,
@@ -12,6 +13,7 @@ from app.vocab import (
     Phase,
     Status,
     StudyType,
+    canonical_country,
     label,
     phase_label,
 )
@@ -97,3 +99,28 @@ def test_labels_match_api_legacy_values() -> None:
 )
 def test_phase_label_combines_phases_in_order(phases: list[Phase], expected: str) -> None:
     assert phase_label(phases) == expected
+
+
+# --- countries (CLAUDE.md §8.4: GET /stats/field/values?fields=LocationCountry, 226 names) ---
+
+
+def test_countries_are_the_registry_names() -> None:
+    assert len(COUNTRIES) == 226 == len(set(COUNTRIES))
+    assert {"Japan", "China", "South Korea", "North Korea", "United States", "Czechia"} <= set(
+        COUNTRIES
+    )
+    assert "Korea" not in COUNTRIES and "USA" not in COUNTRIES
+
+
+@pytest.mark.parametrize(
+    "written,canonical",
+    [("Japan", "Japan"), ("japan", "Japan"), ("  south KOREA ", "South Korea")],
+)
+def test_a_country_matches_its_registry_name_ignoring_case(written: str, canonical: str) -> None:
+    assert canonical_country(written) == canonical
+
+
+@pytest.mark.parametrize("written", ["Korea", "USA", "Beijing, Japan", "Europe", ""])
+def test_a_name_outside_the_registry_is_rejected(written: str) -> None:
+    with pytest.raises(ValueError, match="not a ClinicalTrials.gov country name"):
+        canonical_country(written)

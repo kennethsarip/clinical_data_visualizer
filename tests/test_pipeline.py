@@ -16,7 +16,7 @@ import pytest
 
 import app.aggregators  # noqa: F401  (registers every aggregator)
 from app.checks import CheckContext, run_checks
-from app.ctgov import FetchResult, UpstreamError
+from app.ctgov import FetchResult, UpstreamError, build_params, params_key
 from app.normalize import NormalizedTrial
 from app.pipeline import DependencyError, Pipeline
 from app.planner import ANCHOR_NOTE, PLAN_SCHEMA_NAME
@@ -32,7 +32,7 @@ from app.schemas import (
 from app.viz import PROSE_FALLBACK_NOTE, PROSE_SCHEMA_NAME
 from tests.factories import FIXTURE, T3, make_trial, raw_record
 from tests.llm_fakes import fake_llm, json_reply
-from tests.test_planner import reply
+from tests.test_planner import constraint, reply
 
 TODAY = date(2026, 10, 4)
 PROSE = {"title": "Melanoma Trials by Phase", "notes": ["Counts trials listing melanoma."]}
@@ -58,7 +58,7 @@ class FakeFetcher:
         if self.error:
             raise self.error
         records = [raw_record(t) for t in self.data.get(filters, [])]
-        return FetchResult("key", [], records, len(records))
+        return FetchResult(params_key(build_params(filters, 1000)), [], records, len(records))
 
     def fetch_many(self, filters: Sequence[RetrievalFilters]) -> list[FetchResult]:
         return [self.fetch(f) for f in filters]
@@ -86,6 +86,80 @@ def run(
 MELANOMA = RetrievalFilters(condition="melanoma")
 
 
+# --- retrieval conformance (Phase 6 step 4) ---
+
+GERMANY = RetrievalFilters(condition="melanoma", country="Germany")
+IN_GERMANY = [
+    make_trial(f"NCT{n:08d}", phases=["PHASE2"], countries=["Germany"]) for n in range(10, 29)
+]  # 19 trials, so one off-filter trial is 5% of the batch
+
+
+def test_an_off_filter_trial_is_dropped_and_counted() -> None:
+    off = make_trial("NCT00000099", phases=["PHASE2"], countries=["United States"])
+    response, _ = run(
+        "Phases of melanoma trials in Germany",
+        [
+            json_reply(
+                reply(
+                    condition="melanoma",
+                    country="Germany",
+                    constraints=[constraint("Germany", "country")],
+                )
+            ),
+            json_reply(PROSE),
+        ],
+        FakeFetcher({GERMANY: [*IN_GERMANY, off]}),
+    )
+    assert isinstance(response, OkResponse)
+    charted = {n for row in response.visualization.data for n in row.nct_ids}  # type: ignore[union-attr]
+    assert charted == {t.nct_id for t in IN_GERMANY}
+    assert "NCT00000099" not in response.trials
+    excluded = {e.rule: e.count for e in response.meta.excluded}
+    assert excluded["outside the country filter"] == 1
+    assert response.meta.sample[0].fetched == 20
+
+
+def test_mostly_off_filter_records_are_degraded_not_charted() -> None:
+    """FIXTURE by hand: T2 (US), T3 (no sites) and T4 (France) have no site in Germany."""
+    response, _ = run(
+        "Phases of melanoma trials in Germany",
+        [
+            json_reply(
+                reply(
+                    condition="melanoma",
+                    country="Germany",
+                    constraints=[constraint("Germany", "country")],
+                )
+            ),
+            json_reply(PROSE),
+        ],
+        FakeFetcher({GERMANY: FIXTURE}),
+    )
+    assert isinstance(response, DegradedResponse)
+    [error] = response.meta.errors
+    assert error.check == "retrieval"
+    assert "3 of 5" in error.message and "country" in error.message
+
+
+class _WrongParamsFetcher(FakeFetcher):
+    """Reports the params of a different search than the one meta describes."""
+
+    def fetch(self, filters: RetrievalFilters) -> FetchResult:
+        result = super().fetch(filters)
+        other = params_key(build_params(RetrievalFilters(condition="lung cancer"), 1000))
+        return FetchResult(other, result.pages, result.records, result.total)
+
+
+def test_meta_filters_that_were_not_sent_fail_conformance() -> None:
+    response, _ = run(
+        "Phases of melanoma trials",
+        [json_reply(reply(condition="melanoma")), json_reply(PROSE)],
+        _WrongParamsFetcher({MELANOMA: FIXTURE}),
+    )
+    assert isinstance(response, DegradedResponse)
+    assert {e.check for e in response.meta.errors} == {"conformance"}
+
+
 # --- ok (§1 step 9) ---
 
 
@@ -110,7 +184,10 @@ def test_ok_response_with_llm_title_and_checked_spec() -> None:
 
 
 def test_planner_notes_and_assumptions_reach_meta() -> None:
-    fetcher = FakeFetcher({RetrievalFilters(condition="melanoma", start_year=2021): FIXTURE})
+    since_2021 = [
+        t.model_copy(update={"start_date": "2022-01", "start_year": 2022}) for t in FIXTURE
+    ]
+    fetcher = FakeFetcher({RetrievalFilters(condition="melanoma", start_year=2021): since_2021})
     response, _ = run(
         "melanoma trials started each year over the last five years",
         [
@@ -174,6 +251,46 @@ def test_no_anchor_asks_before_any_fetch() -> None:
     assert fetcher.fetched == [] and len(bodies) == 1
 
 
+def test_a_constraint_no_filter_expresses_asks_before_any_fetch() -> None:
+    fetcher = FakeFetcher()
+    plan = reply(
+        condition="asthma",
+        constraints=[
+            constraint("asthma", "condition"),
+            constraint("pediatric", None, "no filter for age group"),
+        ],
+        suggested="How are asthma trials distributed across phases?",
+    )
+    response, _ = run(
+        "How are pediatric asthma trials distributed across phases?", [json_reply(plan)], fetcher
+    )
+    assert isinstance(response, ClarificationResponse)
+    meta = response.meta
+    assert meta.missing == [] and meta.conflicts == []
+    assert [u.model_dump() for u in meta.unapplied] == [
+        {"quote": "pediatric", "reason": "no filter for age group"}
+    ]
+    assert meta.suggested_query == "How are asthma trials distributed across phases?"
+    assert meta.filters.stated == {"condition": "asthma"}
+    assert fetcher.fetched == []
+
+
+def test_two_values_for_one_filter_name_both_in_meta() -> None:
+    plan = reply(
+        condition="lung cancer",
+        country="Japan",
+        constraints=[constraint("Japan", "country"), constraint("Korea", "country")],
+    )
+    response, _ = run(
+        "Lung cancer trials in Japan and Korea by phase", [json_reply(plan)], FakeFetcher()
+    )
+    assert isinstance(response, ClarificationResponse)
+    assert [c.model_dump() for c in response.meta.conflicts] == [
+        {"filter": "country", "quotes": ["Japan", "Korea"]}
+    ]
+    assert response.meta.suggested_query is None
+
+
 def test_plan_invalid_twice_is_degraded_with_the_request_filters() -> None:
     bad = json_reply(reply("distribution.investigator"))
     response, _ = run("melanoma by investigator", [bad, bad], FakeFetcher(), condition="melanoma")
@@ -189,7 +306,15 @@ def test_lone_entity_with_zero_results_is_not_found_without_a_probe() -> None:
     fetcher = FakeFetcher()
     response, _ = run(
         "Trials per year for Zorblaxumab",
-        [json_reply(reply("time_trend.start_year", drug_name="Zorblaxumab"))],
+        [
+            json_reply(
+                reply(
+                    "time_trend.start_year",
+                    drug_name="Zorblaxumab",
+                    constraints=[constraint("Zorblaxumab", "drug_name")],
+                )
+            )
+        ],
         fetcher,
     )
     assert isinstance(response, NoResultsResponse)
@@ -239,7 +364,16 @@ def test_comparison_with_every_cohort_empty_probes_each_entity() -> None:
     ]
     response, _ = run(
         "Compare phases for aspirin vs Zorblaxumab in Iceland",
-        [json_reply(reply("comparison.phase", cohorts, country="Iceland"))],
+        [
+            json_reply(
+                reply(
+                    "comparison.phase",
+                    cohorts,
+                    country="Iceland",
+                    constraints=[constraint("Iceland", "country")],
+                )
+            )
+        ],
         fetcher,
     )
     assert isinstance(response, NoResultsResponse)
@@ -328,7 +462,9 @@ def test_llm_failure_while_planning_is_a_dependency_error() -> None:
 def test_mostly_unreadable_records_are_a_dependency_error() -> None:
     class Garbage(FakeFetcher):
         def fetch(self, filters: RetrievalFilters) -> FetchResult:
-            return FetchResult("key", [], [{"protocolSection": {}}] * 10, 10)
+            return FetchResult(
+                params_key(build_params(filters, 1000)), [], [{"protocolSection": {}}] * 10, 10
+            )
 
     with pytest.raises(DependencyError, match="unreadable"):
         run("Phases of melanoma trials", [json_reply(reply(condition="melanoma"))], Garbage())
@@ -342,7 +478,7 @@ def test_one_record_without_an_id_is_set_aside_not_fatal() -> None:
     class OneBad(FakeFetcher):
         def fetch(self, filters: RetrievalFilters) -> FetchResult:
             records = [raw_record(t) for t in trials] + [{"protocolSection": {}}]
-            return FetchResult("key", [], records, len(records))
+            return FetchResult(params_key(build_params(filters, 1000)), [], records, len(records))
 
     response, _ = run(
         "Phases of melanoma trials",
@@ -401,7 +537,10 @@ def test_title_call_overlaps_the_fetch() -> None:
 
 
 NOT_OK = {
-    "not found": (reply("time_trend.start_year", drug_name="Zorblaxumab"), FakeFetcher()),
+    "not found": (
+        reply("time_trend.start_year", drug_name="Zorblaxumab"),
+        FakeFetcher(),
+    ),
     "nothing charted": (
         reply("geographic.country", condition="melanoma"),
         FakeFetcher({MELANOMA: [T3, make_trial("NCT00000099", conditions=["Melanoma"])]}),
@@ -486,7 +625,15 @@ def test_a_bug_in_an_abandoned_title_thread_is_logged_not_lost(
     monkeypatch.setattr("app.pipeline.write_prose", broken)
     response, _ = run(
         "Trials per year for Zorblaxumab",
-        [json_reply(reply("time_trend.start_year", drug_name="Zorblaxumab"))],
+        [
+            json_reply(
+                reply(
+                    "time_trend.start_year",
+                    drug_name="Zorblaxumab",
+                    constraints=[constraint("Zorblaxumab", "drug_name")],
+                )
+            )
+        ],
         FakeFetcher(),
     )
     assert isinstance(response, NoResultsResponse)

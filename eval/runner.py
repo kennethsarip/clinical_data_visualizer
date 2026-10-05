@@ -59,9 +59,16 @@ class NetworkMetrics(_Result):
     no_drug_excluded: int
 
 
+class OffFilterMetrics(_Result):
+    trials_checked: int  # distinct charted trials
+    off_filter: int  # charted trials failing at least one applied filter
+    by_filter: dict[str, int]  # filter key -> charted trials failing it
+
+
 class QuestionResult(_Result):
     id: str
     question_class: str
+    probe: bool = False  # a hallucination probe (eval/questions.py)
     passed: bool
     failures: list[str]
     http: int
@@ -78,6 +85,7 @@ class QuestionResult(_Result):
     prose_fallback: bool
     citations: CitationMetrics | None
     network: NetworkMetrics | None
+    off_filter: OffFilterMetrics | None = None
     error: str | None
 
 
@@ -85,6 +93,7 @@ class Summary(_Result):
     questions: int
     passed: int
     by_class: dict[str, list[int]]  # class -> [passed, total]
+    probes: list[int]  # hallucination probes [held, total]
     failure_modes: dict[str, int]
     repaired: int
     prose_fallbacks: int
@@ -94,6 +103,8 @@ class Summary(_Result):
     items_fully_cited: int
     citations: int
     excerpts_passed: int
+    off_filter_trials_checked: int
+    off_filter_trials: int  # Phase 6 done when: 0 across the eval set
 
 
 class RecordingChecker:
@@ -149,11 +160,16 @@ def _result(
 ) -> QuestionResult:
     ok = response if isinstance(response, OkResponse) else None
     first = checker.attempts[0] if checker.attempts else []
+    records = checker.last[1].records if ok and checker.last else None
+    off_filter = off_filter_metrics(ok, records) if ok and records is not None else None
     failures = _failures(question.expected, response, http)
+    if off_filter and off_filter.off_filter:
+        failures.append("off_filter")
     interpretation = ok.meta.interpretation if ok else None
     return QuestionResult(
         id=question.id,
         question_class=question.question_class,
+        probe=question.probe is not None,
         passed=not failures,
         failures=failures,
         http=http,
@@ -168,8 +184,9 @@ def _result(
         repaired=ok is not None and len(checker.attempts) > 1,
         failed_checks=sorted({e.check for e in first}),
         prose_fallback=ok is not None and PROSE_FALLBACK_NOTE in ok.meta.notes,
-        citations=citation_metrics(ok, checker.last[1].records) if ok and checker.last else None,
+        citations=citation_metrics(ok, records) if ok and records is not None else None,
         network=network_metrics(ok) if ok else None,
+        off_filter=off_filter,
         error=error,
     )
 
@@ -259,6 +276,54 @@ def citation_metrics(
     )
 
 
+def off_filter_metrics(
+    response: OkResponse, records: Mapping[str, dict[str, Any]]
+) -> OffFilterMetrics:
+    """Charted trials that fail an applied filter, read straight from the raw records rather than
+    through `normalize` or `checks.py`, so a bug there cannot hide one (Phase 6 step 0).
+
+    Entity filters are searches by design (§7.3), so only the exact filters are tested, each with
+    the API's meaning (§8.4): a phase in the record's list, the status, a start year in range, and
+    a site whose country equals the filter (records use the registry's country names).
+    """
+    filters = {**response.meta.filters.stated, **response.meta.filters.inferred}
+    charted = {n for item in _provenance(response) for n in item.nct_ids}
+    failing: Counter[str] = Counter()
+    off = 0
+    for nct_id in charted:
+        record = records.get(nct_id)
+        failed = ["no_record"] if record is None else _failed_filters(record, filters)
+        failing.update(failed)
+        off += bool(failed)
+    return OffFilterMetrics(trials_checked=len(charted), off_filter=off, by_filter=dict(failing))
+
+
+def _failed_filters(record: dict[str, Any], filters: Mapping[FilterKey, str | int]) -> list[str]:
+    section = record.get("protocolSection", {})
+    status = section.get("statusModule", {})
+    start = status.get("startDateStruct", {}).get("date")
+    year = int(start[:4]) if start else None
+    locations = section.get("contactsLocationsModule", {}).get("locations", [])
+    observed: dict[str, Any] = {
+        "trial_phase": section.get("designModule", {}).get("phases", []),
+        "overall_status": status.get("overallStatus"),
+        "start_year": year,
+        "end_year": year,
+        "country": {str(loc.get("country", "")).casefold() for loc in locations},
+    }
+    return [k for k, v in filters.items() if k in observed and not _meets(k, v, observed[k])]
+
+
+def _meets(key: str, value: str | int, observed: Any) -> bool:
+    if key in ("trial_phase", "country"):  # one of the record's values
+        return str(value).casefold() in {str(o).casefold() for o in observed}
+    if key == "overall_status":
+        return bool(observed == value)
+    if observed is None:  # no start date cannot meet a year bound
+        return False
+    return bool(observed >= int(value) if key == "start_year" else observed <= int(value))
+
+
 def _provenance(response: OkResponse) -> list[Provenance]:
     spec = response.visualization
     if isinstance(spec, NetworkVisualization):
@@ -298,12 +363,14 @@ def summarize(results: list[QuestionResult]) -> Summary:
         tally[0] += r.passed
         tally[1] += 1
     cited = [r.citations for r in results if r.citations]
+    filtered = [r.off_filter for r in results if r.off_filter]
     # A request rejected at validation (422) does no work; its ~0 s would drag the median down.
     latencies = [r.latency_s for r in results if r.http != 422]
     return Summary(
         questions=len(results),
         passed=sum(r.passed for r in results),
         by_class=by_class,
+        probes=[sum(r.passed for r in results if r.probe), sum(r.probe for r in results)],
         failure_modes=dict(Counter(f for r in results for f in r.failures)),
         repaired=sum(r.repaired for r in results),
         prose_fallbacks=sum(r.prose_fallback for r in results),
@@ -313,6 +380,8 @@ def summarize(results: list[QuestionResult]) -> Summary:
         items_fully_cited=sum(c.fully_cited for c in cited),
         citations=sum(c.citations for c in cited),
         excerpts_passed=sum(c.excerpts_passed for c in cited),
+        off_filter_trials_checked=sum(f.trials_checked for f in filtered),
+        off_filter_trials=sum(f.off_filter for f in filtered),
     )
 
 

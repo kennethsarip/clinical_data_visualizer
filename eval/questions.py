@@ -54,6 +54,10 @@ class EvalQuestion(_Strict):
     request: dict[str, Any]  # raw body: an invalid one is itself a test case (http 422)
     expected: Expected
     why: str  # the reasoning behind the expectation, written before any run
+    # A hallucination probe: a question built so that a hallucinating agent would answer it with
+    # false or unrequested data. Names what that wrong answer would be; the expectation is the
+    # refusal or disclosure that holds instead. These fail on purpose when the guard is missing.
+    probe: str | None = None
 
 
 class QuestionSet(_Strict):

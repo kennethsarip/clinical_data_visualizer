@@ -135,7 +135,6 @@ def build_params(filters: RetrievalFilters, page_size: int) -> dict[str, str]:
         "query.intr": filters.drug_name,
         "query.cond": filters.condition,
         "query.spons": filters.sponsor,
-        "query.locn": filters.country,
     }
     params.update({key: value for key, value in searches.items() if value is not None})
     if filters.overall_status is not None:
@@ -154,6 +153,10 @@ def _advanced_filter(filters: RetrievalFilters) -> str:
         start = f"{filters.start_year}-01-01" if filters.start_year is not None else "MIN"
         end = f"{filters.end_year}-12-31" if filters.end_year is not None else "MAX"
         terms.append(f"AREA[StartDate]RANGE[{start},{end}]")
+    if filters.country is not None:
+        # The country field, not `query.locn`: a text search over locations matched "Japan" in a
+        # Beijing hospital's name (§8.4). Quoted so spaces, commas and parentheses stay one term.
+        terms.append(f'AREA[LocationCountry]"{filters.country}"')
     return " AND ".join(terms)
 
 

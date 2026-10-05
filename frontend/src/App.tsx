@@ -68,7 +68,11 @@ export default function App() {
       <div className="results">
         {busy && <LoadingView startedAt={startedAt} query={asked} onCancel={cancel} />}
         {!busy && outcome && (
-          <StatusView result={outcome} onRetry={retry} onAddAnchor={(anchor) => form.current?.openFilter(anchor)} />
+          <StatusView result={outcome} onRetry={retry} onEditQuestion={() => form.current?.focusQuery()}
+            onAsk={(query) => {
+              form.current?.setQuery(query)
+              void run({ query })
+            }} />
         )}
         {!busy && chart && <Answer key={runId} response={chart} />}
       </div>

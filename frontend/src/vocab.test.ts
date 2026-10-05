@@ -1,15 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { PHASE_OPTIONS, filterLabel, formatFilterValue } from './vocab'
+import { filterLabel, formatFilterValue } from './vocab'
 
-describe('phase options', () => {
-  it('lists every phase code with its vocab label, in enum order', () => {
-    expect(PHASE_OPTIONS).toEqual([
-      { value: 'NA', label: 'Not Applicable' },
-      { value: 'EARLY_PHASE1', label: 'Early Phase 1' },
-      { value: 'PHASE1', label: 'Phase 1' },
-      { value: 'PHASE2', label: 'Phase 2' },
-      { value: 'PHASE3', label: 'Phase 3' },
-      { value: 'PHASE4', label: 'Phase 4' },
+describe('phase labels', () => {
+  it('labels every phase code with its vocab label', () => {
+    const codes = ['NA', 'EARLY_PHASE1', 'PHASE1', 'PHASE2', 'PHASE3', 'PHASE4']
+    expect(codes.map((code) => formatFilterValue('trial_phase', code))).toEqual([
+      'Not Applicable',
+      'Early Phase 1',
+      'Phase 1',
+      'Phase 2',
+      'Phase 3',
+      'Phase 4',
     ])
   })
 })

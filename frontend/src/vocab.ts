@@ -15,11 +15,6 @@ interface LabelledEnum<T extends string> {
 const PHASE = openapi.components.schemas.Phase as LabelledEnum<Phase>
 const STATUS = openapi.components.schemas.Status as LabelledEnum<Status>
 
-export const PHASE_OPTIONS: readonly { value: Phase; label: string }[] = PHASE.enum.map((value) => ({
-  value,
-  label: PHASE['x-labels'][value],
-}))
-
 // Every key `meta.filters` can carry (FilterKey in app/schemas.py).
 const FILTER_LABELS: Record<string, string> = {
   drug_name: 'Drug',

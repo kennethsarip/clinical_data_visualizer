@@ -98,6 +98,8 @@ export interface components {
         ClarificationMeta: {
             /** Assumptions */
             assumptions: string[];
+            /** Conflicts */
+            conflicts: components["schemas"]["Conflict"][];
             filters: components["schemas"]["Filters"];
             /** Missing */
             missing: ("drug_name" | "condition" | "sponsor")[];
@@ -108,6 +110,10 @@ export interface components {
              * @constant
              */
             source: "clinicaltrials.gov";
+            /** Suggested Query */
+            suggested_query: string | null;
+            /** Unapplied */
+            unapplied: components["schemas"]["Unapplied"][];
         };
         /** ClarificationResponse */
         ClarificationResponse: {
@@ -132,6 +138,16 @@ export interface components {
             };
             /** Label */
             label: string;
+        };
+        /** Conflict */
+        Conflict: {
+            /**
+             * Filter
+             * @enum {string}
+             */
+            filter: "drug_name" | "condition" | "sponsor" | "country" | "trial_phase" | "overall_status" | "start_year" | "end_year";
+            /** Quotes */
+            quotes: string[];
         };
         /** DegradedMeta */
         DegradedMeta: {
@@ -446,6 +462,13 @@ export interface components {
             /** Start Date */
             start_date: string | null;
         };
+        /** Unapplied */
+        Unapplied: {
+            /** Quote */
+            quote: string;
+            /** Reason */
+            reason: string;
+        };
         /** ValidationError */
         ValidationError: {
             /** Context */
@@ -467,7 +490,7 @@ export interface components {
             /** Condition */
             condition?: string | null;
             /** Country */
-            country?: string | null;
+            country?: ("Afghanistan" | "Aland Islands" | "Albania" | "Algeria" | "American Samoa" | "Andorra" | "Angola" | "Anguilla" | "Antarctica" | "Antigua and Barbuda" | "Argentina" | "Armenia" | "Aruba" | "Australia" | "Austria" | "Azerbaijan" | "Bahrain" | "Bangladesh" | "Barbados" | "Belarus" | "Belgium" | "Belize" | "Benin" | "Bermuda" | "Bhutan" | "Bolivia" | "Bonaire, Saint Eustatius and Saba " | "Bosnia and Herzegovina" | "Botswana" | "Brazil" | "Brunei" | "Bulgaria" | "Burkina Faso" | "Burma" | "Burundi" | "Cabo Verde" | "Cambodia" | "Cameroon" | "Canada" | "Cayman Islands" | "Central African Republic" | "Chad" | "Chile" | "China" | "Christmas Island" | "Colombia" | "Comoros" | "Costa Rica" | "Croatia" | "Cuba" | "Curacao" | "Cyprus" | "Czechia" | "Côte d’Ivoire" | "Democratic Republic of the Congo" | "Denmark" | "Djibouti" | "Dominica" | "Dominican Republic" | "Ecuador" | "Egypt" | "El Salvador" | "Equatorial Guinea" | "Eritrea" | "Estonia" | "Eswatini" | "Ethiopia" | "Faroe Islands" | "Federal Republic of Yugoslavia" | "Fiji" | "Finland" | "France" | "French Guiana" | "French Polynesia" | "French Southern and Antarctic Lands" | "Gabon" | "Georgia" | "Germany" | "Ghana" | "Gibraltar" | "Greece" | "Greenland" | "Grenada" | "Guadeloupe" | "Guam" | "Guatemala" | "Guinea" | "Guinea-Bissau" | "Guyana" | "Haiti" | "Holy See" | "Honduras" | "Hong Kong" | "Hungary" | "Iceland" | "India" | "Indonesia" | "Iran" | "Iraq" | "Ireland" | "Israel" | "Italy" | "Jamaica" | "Japan" | "Jersey" | "Jordan" | "Kazakhstan" | "Kenya" | "Kiribati" | "Kosovo" | "Kuwait" | "Kyrgyzstan" | "Laos" | "Latvia" | "Lebanon" | "Lesotho" | "Liberia" | "Libya" | "Liechtenstein" | "Lithuania" | "Luxembourg" | "Macau" | "Madagascar" | "Malawi" | "Malaysia" | "Maldives" | "Mali" | "Malta" | "Martinique" | "Mauritania" | "Mauritius" | "Mayotte" | "Mexico" | "Micronesia" | "Moldova" | "Monaco" | "Mongolia" | "Montenegro" | "Montserrat" | "Morocco" | "Mozambique" | "Namibia" | "Nepal" | "Netherlands" | "Netherlands Antilles" | "New Caledonia" | "New Zealand" | "Nicaragua" | "Niger" | "Nigeria" | "Niue" | "North Korea" | "North Macedonia" | "Northern Mariana Islands" | "Norway" | "Oman" | "Pakistan" | "Palestinian Territories" | "Panama" | "Papua New Guinea" | "Paraguay" | "Peru" | "Philippines" | "Poland" | "Portugal" | "Puerto Rico" | "Qatar" | "Republic of the Congo" | "Reunion" | "Romania" | "Russia" | "Rwanda" | "Saint Kitts and Nevis" | "Saint Lucia" | "Saint Martin" | "Saint Vincent and the Grenadines" | "Samoa" | "San Marino" | "Saudi Arabia" | "Senegal" | "Serbia" | "Serbia and Montenegro" | "Seychelles" | "Sierra Leone" | "Singapore" | "Slovakia" | "Slovenia" | "Solomon Islands" | "Somalia" | "South Africa" | "South Korea" | "South Sudan" | "Spain" | "Sri Lanka" | "Sudan" | "Suriname" | "Sweden" | "Switzerland" | "Syria" | "Taiwan" | "Tajikistan" | "Tanzania" | "Thailand" | "The Bahamas" | "The Gambia" | "Timor-Leste" | "Togo" | "Trinidad and Tobago" | "Tunisia" | "Turkey (Türkiye)" | "Turkmenistan" | "Uganda" | "Ukraine" | "United Arab Emirates" | "United Kingdom" | "United States" | "United States Minor Outlying Islands" | "Uruguay" | "Uzbekistan" | "Vanuatu" | "Venezuela" | "Vietnam" | "Virgin Islands" | "Yemen" | "Zambia" | "Zimbabwe") | null;
             /** Drug Name */
             drug_name?: string | null;
             /** End Year */

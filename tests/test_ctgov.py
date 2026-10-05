@@ -42,12 +42,22 @@ def test_each_filter_maps_to_its_verified_param() -> None:
         "query.intr": "Pembrolizumab",
         "query.cond": "Melanoma",
         "query.spons": "Merck",
-        "query.locn": "Germany",
         "filter.overallStatus": "RECRUITING",
-        "filter.advanced": "AREA[Phase]PHASE3 AND AREA[StartDate]RANGE[2015-01-01,2020-12-31]",
+        "filter.advanced": (
+            "AREA[Phase]PHASE3 AND AREA[StartDate]RANGE[2015-01-01,2020-12-31] AND "
+            'AREA[LocationCountry]"Germany"'
+        ),
     }
     assert params["pageSize"] == "1000"
     assert params["countTotal"] == "true"
+
+
+def test_country_matches_the_country_field_not_a_text_search() -> None:
+    """§8.4: query.locn matched "Japan" in a Beijing hospital's name; the country field does not.
+    Quoted, so a name with spaces, commas or parentheses stays one term (verified live)."""
+    params = build_params(RetrievalFilters(country="turkey (türkiye)"), 1000)
+    assert "query.locn" not in params
+    assert params["filter.advanced"] == 'AREA[LocationCountry]"Turkey (Türkiye)"'
 
 
 @pytest.mark.parametrize(
