@@ -204,6 +204,8 @@ export interface components {
         Exclusion: {
             /** Count */
             count: number;
+            /** Nct Ids */
+            nct_ids: string[];
             /** Rule */
             rule: string;
         };

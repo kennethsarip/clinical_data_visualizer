@@ -1,0 +1,28 @@
+{
+  "status": "clarification_needed",
+  "visualization": null,
+  "trials": {},
+  "meta": {
+    "source": "clinicaltrials.gov",
+    "filters": {
+      "stated": {
+        "condition": "lung cancer",
+        "country": "Japan"
+      },
+      "inferred": {}
+    },
+    "assumptions": [],
+    "notes": [
+      "\"Beijing\" cannot be applied: no filter for city."
+    ],
+    "missing": [],
+    "unapplied": [
+      {
+        "quote": "Beijing",
+        "reason": "no filter for city"
+      }
+    ],
+    "conflicts": [],
+    "suggested_query": "How are lung cancer trials in Japan distributed across phases?"
+  }
+}

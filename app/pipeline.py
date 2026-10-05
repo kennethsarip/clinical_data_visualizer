@@ -83,6 +83,7 @@ class _Fetched:
     cohorts: list[CohortTrials]
     records: dict[str, dict[str, Any]]  # nct_id -> raw record, the retrieved set the checks use
     sent: list[dict[str, str]]  # the API params each cohort was fetched with
+    cohort_ids: list[frozenset[str]]  # the readable NCT IDs each cohort fetched, for recount
 
 
 @dataclass(frozen=True)
@@ -157,11 +158,13 @@ class Pipeline:
         results = self.fetcher.fetch_many([t.filters for t in targets])
         cohorts: list[CohortTrials] = []
         records: dict[str, dict[str, Any]] = {}
+        cohort_ids: list[frozenset[str]] = []
         for target, result in zip(targets, results, strict=True):
             # Normalize first: a record without an nctId is unreadable and set aside (counted
             # in meta), so it must not abort the request while building the lookup.
             batch = normalize_records(result.records)
             readable = {t.nct_id for t in batch.trials}
+            cohort_ids.append(frozenset(readable))
             records |= {nct_id: r for r in result.records if (nct_id := _nct_id(r)) in readable}
             kept, off_filter = conform(batch.trials, target.filters)
             batch = batch_of(kept, batch.unreadable)
@@ -169,7 +172,7 @@ class Pipeline:
                 CohortTrials(target.label, batch, target.filters, result.total, off_filter)
             )
         sent = [dict(parse_qsl(result.params_key)) for result in results]
-        return _Fetched(cohorts, records, sent)
+        return _Fetched(cohorts, records, sent, cohort_ids)
 
     def _checked(
         self,
@@ -184,7 +187,14 @@ class Pipeline:
         # Chart aggregators expose their categorizer so `membership` can re-derive each trial's
         # category; networks and numeric charts have none.
         categorizer = getattr(aggregator, "categorizer", None)
-        context = CheckContext(aggregator.shape, fetched.records, fetched.sent, categorizer)
+        context = CheckContext(
+            aggregator.shape,
+            fetched.records,
+            fetched.sent,
+            categorizer,
+            aggregator=aggregator,
+            cohort_ids=fetched.cohort_ids,
+        )
 
         def build(title: str, notes: Sequence[str]) -> OkResponse:
             return assemble(
@@ -257,7 +267,7 @@ def _charts_nothing(result: Aggregation | GraphAggregation) -> bool:
 def _nothing_charted(
     plan: QueryPlan, result: Aggregation | GraphAggregation, retrieved: int
 ) -> NoResultsResponse:
-    reasons = ", ".join(f"{count} {rule}" for rule, count in result.excluded.items() if count)
+    reasons = ", ".join(f"{len(ids)} {rule}" for rule, ids in result.excluded.items() if ids)
     note = f"{retrieved} trials matched, but none could be charted"
     note += f" ({reasons})." if reasons else "."
     return _no_results(plan, [], [note])

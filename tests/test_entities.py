@@ -126,7 +126,7 @@ def test_drug_and_biological_registrations_merge_into_one_drug() -> None:
     )
     for nct_id in ("NCT00000001", "NCT00000002", "NCT00000003"):
         assert [m.key for m in selection.mentions[nct_id]] == ["pembrolizumab"]
-    assert selection.excluded == {PLACEBO_RULE: 0, NON_DRUG_RULE: 0, NO_DRUG_RULE: 0}
+    assert selection.excluded == {PLACEBO_RULE: set(), NON_DRUG_RULE: set(), NO_DRUG_RULE: set()}
 
 
 def test_mentions_keep_the_raw_registered_name_as_excerpt() -> None:
@@ -161,7 +161,11 @@ def test_placebo_non_drug_and_drugless_trials_are_counted_per_trial() -> None:
         _trial("NCT00000007", [("DRUG", None)]),
     ]
     selection = select_drugs(trials)
-    assert selection.excluded == {PLACEBO_RULE: 3, NON_DRUG_RULE: 2, NO_DRUG_RULE: 2}
+    assert selection.excluded == {
+        PLACEBO_RULE: {"NCT00000001", "NCT00000002", "NCT00000005"},
+        NON_DRUG_RULE: {"NCT00000003", "NCT00000004"},
+        NO_DRUG_RULE: {"NCT00000004", "NCT00000005"},
+    }
     assert [m.key for m in selection.mentions["NCT00000002"]] == ["ipilimumab"]
     assert {nct for nct, ms in selection.mentions.items() if not ms} == {
         "NCT00000004",

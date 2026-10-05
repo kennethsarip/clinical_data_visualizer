@@ -15,7 +15,7 @@ from app.aggregators.common import (
     Value,
     count_by,
     empty_row,
-    gap_counts,
+    gap_ids,
     single_cohort,
 )
 from app.aggregators.registry import (
@@ -91,7 +91,7 @@ class EnrollmentScatterAggregator:
             key=lambda t: (t.start_date or "", t.nct_id),
         )
         rows = tuple(_point(t) for t in plotted)
-        excluded = gap_counts(trials, Gap.MISSING_ENROLLMENT, Gap.MISSING_START_DATE)
+        excluded = gap_ids(trials, Gap.MISSING_ENROLLMENT, Gap.MISSING_START_DATE)
         return Aggregation(rows, excluded)
 
 
@@ -153,7 +153,7 @@ class EnrollmentHistogramAggregator:
                 }
                 bucket = buckets.get((i, series))
                 rows.append(bucket.row(values) if bucket else empty_row(values))
-        return Aggregation(tuple(rows), gap_counts(trials, Gap.MISSING_ENROLLMENT))
+        return Aggregation(tuple(rows), gap_ids(trials, Gap.MISSING_ENROLLMENT))
 
 
 REGISTRY.register(EnrollmentScatterAggregator())

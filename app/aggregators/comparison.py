@@ -13,8 +13,11 @@ from app.aggregators.common import (
     Categorized,
     Categorizer,
     count_by,
+    cut_by_top_n,
     empty_row,
+    nonempty,
     ordered,
+    top_n_rule,
 )
 from app.aggregators.registry import (
     REGISTRY,
@@ -75,11 +78,12 @@ class ComparisonAggregator:
                 values = {column: category.label, COHORT_COLUMN: label}
                 bucket = cohort_buckets.get(category.key)
                 rows.append(bucket.row(values) if bucket else empty_row(values))
-        excluded = {
-            f"{rule} ({label})": n
-            for label, cat in zip(labels, per_cohort, strict=True)
-            for rule, n in cat.excluded.items()
-        }
+        excluded: dict[str, frozenset[str]] = {}
+        for label, cat in zip(labels, per_cohort, strict=True):
+            rules = dict(cat.excluded)
+            if top_n is not None:
+                rules[top_n_rule(top_n.limit)] = cut_by_top_n(cat, (c.key for c in categories))
+            excluded |= {f"{rule} ({label})": ids for rule, ids in nonempty(rules).items()}
         return Aggregation(tuple(rows), excluded, top_n)
 
 

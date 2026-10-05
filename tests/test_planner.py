@@ -428,9 +428,7 @@ def test_an_age_word_absorbed_into_an_applied_quote_is_not_accounted_for() -> No
     condition was set to "asthma", so asthma was charted for every age. No filter expresses age,
     so an age or sex word counts only when quoted as not applied."""
     for condition in ("asthma", "pediatric asthma"):
-        llm = reply(
-            condition=condition, constraints=[constraint("pediatric asthma", "condition")]
-        )
+        llm = reply(condition=condition, constraints=[constraint("pediatric asthma", "condition")])
         with pytest.raises(LLMOutputError, match="pediatric"):
             build(PEDIATRIC, llm)
 

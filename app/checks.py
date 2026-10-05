@@ -16,18 +16,35 @@ from typing import Any
 from pydantic import ValidationError
 
 from app.aggregators.common import (
+    F_CONDITION,
     F_ENROLLMENT,
     F_ENROLLMENT_TYPE,
+    F_INTERVENTION_NAME,
     F_INTERVENTION_TYPE,
     F_PHASES,
+    F_SPONSOR,
     F_SPONSOR_CLASS,
     F_START_DATE,
     F_STATUS,
     Categorizer,
 )
-from app.aggregators.registry import RowShape
+from app.aggregators.registry import (
+    Aggregator,
+    AggRow,
+    CohortTrials,
+    GraphAggregation,
+    RowShape,
+)
+from app.conformance import OffFilterBatchError, conform
 from app.ctgov import build_params
-from app.normalize import RecordShapeError, normalize_record
+from app.entities import EntityType, entity_key
+from app.normalize import (
+    UNREADABLE_RULE,
+    RecordShapeError,
+    batch_of,
+    normalize_record,
+    normalize_records,
+)
 from app.schemas import (
     RESPONSE_ADAPTER,
     ChartVisualization,
@@ -38,7 +55,7 @@ from app.schemas import (
     Provenance,
     RetrievalFilters,
 )
-from app.viz import VIZ_TYPE, stray_numbers
+from app.viz import VIZ_TYPE, exclusions, stray_numbers
 
 # Dimensions where every trial lands in exactly one row, so rows must sum to the trials charted
 # (§8.5). Multi-valued ones (country, drug, ...) may sum higher, and top-N drops categories.
@@ -73,6 +90,9 @@ class CheckContext:
     # The aggregator's categorizer, for re-deriving each trial's category from its raw record
     # (membership); None for shapes without one (networks, numeric charts).
     categorizer: Categorizer | None = None
+    # For `recount`: the aggregator that built the answer and the NCT IDs each cohort fetched.
+    aggregator: Aggregator | None = None
+    cohort_ids: Sequence[frozenset[str]] | None = None
 
 
 Check = Callable[[OkResponse, CheckContext], list[str]]
@@ -382,8 +402,10 @@ def _membership(response: OkResponse, context: CheckContext) -> list[str]:
     the wrong bar fails even when its excerpt is real. With one cohort, the reverse holds too: no
     retrieved trial that meets the filters and belongs to a shown row is missing from it."""
     spec = response.visualization
+    if isinstance(spec, NetworkVisualization):
+        return _network_support(spec)
     categorizer = context.categorizer
-    if categorizer is None or isinstance(spec, NetworkVisualization):
+    if categorizer is None:
         return []
     rows = [r.model_dump() for r in spec.data]
     charted = {n for row in rows for n in row["nct_ids"]}
@@ -432,6 +454,157 @@ def _categories(
     return {n: [(a.key, a.label) for a in assigned] for n, assigned in by_trial.items()}, unreadable
 
 
+# Record path -> the entity type its values name, for re-deriving a cited node's key.
+_FIELD_ENTITY = {
+    F_INTERVENTION_NAME: EntityType.DRUG,
+    F_SPONSOR: EntityType.SPONSOR,
+    F_CONDITION: EntityType.CONDITION,
+}
+
+
+def _network_support(spec: NetworkVisualization) -> list[str]:
+    """A node's every excerpt normalizes (§6 name rules) to that node, and an edge cites both of
+    its ends for every trial it cites, so a citation cannot vouch for a different entity."""
+    messages = []
+    for node in spec.data.nodes:
+        for c in node.citations:
+            kind = _FIELD_ENTITY.get(c.field)
+            got = f"{kind}:{entity_key(kind, c.excerpt)}" if kind and c.excerpt else None
+            if got != node.id:
+                messages.append(f"node {node.id} cites {c.nct_id} with {c.excerpt!r} ({got})")
+    for edge in spec.data.edges:
+        cited: dict[str, set[str]] = {}
+        for c in edge.citations:
+            kind = _FIELD_ENTITY.get(c.field)
+            if kind and c.excerpt:
+                cited.setdefault(c.nct_id, set()).add(f"{kind}:{entity_key(kind, c.excerpt)}")
+        for nct_id, ends in cited.items():
+            if not {edge.source, edge.target} <= ends:
+                messages.append(
+                    f"edge {edge.source} - {edge.target} cites {nct_id} without both ends"
+                )
+    return messages
+
+
+def _coverage(response: OkResponse, context: CheckContext) -> list[str]:
+    """Every row, node and edge cites min(trial_count, citation_cap) distinct trials (§7.5)."""
+    cap = response.meta.citation_cap
+    messages = []
+    for item in _provenance(response):
+        cited = len({c.nct_id for c in item.citations})
+        wanted = min(item.trial_count, cap)
+        if cited < wanted:
+            messages.append(f"{_name(item)} cites {cited} of {wanted} trials it should")
+    return messages
+
+
+def _name(item: Provenance) -> str:
+    values = item.model_dump(exclude={"trial_count", "nct_ids", "citations"})
+    if "source" in values:
+        return f"edge {values['source']} - {values['target']}"
+    return repr(values.get("id") or next(iter(values.values()), "datum"))
+
+
+def _accounting(response: OkResponse, context: CheckContext) -> list[str]:
+    """Phase 7 step 3: every retrieved trial is on some datum or listed under a reason in
+    `meta.excluded` (a counting rule, off-filter, a top-N cutoff, network pruning), and each
+    reason's count is its IDs (an unreadable record may lack an ID to list)."""
+    messages = []
+    listed: set[str] = set()
+    for e in response.meta.excluded:
+        listed |= set(e.nct_ids)
+        unreadable = e.rule.startswith(UNREADABLE_RULE)
+        if e.count != len(e.nct_ids) and not (unreadable and e.count > len(e.nct_ids)):
+            messages.append(f"{e.rule!r} counts {e.count} but lists {len(e.nct_ids)} trials")
+    charted = {n for item in _provenance(response) for n in item.nct_ids}
+    for nct_id in sorted(set(context.records) - charted - listed, reverse=True):
+        messages.append(f"{nct_id} was retrieved but is on no datum and under no reason")
+    return messages
+
+
+def _recount(response: OkResponse, context: CheckContext) -> list[str]:
+    """Phase 7 step 2: rebuild every cohort from its raw cached records (normalize, the exact
+    filters, the same aggregator) and require every row, node, edge, point and bin, and every
+    exclusion, to match the answer: one code path for every shape. It proves the answer is what
+    the declared rules make of the records; the rules themselves are unit-tested."""
+    if context.aggregator is None or context.cohort_ids is None:
+        return []
+    try:
+        cohorts = _rebuilt_cohorts(response, context, context.cohort_ids)
+    except (RecordShapeError, OffFilterBatchError, ValueError) as exc:
+        return [f"the records could not be recounted: {exc}"]
+    result = context.aggregator.aggregate(cohorts)
+    messages = _compare_data(response, result, context.aggregator.columns)
+    shown = {e.rule: set(e.nct_ids) for e in response.meta.excluded}
+    rebuilt = {e.rule: set(e.nct_ids) for e in exclusions(result, cohorts)}
+    for rule in sorted(set(shown) | set(rebuilt)):
+        if rule.startswith(UNREADABLE_RULE):
+            continue  # unreadable records never reach the cache lookup, so they cannot recount
+        if shown.get(rule, set()) != rebuilt.get(rule, set()):
+            messages.append(f"exclusion {rule!r} lists other trials than the records give")
+    return messages
+
+
+def _rebuilt_cohorts(
+    response: OkResponse, context: CheckContext, cohort_ids: Sequence[frozenset[str]]
+) -> list[CohortTrials]:
+    meta = response.meta
+    shared = {**meta.filters.stated, **meta.filters.inferred}
+    listed = meta.interpretation.cohorts
+    specs = [(c.label, c.filters) for c in listed] if listed else [(None, shared)]
+    if not len(specs) == len(cohort_ids) == len(meta.sample):
+        raise ValueError(f"{len(specs)} cohorts described, {len(cohort_ids)} fetched")
+    cohorts = []
+    for (label, values), nct_ids, sample in zip(specs, cohort_ids, meta.sample, strict=True):
+        # The cache's order, as the pipeline saw it, so label votes break ties the same way.
+        records = [r for n, r in context.records.items() if n in nct_ids]
+        batch = normalize_records(records)
+        filters = RetrievalFilters.model_validate(values)
+        kept, off_filter = conform(batch.trials, filters)
+        cohorts.append(CohortTrials(label, batch_of(kept, []), filters, sample.total, off_filter))
+    return cohorts
+
+
+def _compare_data(response: OkResponse, result: Any, columns: Sequence[str]) -> list[str]:
+    spec = response.visualization
+    if isinstance(spec, NetworkVisualization):
+        if not isinstance(result, GraphAggregation):
+            return ["a network answer recounts as a chart"]
+        nodes = [n.model_dump() for n in spec.data.nodes]
+        edges = [e.model_dump() for e in spec.data.edges]
+        node_cols = ("id", "label", "entity_type", "is_anchor")
+        return [
+            *_compare_items("node", nodes, result.nodes, node_cols),
+            *_compare_items("edge", edges, result.edges, ("source", "target")),
+        ]
+    if isinstance(result, GraphAggregation):
+        return ["a chart answer recounts as a network"]
+    rows = [r.model_dump(mode="json") for r in spec.data]
+    return _compare_items("row", rows, result.rows, columns)
+
+
+def _compare_items(
+    kind: str, shown: list[dict[str, Any]], rebuilt: Sequence[AggRow], columns: Sequence[str]
+) -> list[str]:
+    def key(values: Mapping[str, Any]) -> tuple[Any, ...]:
+        return tuple(values.get(c) for c in columns)
+
+    have = {key(item): set(item["nct_ids"]) for item in shown}
+    want = {key(row.values): set(row.nct_ids) for row in rebuilt}
+    messages = []
+    for k in [*want, *(k for k in have if k not in want)]:
+        if k not in have:
+            messages.append(f"{kind} {k} is missing; the records give {len(want[k])} trials")
+        elif k not in want:
+            messages.append(f"{kind} {k} is not in what the records give")
+        elif have[k] != want[k]:
+            extra, lost = sorted(have[k] - want[k]), sorted(want[k] - have[k])
+            messages.append(f"{kind} {k} differs from the records: +{extra} -{lost}")
+    if [key(item) for item in shown] != [key(r.values) for r in rebuilt] and not messages:
+        messages.append(f"{kind}s are not in the order the records give")
+    return messages
+
+
 CHECKS: tuple[tuple[str, Check], ...] = (
     ("schema", _schema),
     ("encoding", _encoding),
@@ -444,6 +617,9 @@ CHECKS: tuple[tuple[str, Check], ...] = (
     ("disclosures", _disclosures),
     ("conformance", _conformance),
     ("membership", _membership),
+    ("coverage", _coverage),
+    ("accounting", _accounting),
+    ("recount", _recount),
 )
 
 
@@ -461,4 +637,7 @@ CHECK_RULES: Mapping[str, str] = {
     "disclosures": "Sample caps, pruning and top-N limits are disclosed consistently.",
     "conformance": "Every charted trial meets each exact filter; the filters shown are those sent.",
     "membership": "Each trial's own record puts it in its datum, and no matching trial is missing.",
+    "coverage": "Every datum cites as many distinct trials as it holds, up to the citation cap.",
+    "accounting": "Every retrieved trial is on the chart or listed under the reason it is not.",
+    "recount": "Every datum and exclusion is rebuilt from the raw records and matches.",
 }

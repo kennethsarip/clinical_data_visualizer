@@ -1,0 +1,21 @@
+{
+  "status": "no_results",
+  "visualization": null,
+  "trials": {},
+  "meta": {
+    "source": "clinicaltrials.gov",
+    "filters": {
+      "stated": {
+        "drug_name": "Zorblaxumab"
+      },
+      "inferred": {}
+    },
+    "assumptions": [],
+    "notes": [
+      "No trial on ClinicalTrials.gov lists Zorblaxumab. No similar name was substituted."
+    ],
+    "not_found": [
+      "Zorblaxumab"
+    ]
+  }
+}

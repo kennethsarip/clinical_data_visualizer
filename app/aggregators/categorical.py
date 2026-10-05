@@ -8,8 +8,11 @@ from app.aggregators.common import (
     COUNTRY,
     Categorizer,
     count_by,
+    cut_by_top_n,
+    nonempty,
     ordered,
     single_cohort,
+    top_n_rule,
 )
 from app.aggregators.registry import (
     REGISTRY,
@@ -46,13 +49,17 @@ class CategoricalAggregator:
     def aggregate(self, cohorts: Sequence[CohortTrials]) -> Aggregation:
         categorized = self.categorizer.assign(single_cohort(cohorts).batch.trials)
         buckets = ordered(count_by(categorized).values())
+        excluded = dict(categorized.excluded)
         top_n = None
         if self.categorizer.top_n is not None:
             top_n = TopN(limit=self.categorizer.top_n, categories_total=len(buckets))
             buckets = buckets[: self.categorizer.top_n]
+            excluded |= nonempty(
+                {top_n_rule(top_n.limit): cut_by_top_n(categorized, (b.key for b in buckets))}
+            )
         column = self.categorizer.column
         rows = tuple(b.row({column: b.label}) for b in buckets)
-        return Aggregation(rows, dict(categorized.excluded), top_n)
+        return Aggregation(rows, excluded, top_n)
 
 
 for _categorizer in CATEGORICAL:

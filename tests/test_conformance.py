@@ -52,7 +52,7 @@ def test_conform_drops_and_counts_each_trial_once_under_its_first_failed_filter(
     trials.append(make_trial("NCT00000041", countries=["China"]))
     kept, dropped = conform(trials, JAPAN)
     assert [t.nct_id for t in kept] == [t.nct_id for t in trials[:40]]
-    assert dropped == {"outside the country filter": 1}
+    assert dropped == {"outside the country filter": frozenset({"NCT00000041"})}
 
 
 def test_conform_with_every_trial_meeting_the_filters_drops_nothing() -> None:

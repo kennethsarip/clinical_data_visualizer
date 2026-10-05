@@ -19,10 +19,10 @@ from app.aggregators.common import (
     F_CONDITION,
     F_INTERVENTION_NAME,
     F_SPONSOR,
-    NO_CONDITIONS_RULE,
     Value,
-    gap_counts,
-    nonzero,
+    gap_ids,
+    no_conditions,
+    nonempty,
     single_cohort,
 )
 from app.aggregators.registry import (
@@ -52,7 +52,8 @@ TOP_N_NODES = 50
 
 Mentions = dict[str, tuple[Mention, ...]]  # nct_id -> entities in that trial
 End = tuple["Side", Mention]
-Extract = Callable[[Sequence[NormalizedTrial]], tuple[Mentions, dict[str, int]]]
+Extract = Callable[[Sequence[NormalizedTrial]], tuple[Mentions, dict[str, frozenset[str]]]]
+PRUNED_RULE = "pruned from the network"
 
 
 @dataclass(frozen=True)
@@ -64,21 +65,22 @@ class Side:
     extract: Extract
 
 
-def _drugs(trials: Sequence[NormalizedTrial]) -> tuple[Mentions, dict[str, int]]:
+def _drugs(trials: Sequence[NormalizedTrial]) -> tuple[Mentions, dict[str, frozenset[str]]]:
     selection = select_drugs(trials)
-    excluded = nonzero(selection.excluded) | gap_counts(
+    excluded = nonempty(selection.excluded) | gap_ids(
         trials, Gap.NO_INTERVENTIONS, Gap.UNNAMED_INTERVENTION
     )
     return selection.mentions, excluded
 
 
-def _sponsors(trials: Sequence[NormalizedTrial]) -> tuple[Mentions, dict[str, int]]:
+def _sponsors(trials: Sequence[NormalizedTrial]) -> tuple[Mentions, dict[str, frozenset[str]]]:
     return {t.nct_id: (sponsor_mention(t),) for t in trials}, {}
 
 
-def _conditions(trials: Sequence[NormalizedTrial]) -> tuple[Mentions, dict[str, int]]:
-    excluded = nonzero({NO_CONDITIONS_RULE: sum(not t.conditions for t in trials)})
-    return {t.nct_id: condition_mentions(t) for t in trials}, excluded
+def _conditions(
+    trials: Sequence[NormalizedTrial],
+) -> tuple[Mentions, dict[str, frozenset[str]]]:
+    return {t.nct_id: condition_mentions(t) for t in trials}, no_conditions(trials)
 
 
 DRUG_SIDE = Side(EntityType.DRUG, F_INTERVENTION_NAME, _drugs)
@@ -147,8 +149,12 @@ class CooccurrenceAggregator:
             (_edge_row(pair, edges[pair]) for pair in kept_edges),
             key=lambda row: (-len(row.nct_ids), row.values["source"], row.values["target"]),
         )
+        # A trial with entities whose nodes were all pruned is on no node or edge: say so.
+        on_graph = {n for node_id in kept_nodes for n in nodes[node_id].nct_ids}
+        had_nodes = {n for acc in nodes.values() for n in acc.nct_ids}
+        pruned = nonempty({PRUNED_RULE: had_nodes - on_graph})
         return GraphAggregation(
-            tuple(node_rows), tuple(edge_rows), excluded | second_excluded, pruning
+            tuple(node_rows), tuple(edge_rows), excluded | second_excluded | pruned, pruning
         )
 
     def _accumulate(

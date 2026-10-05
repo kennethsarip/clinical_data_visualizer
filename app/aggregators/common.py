@@ -14,6 +14,7 @@ from app.aggregators.registry import (
     CohortTrials,
     Dimension,
     Evidence,
+    Excluded,
 )
 from app.entities import (
     condition_mentions,
@@ -58,7 +59,7 @@ class Assignment:
 @dataclass(frozen=True)
 class Categorized:
     by_trial: Mapping[str, tuple[Assignment, ...]]  # nct_id -> categories; empty = left out
-    excluded: Mapping[str, int]  # counting rule -> trials (non-zero only)
+    excluded: Excluded  # counting rule -> the trials it acted on (non-empty only)
 
 
 @dataclass
@@ -113,12 +114,33 @@ def single_cohort(cohorts: Sequence[CohortTrials]) -> CohortTrials:
     return cohorts[0]
 
 
-def nonzero(counts: Mapping[str, int]) -> dict[str, int]:
-    return {rule: n for rule, n in counts.items() if n}
+def nonempty(ids: Mapping[str, Iterable[str]]) -> dict[str, frozenset[str]]:
+    """Rules that acted on at least one trial, each with the trials it acted on."""
+    frozen = {rule: frozenset(nct_ids) for rule, nct_ids in ids.items()}
+    return {rule: nct_ids for rule, nct_ids in frozen.items() if nct_ids}
 
 
-def gap_counts(trials: Sequence[NormalizedTrial], *gaps: Gap) -> dict[str, int]:
-    return nonzero({str(gap): sum(gap in t.gaps for t in trials) for gap in gaps})
+def gap_ids(trials: Sequence[NormalizedTrial], *gaps: Gap) -> dict[str, frozenset[str]]:
+    # Sets, not generators: a generator would read `gap` after the loop ends (late binding).
+    return nonempty({str(gap): {t.nct_id for t in trials if gap in t.gaps} for gap in gaps})
+
+
+def no_conditions(trials: Sequence[NormalizedTrial]) -> dict[str, frozenset[str]]:
+    return nonempty({NO_CONDITIONS_RULE: {t.nct_id for t in trials if not t.conditions}})
+
+
+def top_n_rule(limit: int) -> str:
+    return f"not in the top {limit}"
+
+
+def cut_by_top_n(categorized: "Categorized", kept: Iterable[Hashable]) -> frozenset[str]:
+    """Trials with categories, none of them among the kept top-N: they are on no bar."""
+    shown = set(kept)
+    return frozenset(
+        nct_id
+        for nct_id, assignments in categorized.by_trial.items()
+        if assignments and not any(a.key in shown for a in assignments)
+    )
 
 
 # --- categorizers ---
@@ -193,7 +215,7 @@ def _assign_intervention_type(trials: Sequence[NormalizedTrial]) -> Categorized:
                     str(i.type), label(i.type), (Evidence(F_INTERVENTION_TYPE, str(i.type)),)
                 )
 
-    excluded = gap_counts(trials, Gap.NO_INTERVENTIONS, Gap.UNNAMED_INTERVENTION)
+    excluded = gap_ids(trials, Gap.NO_INTERVENTIONS, Gap.UNNAMED_INTERVENTION)
     return Categorized(_per_trial(trials, one), excluded)
 
 
@@ -202,7 +224,7 @@ def _assign_country(trials: Sequence[NormalizedTrial]) -> Categorized:
         for country in t.countries:  # already deduped per trial (§6)
             yield Assignment(country, country, (Evidence(F_COUNTRY, country),))
 
-    return Categorized(_per_trial(trials, one), gap_counts(trials, Gap.NO_LOCATIONS))
+    return Categorized(_per_trial(trials, one), gap_ids(trials, Gap.NO_LOCATIONS))
 
 
 def _assign_drug(trials: Sequence[NormalizedTrial]) -> Categorized:
@@ -213,7 +235,7 @@ def _assign_drug(trials: Sequence[NormalizedTrial]) -> Categorized:
         )
         for nct_id, mentions in selection.mentions.items()
     }
-    excluded = nonzero(selection.excluded) | gap_counts(
+    excluded = nonempty(selection.excluded) | gap_ids(
         trials, Gap.NO_INTERVENTIONS, Gap.UNNAMED_INTERVENTION
     )
     return Categorized(by_trial, excluded)
@@ -232,8 +254,7 @@ def _assign_condition(trials: Sequence[NormalizedTrial]) -> Categorized:
         for m in condition_mentions(t):
             yield Assignment(m.key, m.label, (Evidence(F_CONDITION, m.raw),))
 
-    excluded = nonzero({NO_CONDITIONS_RULE: sum(not t.conditions for t in trials)})
-    return Categorized(_per_trial(trials, one), excluded)
+    return Categorized(_per_trial(trials, one), no_conditions(trials))
 
 
 def _assign_start_year(trials: Sequence[NormalizedTrial]) -> Categorized:
@@ -242,7 +263,7 @@ def _assign_start_year(trials: Sequence[NormalizedTrial]) -> Categorized:
             evidence = (Evidence(F_START_DATE, t.start_date),)
             yield Assignment(t.start_year, t.start_year, evidence, (t.start_year,))
 
-    return Categorized(_per_trial(trials, one), gap_counts(trials, Gap.MISSING_START_DATE))
+    return Categorized(_per_trial(trials, one), gap_ids(trials, Gap.MISSING_START_DATE))
 
 
 PHASE = Categorizer(Dimension.PHASE, (F_PHASES,), _assign_phase)

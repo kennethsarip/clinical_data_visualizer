@@ -55,21 +55,21 @@ def failed_filters(trial: NormalizedTrial, filters: RetrievalFilters) -> list[Fi
 
 def conform(
     trials: list[NormalizedTrial], filters: RetrievalFilters
-) -> tuple[list[NormalizedTrial], dict[str, int]]:
-    """The trials meeting every exact filter, and the dropped ones counted per rule (each trial
-    once, under the first filter it fails)."""
+) -> tuple[list[NormalizedTrial], dict[str, frozenset[str]]]:
+    """The trials meeting every exact filter, and the dropped ones per rule (each trial once,
+    under the first filter it fails)."""
     kept: list[NormalizedTrial] = []
-    dropped: dict[str, int] = {}
+    dropped_ids: dict[str, set[str]] = {}
     for trial in trials:
         failed = failed_filters(trial, filters)
         if failed:
-            rule = off_filter_rule(failed[0])
-            dropped[rule] = dropped.get(rule, 0) + 1
+            dropped_ids.setdefault(off_filter_rule(failed[0]), set()).add(trial.nct_id)
         else:
             kept.append(trial)
+    dropped = {rule: frozenset(ids) for rule, ids in dropped_ids.items()}
     off = len(trials) - len(kept)
     if off > MAX_OFF_FILTER_SHARE * len(trials):
-        rules = ", ".join(f"{n} {rule}" for rule, n in dropped.items())
+        rules = ", ".join(f"{len(ids)} {rule}" for rule, ids in dropped.items())
         raise OffFilterBatchError(
             f"{off} of {len(trials)} fetched trials do not meet the filters sent ({rules}; over "
             f"{MAX_OFF_FILTER_SHARE:.0%}), so a filter probably maps to the wrong API param"

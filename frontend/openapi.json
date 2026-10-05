@@ -455,6 +455,14 @@
             "title": "Count",
             "type": "integer"
           },
+          "nct_ids": {
+            "items": {
+              "pattern": "^NCT\\d{8}$",
+              "type": "string"
+            },
+            "title": "Nct Ids",
+            "type": "array"
+          },
           "rule": {
             "title": "Rule",
             "type": "string"
@@ -462,7 +470,8 @@
         },
         "required": [
           "rule",
-          "count"
+          "count",
+          "nct_ids"
         ],
         "title": "Exclusion",
         "type": "object"
@@ -1828,6 +1837,18 @@
     {
       "name": "membership",
       "rule": "Each trial's own record puts it in its datum, and no matching trial is missing."
+    },
+    {
+      "name": "coverage",
+      "rule": "Every datum cites as many distinct trials as it holds, up to the citation cap."
+    },
+    {
+      "name": "accounting",
+      "rule": "Every retrieved trial is on the chart or listed under the reason it is not."
+    },
+    {
+      "name": "recount",
+      "rule": "Every datum and exclusion is rebuilt from the raw records and matches."
     }
   ]
 }

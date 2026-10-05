@@ -296,7 +296,8 @@ class SampleEntry(_Contract):
 
 class Exclusion(_Contract):
     rule: str
-    count: Count
+    count: Count  # == len(nct_ids), except unreadable records that had no usable NCT ID
+    nct_ids: list[NctId]  # every trial the rule acted on, sorted descending (Phase 7 step 3)
 
 
 class TopN(_Contract):

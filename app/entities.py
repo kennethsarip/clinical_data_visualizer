@@ -69,7 +69,7 @@ class Mention:
 @dataclass(frozen=True)
 class DrugSelection:
     mentions: dict[str, tuple[Mention, ...]]  # nct_id -> drugs, one per key, registration order
-    excluded: dict[str, int]  # the three rules above -> trial counts
+    excluded: dict[str, set[str]]  # the three rules above -> the trials each acted on
 
 
 def entity_key(entity_type: EntityType, raw: str) -> str:
@@ -98,7 +98,7 @@ def is_placebo(name: str) -> bool:
 def select_drugs(trials: Sequence[NormalizedTrial]) -> DrugSelection:
     """Apply the §6 drug rule to every trial and count, per trial, what it dropped."""
     mentions: dict[str, tuple[Mention, ...]] = {}
-    excluded = {PLACEBO_RULE: 0, NON_DRUG_RULE: 0, NO_DRUG_RULE: 0}
+    excluded: dict[str, set[str]] = {PLACEBO_RULE: set(), NON_DRUG_RULE: set(), NO_DRUG_RULE: set()}
     for trial in trials:
         drugs: dict[str, Mention] = {}
         dropped_placebo = dropped_non_drug = False
@@ -113,10 +113,13 @@ def select_drugs(trials: Sequence[NormalizedTrial]) -> DrugSelection:
                 mention = _mention(EntityType.DRUG, name)
                 drugs.setdefault(mention.key, mention)
         mentions[trial.nct_id] = tuple(drugs.values())
-        excluded[PLACEBO_RULE] += dropped_placebo
-        excluded[NON_DRUG_RULE] += dropped_non_drug
+        if dropped_placebo:
+            excluded[PLACEBO_RULE].add(trial.nct_id)
+        if dropped_non_drug:
+            excluded[NON_DRUG_RULE].add(trial.nct_id)
         # No named intervention at all is already a normalize gap; don't count it twice.
-        excluded[NO_DRUG_RULE] += bool(named) and not drugs
+        if named and not drugs:
+            excluded[NO_DRUG_RULE].add(trial.nct_id)
     return DrugSelection(mentions, excluded)
 
 

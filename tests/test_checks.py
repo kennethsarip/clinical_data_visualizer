@@ -279,7 +279,7 @@ def test_single_valued_rows_must_sum_to_trials_minus_exclusions() -> None:
 def test_exclusions_close_the_single_valued_sum() -> None:
     payload = _bar()
     payload["meta"]["sample"][0].update(fetched=5, total=5)
-    payload["meta"]["excluded"] = [{"rule": "unreadable record", "count": 1}]
+    payload["meta"]["excluded"] = [{"rule": "unreadable record", "count": 1, "nct_ids": []}]
     assert _errors(payload) == []
 
 
@@ -388,6 +388,68 @@ def test_a_trial_left_off_its_bar_fails_membership() -> None:
     errors = _membership_errors(payload)
     assert "membership" in _checks(errors)
     assert any("NCT00000002" in m and "missing" in m for _, m in errors)
+
+
+# --- coverage, network support, accounting (Phase 7 steps 1 and 3) ---
+
+
+def test_a_datum_citing_fewer_trials_than_it_holds_fails_coverage() -> None:
+    payload = _bar()
+    phase3 = payload["visualization"]["data"][1]
+    phase3["citations"] = phase3["citations"][:1]
+    errors = _errors(payload)
+    assert _checks(errors) == {"coverage"}
+    assert "Phase 3" in errors[0][1] and "1 of 2" in errors[0][1]
+
+
+def test_the_citation_cap_bounds_coverage() -> None:
+    payload = _bar()
+    payload["meta"]["citation_cap"] = 1
+    for row in payload["visualization"]["data"]:
+        row["citations"] = row["citations"][:1]
+    assert "coverage" not in _checks(_errors(payload))
+
+
+def test_a_node_cited_with_another_drugs_name_fails_membership() -> None:
+    payload = _network()
+    node = payload["visualization"]["data"]["nodes"][0]  # pembrolizumab
+    node["citations"][0]["excerpt"] = "Ipilimumab"
+    context = CheckContext(RowShape.GRAPH, NETWORK_RECORDS, categorizer=None)
+    response = RESPONSE_ADAPTER.validate_python(payload)
+    assert isinstance(response, OkResponse)
+    errors = run_checks(response, context)
+    assert {e.check for e in errors} == {"membership"}
+    assert "drug:pembrolizumab" in errors[0].message
+
+
+def test_an_edge_must_cite_both_ends_for_each_trial() -> None:
+    payload = _network()
+    edge = payload["visualization"]["data"]["edges"][0]
+    edge["citations"] = edge["citations"][:1]  # Ipilimumab only
+    response = RESPONSE_ADAPTER.validate_python(payload)
+    assert isinstance(response, OkResponse)
+    errors = run_checks(response, CheckContext(RowShape.GRAPH, NETWORK_RECORDS))
+    assert "membership" in {e.check for e in errors}
+
+
+def test_a_retrieved_trial_on_no_datum_and_under_no_reason_fails_accounting() -> None:
+    records = BAR_RECORDS | {"NCT00000099": _record("NCT00000099")}
+    errors = _errors(_bar(), records=records)
+    assert "accounting" in _checks(errors)
+    assert any("NCT00000099" in m for c, m in errors if c == "accounting")
+    payload = _bar()
+    payload["meta"]["excluded"] = [
+        {"rule": "missing start date", "count": 1, "nct_ids": ["NCT00000099"]}
+    ]
+    payload["meta"]["sample"][0]["fetched"] = 5
+    payload["meta"]["sample"][0]["total"] = 5
+    assert "accounting" not in _checks(_errors(payload, records=records))
+
+
+def test_an_exclusion_count_must_equal_its_ids() -> None:
+    payload = _bar()
+    payload["meta"]["excluded"] = [{"rule": "no locations", "count": 2, "nct_ids": ["NCT00000004"]}]
+    assert "accounting" in _checks(_errors(payload))
 
 
 # --- title ---
