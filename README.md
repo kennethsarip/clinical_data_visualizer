@@ -10,6 +10,7 @@ citations from each data point back to the trials that produced it.
 
 - [uv](https://docs.astral.sh/uv/). It installs the pinned Python (3.12) if you don't have it.
 - [Docker](https://docs.docker.com/get-docker/) with Compose, for the local Postgres cache.
+- [Node.js](https://nodejs.org/) 24 or later with npm, for the frontend.
 
 ## Setup
 
@@ -30,12 +31,19 @@ uv run --env-file .env uvicorn app.main:app --reload
 
 Interactive API docs: http://127.0.0.1:8000/docs
 
+In a second terminal, the frontend (it proxies `/api` to the backend on port 8000):
+
+```bash
+cd frontend && npm install && npm run dev   # http://localhost:5173
+```
+
 ## Quality checks
 
 The same commands run in CI:
 
 ```bash
 uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest
+cd frontend && npm run lint && npm run typecheck && npm test
 ```
 
 Live tests against the real API are excluded by default; run them with `uv run pytest -m live`.
