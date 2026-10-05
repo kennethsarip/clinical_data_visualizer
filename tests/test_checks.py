@@ -15,6 +15,7 @@ from app.checks import CheckContext, run_checks
 from app.ctgov import build_params
 from app.schemas import RESPONSE_ADAPTER, OkResponse, RetrievalFilters
 from app.viz import VIZ_TYPE
+from tests.factories import Interventions, make_trial, raw_record
 
 SCHEMAS_MD = Path(__file__).resolve().parents[1] / "SCHEMAS.md"
 _BLOCKS = [
@@ -35,16 +36,17 @@ BAR_RECORDS = {
     "NCT00000003": _record("NCT00000003", designModule={"phases": ["PHASE1", "PHASE2"]}),
     "NCT00000004": _record("NCT00000004", designModule={"studyType": "OBSERVATIONAL"}),
 }
+
+
+def _drug_record(nct_id: str, *drugs: str, countries: tuple[str, ...] = ()) -> dict[str, Any]:
+    """A complete record, so the network check's recount can normalize it."""
+    interventions: Interventions = [("BIOLOGICAL", d) for d in drugs]
+    trial = make_trial(nct_id, interventions, conditions=["Melanoma"], countries=list(countries))
+    return raw_record(trial)
+
+
 NETWORK_RECORDS = {
-    "NCT00000007": _record(
-        "NCT00000007",
-        armsInterventionsModule={
-            "interventions": [
-                {"type": "BIOLOGICAL", "name": "Pembrolizumab (MK-3475)"},
-                {"type": "DRUG", "name": "Ipilimumab"},
-            ]
-        },
-    )
+    "NCT00000007": _drug_record("NCT00000007", "Pembrolizumab (MK-3475)", "Ipilimumab")
 }
 
 
@@ -65,6 +67,8 @@ def _network() -> dict[str, Any]:
             "conditions": [],
         }
     }
+    # The example's title is a melanoma network; a drug filter would make Pembrolizumab its anchor.
+    response["meta"]["filters"] = {"stated": {"condition": "Melanoma"}, "inferred": {}}
     response["meta"]["interpretation"] = {
         "intent": "network",
         "dimension": "drug_drug",
@@ -436,3 +440,102 @@ def test_every_check_has_a_plain_language_rule_in_order() -> None:
 
     assert list(CHECK_RULES) == [name for name, _ in CHECKS]
     assert all(rule.endswith(".") and len(rule) < 120 for rule in CHECK_RULES.values())
+
+
+# --- network (Phase 8.1) ---
+
+
+def _network_messages(payload: dict[str, Any], records: dict[str, Any] | None = None) -> list[str]:
+    errors = _errors(payload, RowShape.GRAPH, NETWORK_RECORDS if records is None else records)
+    return [message for check, message in errors if check == "network"]
+
+
+def _set_anchor_filter(payload: dict[str, Any], **stated: Any) -> None:
+    payload["meta"]["filters"]["stated"] = stated
+
+
+def test_edge_below_the_disclosed_weight_threshold_fails() -> None:
+    payload = _network()
+    payload["meta"]["pruning"] |= {"min_edge_weight": 2, "fallback_used": False}
+    assert any("below min_edge_weight 2" in m for m in _network_messages(payload))
+
+
+def test_more_nodes_than_top_n_fails() -> None:
+    payload = _network()
+    payload["meta"]["pruning"]["top_n_nodes"] = 1
+    assert any("exceed top_n_nodes 1" in m for m in _network_messages(payload))
+
+
+def test_orphan_node_fails() -> None:
+    payload = _network()
+    orphan = copy.deepcopy(payload["visualization"]["data"]["nodes"][1])
+    orphan |= {"id": "drug:nivolumab", "label": "Nivolumab"}
+    payload["visualization"]["data"]["nodes"].append(orphan)
+    assert any("drug:nivolumab has no edge" in m for m in _network_messages(payload))
+
+
+def test_edge_to_a_node_not_in_the_graph_fails() -> None:
+    payload = _network()
+    payload["visualization"]["data"]["edges"][0]["source"] = "drug:nivolumab"
+    assert any("drug:nivolumab is not a node" in m for m in _network_messages(payload))
+
+
+def test_the_named_entity_must_be_the_anchor() -> None:
+    payload = _network()
+    _set_anchor_filter(payload, drug_name="Pembrolizumab")
+    assert any("drug:pembrolizumab" in m and "is_anchor" in m for m in _network_messages(payload))
+
+
+def test_an_unnamed_entity_marked_as_anchor_fails() -> None:
+    payload = _network()
+    payload["visualization"]["data"]["nodes"][1]["is_anchor"] = True
+    assert any("drug:ipilimumab" in m and "is_anchor" in m for m in _network_messages(payload))
+
+
+def test_a_named_entity_missing_from_the_graph_passes() -> None:
+    # The API expands synonyms (§7.3): a Keytruda query charts pembrolizumab; merging is deferred.
+    payload = _network()
+    _set_anchor_filter(payload, drug_name="Keytruda")
+    assert _network_messages(payload) == []
+
+
+def test_marked_anchor_matching_the_named_entity_passes() -> None:
+    payload = _network()
+    _set_anchor_filter(payload, drug_name="Pembrolizumab")
+    payload["visualization"]["data"]["nodes"][0]["is_anchor"] = True
+    assert _network_messages(payload) == []
+
+
+def test_removed_counts_must_match_a_recount() -> None:
+    payload = _network()
+    payload["meta"]["pruning"]["nodes_removed"] = 3
+    assert any("nodes_removed 3" in m for m in _network_messages(payload))
+
+
+def test_fallback_must_match_a_recount() -> None:
+    # One trial gives weight-1 edges only, so the weight-2 pass is empty and the fallback runs.
+    payload = _network()
+    payload["meta"]["pruning"]["fallback_used"] = False
+    assert any("fallback_used False" in m for m in _network_messages(payload))
+
+
+def test_a_charted_trial_the_graph_left_out_fails() -> None:
+    records = dict(NETWORK_RECORDS)
+    records["NCT00000008"] = _drug_record("NCT00000008", "Pembrolizumab", "Ipilimumab")
+    messages = _network_messages(_network(), records)
+    assert any("NCT00000008" in m for m in messages)
+
+
+def test_records_outside_an_exact_filter_are_not_recounted() -> None:
+    # The pipeline passes every retrieved record; off-filter ones were dropped before charting.
+    payload = _network()
+    payload["meta"]["filters"]["stated"]["country"] = "Japan"
+    records = {
+        "NCT00000007": _drug_record(
+            "NCT00000007", "Pembrolizumab (MK-3475)", "Ipilimumab", countries=("Japan",)
+        ),
+        "NCT00000008": _drug_record(
+            "NCT00000008", "Pembrolizumab", "Ipilimumab", countries=("China",)
+        ),
+    }
+    assert _network_messages(payload, records) == []

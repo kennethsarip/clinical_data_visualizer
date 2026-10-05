@@ -1745,6 +1745,10 @@
     {
       "name": "conformance",
       "rule": "Every charted trial meets each exact filter; the filters shown are those sent."
+    },
+    {
+      "name": "network",
+      "rule": "Each network obeys its pruning, marks the named entity, and matches a recount."
     }
   ]
 }

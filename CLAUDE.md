@@ -176,6 +176,7 @@ app/
   aggregators/       # registry.py = SINGLE SOURCE of dispatch; common.py = categorizers + the one count_by; one module per family
   citations.py       # {nct_id, excerpt} per row, from cached records only
   checks.py          # every §7.6 check
+  recount.py         # independent graph re-derivation for the network check (§7.6)
   pipeline.py        # §1 steps, repair-once, status selection, error -> status mapping
 migrations/          # SINGLE SOURCE of DB schema truth
 tests/               # unit + contract tests; small synthetic fixtures (§9)
@@ -318,6 +319,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 | title | The title contains no number that is not in the filters (§7.2) |
 | disclosures | The WARN items are disclosed consistently: `sample.capped` matches `fetched < total`; `pruning` is set for a network and only for a network; `top_n` bounds the categories shown |
 | conformance | Every charted trial's raw record meets each exact filter in `meta` (phase, status, start-year range, country), and `meta`'s filters equal the API params each cohort was fetched with, in both directions |
+| network | Every kept edge meets `meta.pruning`'s weight threshold, at most `top_n_nodes` nodes remain, no node is orphaned and every edge end is a node, `is_anchor` marks exactly the named entity's node (a named entity with no node passes: synonyms, §7.3), and a recount from the charted raw records (`app/recount.py`) gives the same nodes, edges, `nct_ids` and `meta.pruning` |
 
 **WARN** (disclosed in `meta`; the response stays `ok`): cap hit, records excluded by a counting rule, network pruned.
 
@@ -536,7 +538,7 @@ Done when: every check catches its seeded fault, the ledger renders for every st
 
 ### Phase 8: Richer networks
 Goal: networks a reviewer can trust and read, made obvious in the README. No new entity types or graph algorithms (§13.4).
-1. **Network checks.** Every kept edge meets `meta.pruning`'s weight threshold, at most the top-N nodes remain, no node is orphaned, removed counts reconcile with `meta.pruning`, and `is_anchor` matches the query's entity. Each gets a seeded fault (Phase 7 step 7).
+Built alongside Phase 6 in a separate worktree (user decision, 2026-10-05): steps 1-2 do not depend on it; steps 3-4 wait for the finished system.
 2. **Legible labels** (user decision, 2026-10-05). Phase 5.4 found labels overprinting each other and hidden under nodes in 3 of 4 eval networks, and ~5 px after fit-to-view in the fourth. Every shown label must be readable without overlap at the default zoom; test it on those four networks before the showcase.
 3. **Showcase.** A condition-anchored drug-drug network captured from the live system into `examples/`, with a screenshot.
 4. **README "Richer networks".** The drug rule, name normalization, co-occurrence counting, pruning by weighted degree with the fallback, the anchor hub, the deterministic layout (concentric seed, then force-directed CoSE), and why no path algorithm; the eval network metrics; brand <-> generic merging as a limitation.

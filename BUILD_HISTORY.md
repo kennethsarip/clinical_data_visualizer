@@ -4,6 +4,14 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ## Shipped
 
+### Phase 8: Richer networks (in progress, built alongside Phase 6)
+
+- **8.1 Network checks** (2026-10-05): a `network` check (`app/checks.py`) holds every kept edge to `meta.pruning`'s weight threshold, at most `top_n_nodes` nodes, no orphan node or dangling edge end, and `is_anchor` true exactly on the nodes of the drug, condition or sponsor the filters name. It then rebuilds the graph from the charted raw records (`app/recount.py`) and compares nodes, edges, each one's `nct_ids` and every `meta.pruning` field.
+  - The recount shares only the §6 entity rules and the §7.4 policy values with `aggregators/network.py`; counting and pruning are rewritten from the §7.4 text, so an aggregator bug shows as a mismatch. It is also the only way to verify `nodes_removed` / `edges_removed` and the top-N choice, which the response alone cannot show.
+  - The charted set is the records meeting every exact filter in `meta`, read raw as the conformance check does, because the pipeline passes every retrieved record and drops off-filter ones before aggregating.
+  - A named entity with no node passes: the API expands synonyms, so a Keytruda query charts pembrolizumab, and merging is deferred (§13.4).
+  - Each rule has a failing fixture (its seeded fault for Phase 7.7) in `tests/test_checks.py`, plus recount unit tests derived from §7.4 (`tests/test_recount.py`). The checks fixture's network now carries the melanoma condition filter its title implies, since its old pembrolizumab drug filter would have made Pembrolizumab its anchor. Live: the 5 eval network questions pass with the check on.
+
 ### Phase 6: Query understanding and retrieval (in progress)
 
 - **6.4 Retrieval conformance, then the fix** (2026-10-05): `app/conformance.py` drops a fetched trial that fails an exact filter sent (phase in its list, status, start year in range, a site in the country) and counts it in `meta.excluded` as `outside the <filter> filter`, under the first filter it fails so sums reconcile; over 5% of a batch is `degraded` (`retrieval`). A tenth spec check, `conformance`, re-reads raw records (not `normalize`) for every charted trial and compares `meta`'s filters with the params each cohort was actually fetched with, both directions. Red-first (16 tests); the conformance unit was written against the Japan case.
@@ -296,3 +304,5 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
   - A `meta.verification` ledger on every status, plus a badge, because verification the user cannot see builds no trust. Numbered markers sit in a selected-datum header, extending the 2026-10-04 "a datum replaces the inline marker" adaptation.
   - Networks: no new algorithms. No question asks for a path (Dijkstra), and co-occurrence weights measure closeness, not distance. Community detection waits for a hairball (§13.4).
   - The baseline had already run, so the new eval questions get a pre-fix run on the current code before any Phase 6 code.
+- **Phase 8 alongside Phase 6** (user decision, 2026-10-05): an exception to "foundation before features". Phase 8 steps 1-2 touch only pruning, anchors and the network renderer, which Phase 6 does not change, so they run in a separate worktree from `b9c7d4b` (Phase 6.4). Steps 3-4 still wait, because examples must be captured from the finished system.
+- **8.1 check design** (user decisions, 2026-10-05): one `network` check rather than five named ones, like `disclosures`; removed counts are verified by an independent recount rather than by adding totals to `meta.pruning` (a contract change that would still trust the aggregator's totals); a named entity missing from the graph is allowed rather than failing, since failing would degrade correct synonym queries. Investigator and site networks stay deferred (§13.4).

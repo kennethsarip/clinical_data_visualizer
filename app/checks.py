@@ -24,8 +24,11 @@ from app.aggregators.common import (
     F_START_DATE,
     F_STATUS,
 )
-from app.aggregators.registry import RowShape
+from app.aggregators.registry import Dimension, RowShape
 from app.ctgov import build_params
+from app.entities import EntityType, entity_key
+from app.normalize import normalize_records
+from app.recount import NETWORK_ENDS, RecountedGraph, recount_network
 from app.schemas import (
     RESPONSE_ADAPTER,
     ChartVisualization,
@@ -34,6 +37,7 @@ from app.schemas import (
     NetworkVisualization,
     OkResponse,
     Provenance,
+    Pruning,
     RetrievalFilters,
 )
 from app.viz import VIZ_TYPE, stray_numbers
@@ -371,6 +375,110 @@ def _param_terms(params: Mapping[str, str]) -> set[tuple[str, str]]:
     return terms
 
 
+# Filters naming the entity a network is anchored on (§7.4), and that entity's node type.
+ANCHOR_FILTERS: Mapping[str, EntityType] = {
+    "drug_name": EntityType.DRUG,
+    "condition": EntityType.CONDITION,
+    "sponsor": EntityType.SPONSOR,
+}
+
+
+def _network(response: OkResponse, context: CheckContext) -> list[str]:
+    """Phase 8 step 1: the graph obeys the pruning `meta` discloses, its anchor is the named
+    entity, and an independent recount from the charted records gives the same graph."""
+    spec, pruning = response.visualization, response.meta.pruning
+    if not isinstance(spec, NetworkVisualization) or pruning is None:
+        return []  # the disclosures check reports a missing or misplaced pruning
+    return [
+        *_pruned_shape(spec, pruning),
+        *_anchor_flags(response, spec),
+        *_recount_mismatches(response, spec, pruning, context),
+    ]
+
+
+def _pruned_shape(spec: NetworkVisualization, pruning: Pruning) -> list[str]:
+    nodes = {node.id for node in spec.data.nodes}
+    ends = {end for edge in spec.data.edges for end in (edge.source, edge.target)}
+    messages = [
+        f"edge {e.source} - {e.target} has weight {e.trial_count}, below min_edge_weight "
+        f"{pruning.min_edge_weight}"
+        for e in spec.data.edges
+        if e.trial_count < pruning.min_edge_weight
+    ]
+    if len(nodes) > pruning.top_n_nodes:
+        messages.append(f"{len(nodes)} nodes exceed top_n_nodes {pruning.top_n_nodes}")
+    messages += [f"node {node} has no edge" for node in sorted(nodes - ends)]
+    messages += [f"edge end {end} is not a node" for end in sorted(ends - nodes)]
+    return messages
+
+
+def _anchor_flags(response: OkResponse, spec: NetworkVisualization) -> list[str]:
+    """is_anchor marks exactly the named entities' nodes. A named entity may have no node: the
+    API expands synonyms (§7.3), so a Keytruda query charts pembrolizumab."""
+    filters = response.meta.filters
+    shared = {**filters.stated, **filters.inferred}
+    named = {
+        f"{kind}:{entity_key(kind, str(shared[key]))}"
+        for key, kind in ANCHOR_FILTERS.items()
+        if key in shared
+    }
+    return [
+        f"node {node.id} has is_anchor {node.is_anchor}, but it is "
+        f"{'' if node.id in named else 'not '}the entity the query named"
+        for node in spec.data.nodes
+        if node.is_anchor != (node.id in named)
+    ]
+
+
+def _recount_mismatches(
+    response: OkResponse, spec: NetworkVisualization, pruning: Pruning, context: CheckContext
+) -> list[str]:
+    dimension = response.meta.interpretation.dimension
+    if dimension not in NETWORK_ENDS:
+        return [f"dimension {dimension} is not a registered network"]
+    filters = response.meta.filters
+    shared = {**filters.stated, **filters.inferred}
+    # The charted set: the pipeline drops records outside an exact filter before aggregating.
+    charted = [
+        record
+        for record in context.records.values()
+        if all(_meets_raw(record.get("protocolSection", {}), k, v) for k, v in shared.items())
+    ]
+    graph = recount_network(Dimension(dimension), normalize_records(charted).trials)
+    shown_nodes = {node.id: frozenset(node.nct_ids) for node in spec.data.nodes}
+    shown_edges = {(e.source, e.target): frozenset(e.nct_ids) for e in spec.data.edges}
+    return [
+        *_graph_diff("node", shown_nodes, graph.nodes),
+        *_graph_diff("edge", shown_edges, graph.edges),
+        *_pruning_diff(pruning, graph),
+    ]
+
+
+def _graph_diff[K: (str, tuple[str, str])](
+    kind: str, shown: Mapping[K, frozenset[str]], recounted: Mapping[K, frozenset[str]]
+) -> list[str]:
+    def name(key: K) -> str:
+        return key if isinstance(key, str) else " - ".join(key)
+
+    messages = [f"{kind} {name(k)} is not in the recounted graph" for k in shown - recounted.keys()]
+    messages += [
+        f"{kind} {name(k)} is missing; the recount keeps it" for k in recounted - shown.keys()
+    ]
+    for key in shown.keys() & recounted.keys():
+        if differ := sorted(shown[key] ^ recounted[key]):
+            messages.append(f"{kind} {name(key)} differs from the recount on {', '.join(differ)}")
+    return sorted(messages)
+
+
+def _pruning_diff(pruning: Pruning, graph: RecountedGraph) -> list[str]:
+    shown, recounted = pruning.model_dump(), graph.pruning.model_dump()
+    return [
+        f"pruning {key} {shown[key]} differs from the recount's {recounted[key]}"
+        for key in shown
+        if shown[key] != recounted[key]
+    ]
+
+
 CHECKS: tuple[tuple[str, Check], ...] = (
     ("schema", _schema),
     ("encoding", _encoding),
@@ -382,6 +490,7 @@ CHECKS: tuple[tuple[str, Check], ...] = (
     ("title", _title),
     ("disclosures", _disclosures),
     ("conformance", _conformance),
+    ("network", _network),
 )
 
 
@@ -398,4 +507,5 @@ CHECK_RULES: Mapping[str, str] = {
     "title": "The title contains no number that is not in the filters.",
     "disclosures": "Sample caps, pruning and top-N limits are disclosed consistently.",
     "conformance": "Every charted trial meets each exact filter; the filters shown are those sent.",
+    "network": "Each network obeys its pruning, marks the named entity, and matches a recount.",
 }
