@@ -132,7 +132,7 @@ Happy path (LLM steps marked):
 | API framework | FastAPI | Request and response models use Pydantic, FastAPI's model layer |
 | Database | Postgres, run with Docker Compose | Response cache only (§6) |
 | Data source | ClinicalTrials.gov Data API v2 | The authoritative source. No API key needed (verified 2026-10-04). Facts in §8.4 |
-| LLM | OpenAI `gpt-5.4-mini`, medium reasoning effort | The company supplied the key and an allowed-model list. Planning is enum classification, so a current mini model gives accuracy at low latency. Effort raised from `low` to `medium` after live eval runs: low misrouted 3/15 enrollment questions, medium 0/15 and 87/87 on the full set, for ~0.2-0.6 s more (user decision, 2026-10-04; `OPENAI_REASONING_EFFORT`). No model benchmarking (user decision, 2026-10-04). Set in `OPENAI_MODEL`. Used only for planning and prose (§7.2) |
+| LLM | OpenAI `gpt-5.4-mini`, medium reasoning effort | The company supplied the key and an allowed-model list. Planning is enum classification, so a current mini model gives accuracy at low latency. Effort raised from `low` to `medium` after live eval runs: low misrouted 3/15 enrollment questions, medium 0/15 and 87/87 on the full set, for ~0.2-0.6 s more (user decision, 2026-10-04; `OPENAI_REASONING_EFFORT`). No model benchmarking (user decision, 2026-10-04). The title call runs at `none` (`OPENAI_PROSE_REASONING_EFFORT`): 1.06 s median vs 2.0 s at medium, titles equivalent (six eval questions, 2026-10-05). Set in `OPENAI_MODEL`. Used only for planning and prose (§7.2) |
 | Orchestration | Hand-rolled Python | No agent framework (§13.3) |
 | Vector DB | None | Rejected (§13.3) |
 | HTTP client | httpx (sync) | FastAPI runs sync routes in a threadpool and requests are sequential, so async adds complexity without need; `MockTransport` serves test fixtures without a mocking dependency. The OpenAI SDK (3.x) brings its own fork, `httpx2`, so the LLM fakes use `httpx2.MockTransport` (a declared dev dependency) |
@@ -268,7 +268,7 @@ The steps are in §1. Only steps 2 and 7 touch the LLM; everything else is deter
 
 Why: in a visualization agent, the hallucination-prone step is letting the model emit data. Keeping the model in a schema-validated planning role makes numeric hallucination structurally impossible, rather than something to detect afterwards. The viz type is Python too (decided 2026-10-04): each row shape maps to exactly one type, so an LLM pick would add a failure mode and no choice.
 
-**Calls** (decided 2026-10-04): two per request. (1) The plan, via OpenAI structured outputs with a JSON schema generated from the registry, so only registered (intent, dimension) pairs can be chosen. (2) Title and notes, after aggregation; the model sees the plan, row shape, columns and filters, never row values. A title containing a number that is not in the filters fails a check. If the plan fails validation, retry once with the validation error; if it fails again, return `degraded` (`errors[].check = "plan"`). If the title call fails or its title fails the `title` check, the response stays `ok` with `viz.default_title`, no LLM notes and a note saying so: the data is already verified, so prose never costs the user the chart.
+**Calls** (decided 2026-10-04): two per request. (1) The plan, via OpenAI structured outputs with a JSON schema generated from the registry, so only registered (intent, dimension) pairs can be chosen. (2) Title and notes; the model sees the plan, row shape, columns and filters, never row values. Since that input is all in the plan, the call runs while the trials are fetched (decided 2026-10-05): only an `ok` answer waits for it, and every other outcome returns at once while the unread call finishes in the background. A title containing a number that is not in the filters fails a check. If the plan fails validation, retry once with the validation error; if it fails again, return `degraded` (`errors[].check = "plan"`). If the title call fails or its title fails the `title` check, the response stays `ok` with `viz.default_title`, no LLM notes and a note saying so: the data is already verified, so prose never costs the user the chart.
 
 **Plan shape** (decided 2026-10-04): `analysis`, a single enum of registered keys (`"distribution.phase"`, `"network.drug_drug"`, ...) generated from `REGISTRY.registered()`, so an unregistered pair is unrepresentable rather than retried; `filters` (the `RetrievalFilters` fields, values only); `cohorts` (comparison only, else null): 2-4 entries, each a `label` plus exactly one entity override (drug, condition or sponsor) on the shared filters, one fetch per cohort, anything else -> `clarification_needed` (named cohorts count as anchors, so too many cohorts gives `missing: []`); `unsupported_reason`, set when no analysis fits (-> `clarification_needed` with the reason). The anchor rule itself is Python, so the LLM reports no missing anchor (changed from `missing_anchor` in Phase 3.2). The LLM copies filter values from the query text only; request fields are merged in by Python. The LLM never labels a filter stated or inferred (§7.3). Code: `LLMPlan` in `schemas.py`; `planner.build_plan` holds every rule and needs no LLM.
 
@@ -278,7 +278,9 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 - Unambiguous filters (dates, status, phase, country) are applied hard. A filter inferred from ambiguous wording is disclosed as an assumption, because a wrong silent filter removes the correct answer. A filter is **stated** if and only if its value comes from a request field or appears verbatim in `query`; otherwise it is **inferred** (decided 2026-10-04). Python applies this test to the plan's filter values, case-insensitively, and writes the assumption for each inferred filter. When a request field and the query name different values for one filter, Python overwrites the plan's value with the field's and `meta.notes` says so (decided 2026-10-04).
 - Paginate with `nextPageToken` at `pageSize` 1000 (the API clamps larger values to 1000) and stop at `FETCH_CAP` (default 10000, ten pages; raised from 2000 because at 2000, 19/23 charted eval answers were capped samples with understated counts, `BUILD_HISTORY.md` 5.3). A capped chart says so on its count axis and in a caption. Send `countTotal=true` so `meta` can report "fetched N of total M" when capped.
 - Cache by API params (§6).
-- Upstream errors: 30 s timeout; retry twice with backoff on 5xx and 429, then raise a typed `UpstreamError` (mapped to 502, §7.7).
+- Cohorts download concurrently (pages within one search cannot: each follows the previous page's token); Postgres stays on the request thread.
+- Rate limit (§8.4): every request takes a slot from one token bucket per process (burst 8, then 1 request/s), so concurrent searches queue instead of tripping the limit.
+- Upstream errors: 30 s timeout; retry twice on 5xx (1 s, 2 s) and 429 (8 s, the measured recovery), honouring a readable `Retry-After` and failing at once if it asks for over 10 s; then raise a typed `UpstreamError` (mapped to 502, §7.7).
 
 ### 7.4 Aggregation
 - A registry maps (intent, dimension) to an aggregator. Route handlers never branch on question type, so a new question class means a new registered aggregator plus its tests.
@@ -357,7 +359,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 - Base URL `https://clinicaltrials.gov/api/v2`. `GET /studies` returns `{totalCount, studies, nextPageToken}`; `fields=` trims the payload.
 - Verified params: `query.intr`, `query.cond`, `query.spons`, `query.locn`, `filter.overallStatus`, and `filter.advanced` with `AREA[Phase]PHASE3` and `AREA[StartDate]RANGE[2015-01-01,MAX]`.
 - Enums (`GET /studies/enums`): Phase, Status, InterventionType, AgencyClass (sponsor class) and StudyType. `app/vocab.py` mirrors them and is the only place their values and display labels (e.g. `PHASE1` -> "Phase 1") are defined.
-- Rate limits: not verified.
+- Rate limits (measured 2026-10-05; none published, no rate-limit headers): ~10 requests in a burst, then 429 (an HTML page, no `Retry-After`); 1.0 request/s for 50 requests drew no 429, 1.5/s drew 3 in 40; a 429 cleared after ~8 s. A 1,000-trial page takes ~0.67 s (100-trial pages cost ~1.8 s per 1,000 trials).
 
 ### 8.5 Formulas
 - A row's `trial_count` is the number of distinct NCT IDs in its provenance set: `trial_count == len(nct_ids)`.
@@ -479,7 +481,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 ### 13.4 Deferred
 - Synonym resolution of inputs. Trigger: an eval run logs a zero-result query that a synonym would have fixed. The API already expands drug synonyms (§7.3).
-- Upstream hardening: honoring `Retry-After` on 429 and retrying timeouts. Trigger: a logged 429 or timeout in an eval or example run (rate limits are unverified, §8.4). Observed 2026-10-04: two 429s in a Phase 2 live sweep (~22 requests in ~20 s), both absorbed by the existing retries. Trigger met 2026-10-05: the Phase 5 after-run at the 10,000 cap logged two 429s on a two-cohort comparison (absorbed; 25 s for that question), so this is the next upstream fix if a run fails on one.
+- Retrying timeouts. Trigger: a logged timeout in an eval or example run. (The 429 half of this item shipped in Phase 5.3: rate limiting, the 8 s recovery and `Retry-After`, §7.3.)
 - Multi-value phase and status filters (e.g. "Phase 2 or 3"). Trigger: an eval question that needs one; the API syntax is unverified.
 - Brand <-> generic and code-name merging of network nodes (Keytruda, MK-3475 -> pembrolizumab). Trigger: an eval network splits one drug across nodes in a way the §6 name rules miss.
 - Investigator and site networks (the assignment lists both entities). Trigger: every Phase 2-6 "Done when" passes with time left. First verify `overallOfficials[].name` and `locations[].facility` on the live API; site names are messy free text.
@@ -489,7 +491,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 ### 13.5 Decided by assumption
 | Assumption | Falsified if |
 |---|---|
-| The API needs no key and tolerates our request rate | Responses come back 401, 403 or 429 |
+| The API needs no key and tolerates our paced request rate (§7.3) | Responses come back 401 or 403, or 429s fail eval runs despite the pacing. Checked 2026-10-05: unpaced, two concurrent cohorts failed a run with three 429s; paced, 30/30 cold with one 429 absorbed |
 | Listing "vector databases" in the stack does not require using one; a documented rejection shows judgment | The assignment or interviewer says one is required |
 | A capped sample with a disclosed total is useful for broad queries | Eval shows the sample's distribution differs materially from per-bucket totals. Checked 2026-10-05 on two capped time trends: shares within 0.9 pp (holds); absolute counts understated (`BUILD_HISTORY.md` 5.3) |
 

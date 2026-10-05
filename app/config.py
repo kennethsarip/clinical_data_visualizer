@@ -25,6 +25,9 @@ class Settings(BaseModel):
     # medium, not low: low misrouted 3/15 enrollment questions, medium 0/15, for ~0.2 s more
     # (live eval, 2026-10-04; CLAUDE.md §3).
     openai_reasoning_effort: ReasoningEffort = "medium"
+    # The title call needs no reasoning: 1.06 s median vs 2.0 s at medium, titles equivalent
+    # (six eval questions, Phase 5.3). The planner keeps the effort above.
+    openai_prose_reasoning_effort: ReasoningEffort = "none"
     database_url: SecretStr  # may embed the DB password
     ctgov_base_url: str = "https://clinicaltrials.gov/api/v2"
     # Max records fetched per request (CLAUDE.md §7.3). 10,000, not 2,000: at 2,000, 19/23 charted

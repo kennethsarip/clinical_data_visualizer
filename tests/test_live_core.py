@@ -26,7 +26,14 @@ from app.aggregators.registry import (
 )
 from app.checks import CheckContext, excerpt_matches, run_checks
 from app.citations import provenance, trial_summaries
-from app.ctgov import TIMEOUT_SECONDS, CtgovClient, record_nct_id
+from app.ctgov import (
+    BURST,
+    RATE_PER_SECOND,
+    TIMEOUT_SECONDS,
+    CtgovClient,
+    RateLimiter,
+    record_nct_id,
+)
 from app.normalize import normalize_records
 from app.schemas import Filters, RetrievalFilters
 from app.viz import assemble, default_title
@@ -48,7 +55,7 @@ class Live:
 def live() -> Iterator[dict[str, Live]]:
     base_url = os.environ.get("CTGOV_BASE_URL") or "https://clinicaltrials.gov/api/v2"
     with httpx.Client(base_url=base_url, timeout=TIMEOUT_SECONDS) as http:
-        client = CtgovClient(http, fetch_cap=1000)
+        client = CtgovClient(http, 1000, RateLimiter(RATE_PER_SECOND, BURST))
         yield {
             "melanoma": Live(client, RetrievalFilters(condition="melanoma"), None),
             "pembrolizumab": Live(

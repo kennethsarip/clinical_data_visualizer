@@ -44,6 +44,11 @@ def test_valid_title_and_notes_are_used() -> None:
     assert prose == Prose("Pembrolizumab Trials Started per Year", tuple(notes))
 
 
+def test_title_call_uses_the_prose_effort_not_the_planner_effort() -> None:
+    _, bodies = _write(json_reply({"title": "T", "notes": []}))
+    assert bodies[0]["reasoning"] == {"effort": "none"}  # fake_llm: planner "low", prose "none"
+
+
 def test_request_carries_the_plan_but_no_row_values() -> None:
     _, bodies = _write(json_reply({"title": "T", "notes": []}))
     sent = bodies[0]["input"]

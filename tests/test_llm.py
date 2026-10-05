@@ -72,6 +72,16 @@ def test_request_carries_model_effort_prompt_and_strict_schema() -> None:
     assert fmt["schema"] == strict_json_schema(Answer)
 
 
+def test_effort_can_be_lowered_per_call() -> None:
+    # The title call needs no reasoning: 1.06 s median at "none" vs 2.0 s at medium, with
+    # equivalent titles (measured on six eval questions, Phase 5.3).
+    llm, bodies = fake_llm(replies(json_reply(GOOD)))
+    llm.complete(
+        instructions="i", user_input="u", name="answer", output_type=Answer, reasoning_effort="none"
+    )
+    assert bodies[0]["reasoning"] == {"effort": "none"}
+
+
 # --- malformed output: LLMOutputError, which the caller retries once (§7.2) ---
 
 

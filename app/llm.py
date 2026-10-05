@@ -49,10 +49,17 @@ class LLMOutputError(ValueError):
 
 
 class LLMClient:
-    def __init__(self, sdk: openai.OpenAI, model: str, reasoning_effort: ReasoningEffort) -> None:
+    def __init__(
+        self,
+        sdk: openai.OpenAI,
+        model: str,
+        reasoning_effort: ReasoningEffort,
+        prose_reasoning_effort: ReasoningEffort,
+    ) -> None:
         self._sdk = sdk
         self._model = model
         self._reasoning_effort = reasoning_effort
+        self.prose_reasoning_effort = prose_reasoning_effort
 
     @classmethod
     def from_settings(cls, settings: Settings) -> "LLMClient":
@@ -61,7 +68,12 @@ class LLMClient:
             timeout=TIMEOUT_SECONDS,
             max_retries=MAX_RETRIES,
         )
-        return cls(sdk, settings.openai_model, settings.openai_reasoning_effort)
+        return cls(
+            sdk,
+            settings.openai_model,
+            settings.openai_reasoning_effort,
+            settings.openai_prose_reasoning_effort,
+        )
 
     def complete[M: BaseModel](
         self,
@@ -71,18 +83,20 @@ class LLMClient:
         name: str,
         output_type: type[M],
         schema: dict[str, Any] | None = None,
+        reasoning_effort: ReasoningEffort | None = None,
     ) -> M:
         """One structured-output call; `name` labels the schema and every error message.
 
         `schema` overrides the one generated from `output_type`, for constraints known only at
         runtime (the registered analysis keys). The reply is still validated by `output_type`.
+        `reasoning_effort` overrides the client's for this call.
         """
         try:
             response = self._sdk.responses.create(
                 model=self._model,
                 instructions=instructions,
                 input=user_input,
-                reasoning={"effort": self._reasoning_effort},
+                reasoning={"effort": reasoning_effort or self._reasoning_effort},
                 max_output_tokens=MAX_OUTPUT_TOKENS,
                 text={
                     "format": {

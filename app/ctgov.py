@@ -8,9 +8,12 @@ page; invalid params return HTTP 400 with a plain-text reason.
 """
 
 import logging
+import threading
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
 from typing import Any
 from urllib.parse import urlencode
 
@@ -25,6 +28,8 @@ logger = logging.getLogger(__name__)
 MAX_PAGE_SIZE = 1000
 TIMEOUT_SECONDS = 30.0
 RETRY_DELAYS_SECONDS = (1.0, 2.0)  # two retries, on 5xx and 429 only
+# A longer Retry-After fails the request now: a 502 is a faster answer than a minute's stall.
+MAX_RETRY_AFTER_SECONDS = 10.0
 
 # The §6 source paths. Trimming keeps cached records small; excerpts are still verbatim values.
 RECORD_FIELDS = (
@@ -43,6 +48,54 @@ RECORD_FIELDS = (
     "protocolSection.conditionsModule.conditions",
     "protocolSection.contactsLocationsModule.locations.country",
 )
+
+
+# The API publishes no rate limit and sends no rate-limit headers. Measured 2026-10-05: a burst of
+# ~10 requests, then 429s; 1.0 request/s for 50 requests drew none, 1.5/s drew 3 in 40; a 429
+# cleared after ~8 s. So requests are paced below that, and a 429 waits out the recovery.
+RATE_PER_SECOND = 1.0
+BURST = 8
+RATE_LIMIT_RECOVERY_SECONDS = 8.0
+
+
+class RateLimiter:
+    """A token bucket shared by every request of one client (the limit is per IP). A caller
+    over the burst reserves the next free slot and sleeps outside the lock, so concurrent
+    cohort downloads queue for distinct slots instead of tripping the limit together."""
+
+    def __init__(
+        self,
+        rate: float,
+        burst: int,
+        clock: Callable[[], float] = time.monotonic,
+        sleep: Callable[[float], None] = time.sleep,
+    ) -> None:
+        self._rate = rate
+        self._burst = burst
+        self._clock = clock
+        self._sleep = sleep
+        self._lock = threading.Lock()
+        self._tokens = float(burst)
+        self._updated = clock()
+
+    def acquire(self) -> None:
+        with self._lock:
+            self._refill()
+            self._tokens -= 1  # may go negative: a reservation of a future slot
+            wait = -self._tokens / self._rate
+        if wait > 0:
+            self._sleep(wait)
+
+    def drain(self) -> None:
+        """After a 429: whatever burst we thought was left, the server disagreed."""
+        with self._lock:
+            self._refill()
+            self._tokens = min(self._tokens, 0.0)
+
+    def _refill(self) -> None:
+        now = self._clock()
+        self._tokens = min(self._burst, self._tokens + (now - self._updated) * self._rate)
+        self._updated = now
 
 
 class UpstreamError(RuntimeError):
@@ -144,8 +197,10 @@ class CtgovClient:
         self,
         http: httpx.Client,
         fetch_cap: int,
+        limiter: RateLimiter,
         sleep: Callable[[float], None] = time.sleep,
     ) -> None:
+        self.limiter = limiter
         self._http = http
         self._fetch_cap = fetch_cap
         self._sleep = sleep
@@ -153,7 +208,7 @@ class CtgovClient:
     @classmethod
     def from_settings(cls, settings: Settings) -> "CtgovClient":
         http = httpx.Client(base_url=settings.ctgov_base_url, timeout=TIMEOUT_SECONDS)
-        return cls(http, settings.fetch_cap)
+        return cls(http, settings.fetch_cap, RateLimiter(RATE_PER_SECOND, BURST))
 
     @property
     def fetch_cap(self) -> int:
@@ -179,13 +234,16 @@ class CtgovClient:
 
     def _get_studies(self, params: dict[str, str]) -> dict[str, Any]:
         for attempt in range(len(RETRY_DELAYS_SECONDS) + 1):
+            self.limiter.acquire()
             try:
                 response = self._http.get("/studies", params=params)
             except httpx.HTTPError as exc:
                 raise UpstreamError(f"ClinicalTrials.gov request failed: {exc!r}") from exc
             retryable = response.status_code == 429 or response.status_code >= 500
+            if response.status_code == 429:
+                self.limiter.drain()
             if retryable and attempt < len(RETRY_DELAYS_SECONDS):
-                delay = RETRY_DELAYS_SECONDS[attempt]
+                delay = _retry_delay(response, RETRY_DELAYS_SECONDS[attempt])
                 logger.warning(
                     "ClinicalTrials.gov HTTP %d; retry in %.0fs", response.status_code, delay
                 )
@@ -197,6 +255,33 @@ class CtgovClient:
                 )
             return _json_object(response)
         raise AssertionError("unreachable: the last attempt returns or raises")
+
+
+def _retry_delay(response: httpx.Response, backoff: float) -> float:
+    """The backoff, or longer if the API's Retry-After (seconds or an HTTP-date) asks for it.
+    A 429 without a readable Retry-After waits out the measured recovery instead."""
+    asked = _retry_after_seconds(response.headers.get("Retry-After"))
+    if asked is None:
+        return RATE_LIMIT_RECOVERY_SECONDS if response.status_code == 429 else backoff
+    if asked > MAX_RETRY_AFTER_SECONDS:
+        raise UpstreamError(
+            f"ClinicalTrials.gov HTTP {response.status_code}: retry after {asked:.0f} s"
+        )
+    return max(backoff, asked)
+
+
+def _retry_after_seconds(header: str | None) -> float | None:
+    if header is None:
+        return None
+    if header.strip().isdigit():
+        return float(header)
+    try:
+        when = parsedate_to_datetime(header)
+    except (TypeError, ValueError):
+        return None  # unreadable: the backoff applies
+    if when.tzinfo is None:  # a "-0000" zone parses naive; HTTP-dates are always UTC
+        when = when.replace(tzinfo=UTC)
+    return max(0.0, (when - datetime.now(UTC)).total_seconds())
 
 
 def _json_object(response: httpx.Response) -> dict[str, Any]:

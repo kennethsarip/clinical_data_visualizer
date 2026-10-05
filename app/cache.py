@@ -6,7 +6,8 @@ transaction, so the two tables never disagree.
 """
 
 import logging
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
+from concurrent.futures import FIRST_EXCEPTION, ThreadPoolExecutor, wait
 from typing import Any
 
 import psycopg
@@ -34,15 +35,46 @@ class TrialCache:
 
     def fetch(self, filters: RetrievalFilters) -> FetchResult:
         """Cached pages for these filters if fresh and complete for the cap, else a live fetch."""
+        return self.fetch_many([filters])[0]
+
+    def fetch_many(self, filters: Sequence[RetrievalFilters]) -> list[FetchResult]:
+        """One result per filter set, in order. Misses download concurrently: pages within one
+        search must follow each other's tokens, but separate cohorts need not wait in line.
+        Postgres is read and written on this thread only, as a psycopg connection requires."""
+        results = [self._cached(f) for f in filters]
+        misses = [i for i, result in enumerate(results) if result is None]
+        downloaded = self._download([filters[i] for i in misses])
+        for i, result in zip(misses, downloaded, strict=True):
+            self._write(result)
+            results[i] = result
+        return [r for r in results if r is not None]
+
+    def _cached(self, filters: RetrievalFilters) -> FetchResult | None:
         key = params_key(self._client.params_for(filters))
         pages = self._read_pages(key)
         if pages and covers_cap(pages, self._client.fetch_cap):
             logger.info("cache hit: %s", key)
             return assemble_result(key, pages, self._client.fetch_cap)
         logger.info("cache miss: %s", key)
-        result = self._client.fetch(filters)
-        self._write(result)
-        return result
+        return None
+
+    def _download(self, filters: list[RetrievalFilters]) -> list[FetchResult]:
+        if len(filters) <= 1:
+            return [self._client.fetch(f) for f in filters]
+        pool = ThreadPoolExecutor(len(filters), thread_name_prefix="ctgov")
+        try:
+            futures = [pool.submit(self._client.fetch, f) for f in filters]
+            # Whichever cohort fails first ends the wait and is raised; collecting results in
+            # cohort order instead would first wait out a slow cohort ahead of the failed one.
+            done, _ = wait(futures, return_when=FIRST_EXCEPTION)
+            for future in done:
+                if (error := future.exception()) is not None:
+                    raise error
+            return [future.result() for future in futures]
+        finally:
+            # On a failure, return at once: the other downloads finish in the background and
+            # are discarded, never written, so a failed request leaves no partial cache entry.
+            pool.shutdown(wait=False, cancel_futures=True)
 
     def count(self, filters: RetrievalFilters) -> int:
         """Uncached: a count is one tiny request, and caching it would need a second key space."""

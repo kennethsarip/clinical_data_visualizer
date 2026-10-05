@@ -14,6 +14,7 @@ rebuild can change. The API is never re-queried (§7.7).
 
 import logging
 from collections.abc import Callable, Sequence
+from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import date
 from typing import Any, Protocol
@@ -45,7 +46,7 @@ from app.schemas import (
     RetrievalFilters,
     VisualizeRequest,
 )
-from app.viz import SOURCE, assemble, default_title, write_prose
+from app.viz import SOURCE, Prose, assemble, default_title, write_prose
 
 logger = logging.getLogger(__name__)
 
@@ -57,12 +58,20 @@ Checker = Callable[[OkResponse, CheckContext], list[CheckError]]
 class Fetcher(Protocol):
     """The record source: `TrialCache` in the app, a fake in tests."""
 
-    def fetch(self, filters: RetrievalFilters) -> FetchResult: ...
+    def fetch_many(self, filters: Sequence[RetrievalFilters]) -> list[FetchResult]: ...
     def count(self, filters: RetrievalFilters) -> int: ...
 
 
 class DependencyError(RuntimeError):
     """A dependency failed (ClinicalTrials.gov, the LLM, or the API's record format): HTTP 502."""
+
+
+@dataclass(frozen=True)
+class _Target:
+    """One search: a cohort's label (None without cohorts) and its filters."""
+
+    label: str | None
+    filters: RetrievalFilters
 
 
 @dataclass(frozen=True)
@@ -95,49 +104,68 @@ class Pipeline:
             return _degraded(Filters(stated=stated, inferred={}), (), [_plan_error(exc)])
         if isinstance(planned, Clarification):
             return _clarification(planned)
-        fetched = self._fetch(planned)
-        if not fetched.records:
-            return self._zero_results(planned)
         aggregator = self.registry.get(planned.intent, planned.dimension)
+        targets = [_Target(c.label, c.filters) for c in planned.cohorts] or [
+            _Target(None, planned.filters)
+        ]
+        # The title is written from the plan alone (§7.2), so it runs while the trials are
+        # fetched. Only an `ok` answer waits for it; any other outcome returns at once and the
+        # call finishes unread in the background.
+        pool = ThreadPoolExecutor(1, thread_name_prefix="title")
+        try:
+            prose = pool.submit(
+                write_prose,
+                self.llm,
+                query=request.query,
+                aggregator=aggregator,
+                cohorts=targets,
+                filters=_filters(planned),
+            )
+            prose.add_done_callback(_log_title_failure)
+            return self._answer(planned, aggregator, targets, prose)
+        finally:
+            pool.shutdown(wait=False)
+
+    def _answer(
+        self,
+        plan: QueryPlan,
+        aggregator: Aggregator,
+        targets: list["_Target"],
+        prose: "Future[Prose]",
+    ) -> AnyResponse:
+        fetched = self._fetch(targets)
+        if not fetched.records:
+            return self._zero_results(plan)
         result = aggregator.aggregate(fetched.cohorts)
         if _charts_nothing(result):
-            return _nothing_charted(planned, result, len(fetched.records))
-        return self._checked(request, planned, aggregator, result, fetched)
+            return _nothing_charted(plan, result, len(fetched.records))
+        return self._checked(plan, aggregator, result, fetched, prose.result())
 
-    def _fetch(self, plan: QueryPlan) -> _Fetched:
-        """One fetch per cohort (§7.2); a plan without cohorts is one unlabeled cohort."""
-        targets: list[tuple[str | None, RetrievalFilters]] = [
-            (c.label, c.filters) for c in plan.cohorts
-        ] or [(None, plan.filters)]
+    def _fetch(self, targets: list["_Target"]) -> _Fetched:
+        """One fetch per cohort (§7.2), downloaded together; a plan without cohorts is one
+        unlabeled cohort."""
+        results = self.fetcher.fetch_many([t.filters for t in targets])
         cohorts: list[CohortTrials] = []
         records: dict[str, dict[str, Any]] = {}
-        for label, filters in targets:
-            result = self.fetcher.fetch(filters)
+        for target, result in zip(targets, results, strict=True):
             # Normalize first: a record without an nctId is unreadable and set aside (counted
             # in meta), so it must not abort the request while building the lookup.
             batch = normalize_records(result.records)
             readable = {t.nct_id for t in batch.trials}
             records |= {nct_id: r for r in result.records if (nct_id := _nct_id(r)) in readable}
-            cohorts.append(CohortTrials(label, batch, filters, result.total))
+            cohorts.append(CohortTrials(target.label, batch, target.filters, result.total))
         return _Fetched(cohorts, records)
 
     def _checked(
         self,
-        request: VisualizeRequest,
         plan: QueryPlan,
         aggregator: Aggregator,
         result: Aggregation | GraphAggregation,
         fetched: _Fetched,
+        prose: Prose,
     ) -> AnyResponse:
         """§1 steps 7-9: prose, assembly, checks, one repair without the prose, else degraded."""
         filters = _filters(plan)
-        prose = write_prose(
-            self.llm,
-            query=request.query,
-            aggregator=aggregator,
-            cohorts=fetched.cohorts,
-            filters=filters,
-        )
         context = CheckContext(aggregator.shape, fetched.records)
 
         def build(title: str, notes: Sequence[str]) -> OkResponse:
@@ -178,6 +206,13 @@ class Pipeline:
             for name in not_found
         ] or [NOT_WIDENED_NOTE]
         return _no_results(plan, not_found, notes)
+
+
+def _log_title_failure(future: "Future[Prose]") -> None:
+    """A bug in the title thread: an `ok` answer re-raises it from `result()`, but an answer that
+    abandoned the call would otherwise lose it."""
+    if not future.cancelled() and (error := future.exception()) is not None:
+        logger.error("title call failed: %r", error, exc_info=error)
 
 
 def _nct_id(record: dict[str, Any]) -> str | None:
