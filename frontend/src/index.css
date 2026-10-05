@@ -25,6 +25,7 @@
 
   --color-highlight: #fcf090; /* excerpt highlight */
   --color-error: #d14343; /* not in the reference; a standard accessible red */
+  --color-error-tint: #fbeeee;
   --color-source: #2aa7b0;
   --color-source-bg: #e3f5f8;
 
@@ -273,7 +274,127 @@ a {
   font-weight: 500;
 }
 
-.result-placeholder {
+/* --- results and status views (Phase 4 step 5) --- */
+
+.results {
   margin-top: 24px;
+  display: grid;
+  gap: 16px;
+}
+
+.status-card .card-header h2 {
+  color: var(--color-accent);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.status-error .card-header {
+  background: var(--color-error-tint);
+}
+
+.status-error .card-header h2 {
+  color: var(--color-error);
+}
+
+.status-card .card-body > * + * {
+  margin-top: 12px;
+}
+
+.status-card p {
+  margin: 0;
+}
+
+.note {
+  color: var(--color-text-body);
+}
+
+.detail {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pill-list li {
+  background: var(--color-blue-chip);
+  color: var(--color-text);
+  border-radius: var(--radius-chip);
+  padding: 3px 10px;
+  font-size: 13px;
+}
+
+.check-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.check-list code {
+  font-size: 13px;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+
+.loading-body {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.loading-text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.loading-text strong {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.loading-text span {
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+.spinner {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border: 3px solid var(--color-blue-chip);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 3s;
+  }
+}
+
+.result-placeholder {
+  margin: 0;
   color: var(--color-text-muted);
 }

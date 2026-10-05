@@ -1073,6 +1073,42 @@
         "title": "Sort",
         "type": "object"
       },
+      "Status": {
+        "enum": [
+          "ACTIVE_NOT_RECRUITING",
+          "COMPLETED",
+          "ENROLLING_BY_INVITATION",
+          "NOT_YET_RECRUITING",
+          "RECRUITING",
+          "SUSPENDED",
+          "TERMINATED",
+          "WITHDRAWN",
+          "AVAILABLE",
+          "NO_LONGER_AVAILABLE",
+          "TEMPORARILY_NOT_AVAILABLE",
+          "APPROVED_FOR_MARKETING",
+          "WITHHELD",
+          "UNKNOWN"
+        ],
+        "title": "Status",
+        "type": "string",
+        "x-labels": {
+          "ACTIVE_NOT_RECRUITING": "Active, not recruiting",
+          "APPROVED_FOR_MARKETING": "Approved for marketing",
+          "AVAILABLE": "Available",
+          "COMPLETED": "Completed",
+          "ENROLLING_BY_INVITATION": "Enrolling by invitation",
+          "NOT_YET_RECRUITING": "Not yet recruiting",
+          "NO_LONGER_AVAILABLE": "No longer available",
+          "RECRUITING": "Recruiting",
+          "SUSPENDED": "Suspended",
+          "TEMPORARILY_NOT_AVAILABLE": "Temporarily not available",
+          "TERMINATED": "Terminated",
+          "UNKNOWN": "Unknown status",
+          "WITHDRAWN": "Withdrawn",
+          "WITHHELD": "Withheld"
+        }
+      },
       "StoredTrial": {
         "additionalProperties": false,
         "description": "`GET /api/trials/{nct_id}`: the cached record a citation was checked against\n(SCHEMAS.md \u00a76).",

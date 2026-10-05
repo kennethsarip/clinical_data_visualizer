@@ -44,9 +44,11 @@ async function call<T>(url: string, init: RequestInit): Promise<ApiResult<T>> {
     response = await fetch(url, init)
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') throw error
-    return { kind: 'failed', detail: 'Could not reach the server. Is the backend running?' }
+    return { kind: 'failed', detail: UNREACHABLE }
   }
   const body = await readJson(response)
+  // A backend 502 always carries {detail}; a bare 502 comes from the dev proxy (backend down).
+  if (response.status === 502 && !hasDetail(body)) return { kind: 'failed', detail: UNREACHABLE }
   switch (response.status) {
     case 200:
       return { kind: 'ok', data: body as T }
@@ -62,6 +64,12 @@ async function call<T>(url: string, init: RequestInit): Promise<ApiResult<T>> {
         detail: `Unexpected response from the server (HTTP ${response.status}).`,
       }
   }
+}
+
+const UNREACHABLE = 'Could not reach the server. Is the backend running?'
+
+function hasDetail(body: unknown): boolean {
+  return typeof (body as { detail?: unknown } | null)?.detail === 'string'
 }
 
 async function readJson(response: Response): Promise<unknown> {

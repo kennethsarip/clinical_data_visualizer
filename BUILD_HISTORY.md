@@ -6,6 +6,11 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ### Phase 4: Frontend (in progress)
 
+- **4.5 Status views** (2026-10-05): `src/status/`. `StatusView` renders every outcome but a chart: clarification (notes plus an "Add a drug/condition/sponsor" chip per missing anchor, which opens and focuses that filter), no results (the filters applied), not found (the names, nothing substituted), degraded (each failed check), 422 (per-field messages), 502 and other failures (detail plus Try again, which resends the last request). `LoadingView` shows elapsed seconds and Cancel, which aborts the fetch and returns to idle with no error.
+  - Views are tested against the SCHEMAS.md §5 examples, read by `src/test/schemasExamples.ts` with `fs` in tests only: a Vite `?raw` import would need the repo root, which holds `.env`, on the dev server's allow list.
+  - The backend now also publishes `Status` labels (`x-labels`), so an inferred `overall_status` filter shows "Recruiting", not `RECRUITING`. `src/vocab.ts` holds the shared label helpers.
+  - Live through the proxy: clarification, zero results, not found and 422 each returned the expected body; a backend started with an invalid OpenAI key returned 502 `{detail}`. `degraded` was not triggered live (it needs a failing check) and is covered by its SCHEMAS.md example test.
+  - Bug found live and fixed red-first: with the backend down, the Vite proxy answers a bare 502, which the client read as "a data service is unavailable". A 502 without `{detail}` now maps to "Could not reach the server".
 - **4.4 Search page** (2026-10-05): `src/search/`: a query card (Enter submits, Shift+Enter adds a line), a collapsible filter row with an active-filter count, and six example chips, one per §1 class. Client checks in `request.ts` mirror `VisualizeRequest` (trimmed lengths, whole years, start <= end, blanks omitted); the server stays authoritative.
   - The chips are eval questions expected `ok`, verbatim; a test keeps each in sync with `eval/questions.json` and its class. A chip clears the filters, so it runs exactly as verified.
   - The phase picker reads codes and labels from `openapi.json`: the app's OpenAPI override publishes `vocab.py`'s labels as `Phase.x-labels`, leaving the LLM plan schema untouched, so labels have one source.

@@ -63,3 +63,11 @@ def test_phase_enum_carries_the_vocab_display_labels() -> None:
     }
     # The dump sorts keys, so display order comes from `enum`; every value must have a label.
     assert set(phase["x-labels"]) == set(phase["enum"])
+
+
+def test_status_enum_carries_the_vocab_display_labels() -> None:
+    # `meta.filters` may hold an overall_status code the planner chose; views show its label.
+    status = json.loads(openapi_json())["components"]["schemas"]["Status"]
+    assert set(status["enum"]) == set(status["x-labels"])
+    assert status["x-labels"]["RECRUITING"] == "Recruiting"
+    assert status["x-labels"]["ACTIVE_NOT_RECRUITING"] == "Active, not recruiting"

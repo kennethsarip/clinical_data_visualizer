@@ -59,6 +59,16 @@ describe('visualize', () => {
     })
   })
 
+  it('treats a 502 without a detail body as the backend being unreachable', async () => {
+    // The Vite dev proxy answers 502 with an empty body when the backend is down; a real backend
+    // 502 always carries {detail} (SCHEMAS.md §1).
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('', { status: 502 })))
+    expect(await visualize({ query: 'melanoma phases' })).toEqual({
+      kind: 'failed',
+      detail: 'Could not reach the server. Is the backend running?',
+    })
+  })
+
   it('reports an unexpected status as failed', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('Internal Server Error', { status: 500 })))
     expect(await visualize({ query: 'melanoma phases' })).toEqual({

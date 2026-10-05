@@ -31,7 +31,7 @@ from app.schemas import (
     VisualizeRequest,
     VisualizeResponse,
 )
-from app.vocab import PHASE_LABELS, Phase
+from app.vocab import PHASE_LABELS, STATUS_LABELS, Phase, Status
 
 # uvicorn configures only its own loggers; without this, the app's INFO logs (cache hits and
 # misses, retries, repairs) are dropped.
@@ -42,13 +42,16 @@ app = FastAPI(title="ClinicalTrials.gov Query-to-Visualization Agent")
 
 
 def _openapi() -> dict[str, Any]:
-    """FastAPI's schema plus the phase display labels from `vocab.py`, so the frontend's phase
-    picker reads labels from the drift-checked schema instead of keeping a second copy."""
+    """FastAPI's schema plus display labels from `vocab.py` as `x-labels`, so the frontend reads
+    labels from the drift-checked schema instead of keeping a second copy. `Status` appears only
+    as a value in `meta.filters`, so it is added as a component of its own."""
     if app.openapi_schema is None:
         schema = get_openapi(title=app.title, version=app.version, routes=app.routes)
-        schema["components"]["schemas"]["Phase"]["x-labels"] = {
-            phase.value: PHASE_LABELS[phase] for phase in Phase
-        }
+        components = schema["components"]["schemas"]
+        components.setdefault("Status", {"type": "string", "title": "Status"})
+        for enum, labels in ((Phase, PHASE_LABELS), (Status, STATUS_LABELS)):
+            components[enum.__name__]["enum"] = [member.value for member in enum]
+            components[enum.__name__]["x-labels"] = {m.value: labels[m] for m in enum}
         app.openapi_schema = schema
     return app.openapi_schema
 

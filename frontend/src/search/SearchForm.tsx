@@ -1,7 +1,15 @@
-import { useId, useState, type FormEvent, type KeyboardEvent } from 'react'
+import { flushSync } from 'react-dom'
+import {
+  useId,
+  useImperativeHandle,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+  type Ref,
+} from 'react'
 import type { VisualizeRequest } from '../api/client'
 import { EXAMPLES } from './examples'
-import { PHASE_OPTIONS } from './phases'
+import { PHASE_OPTIONS } from '../vocab'
 import {
   EMPTY_FORM,
   activeFilterCount,
@@ -10,12 +18,18 @@ import {
   type SearchFormValues,
 } from './request'
 
+export interface SearchFormHandle {
+  /** Open the filter row and focus one field, e.g. the anchor a clarification asked for. */
+  openFilter: (field: TextField) => void
+}
+
 interface Props {
   busy: boolean
   onSubmit: (request: VisualizeRequest) => void
+  ref?: Ref<SearchFormHandle>
 }
 
-type TextField = Exclude<keyof SearchFormValues, 'query' | 'trial_phase'>
+export type TextField = Exclude<keyof SearchFormValues, 'query' | 'trial_phase'>
 
 const TEXT_FIELDS: readonly { field: TextField; label: string; placeholder: string }[] = [
   { field: 'drug_name', label: 'Drug', placeholder: 'e.g. pembrolizumab' },
@@ -26,12 +40,20 @@ const TEXT_FIELDS: readonly { field: TextField; label: string; placeholder: stri
   { field: 'end_year', label: 'End year', placeholder: 'e.g. 2024' },
 ]
 
-export function SearchForm({ busy, onSubmit }: Props) {
+export function SearchForm({ busy, onSubmit, ref }: Props) {
   const [values, setValues] = useState<SearchFormValues>(EMPTY_FORM)
   const [errors, setErrors] = useState<FormErrors>({})
   const [filtersOpen, setFiltersOpen] = useState(false)
   const id = useId()
   const filterCount = activeFilterCount(values)
+
+  useImperativeHandle(ref, () => ({
+    openFilter(field) {
+      // Render the filter row now: the input does not exist while it is collapsed.
+      flushSync(() => setFiltersOpen(true))
+      document.getElementById(`${id}-${field}`)?.focus()
+    },
+  }))
 
   function set<K extends keyof SearchFormValues>(field: K, value: SearchFormValues[K]) {
     setValues((current) => ({ ...current, [field]: value }))
