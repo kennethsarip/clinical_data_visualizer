@@ -6,6 +6,12 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ### Phase 3: LLM planning and the endpoint (in progress)
 
+- **3.3 Title and notes** (2026-10-04): `viz.write_prose(llm, query, aggregator, cohorts, filters)` makes the second LLM call (`LLMProse`: a title of up to 120 characters, up to 3 notes) from the question, analysis key, chart type, columns, filters and cohort labels; rows never reach the prompt (a test asserts no trial ID or title is sent).
+  - The §7.6 number rule moved to `viz.stray_numbers`, shared with `checks._title`, so the prose step and the check cannot disagree. A title with a stray number falls back; a note with one is dropped on its own.
+  - Any failure (malformed answer, refusal, upstream error, stray number) returns `default_title` plus a note saying so, with no retry, keeping the response `ok`.
+  - 9 offline tests, seen red (8 failures) against a stub.
+- **Live status** (2026-10-04): the replacement key authenticates, but the account returns 429 `insufficient_quota` ("no credits remaining"), so both live LLM tests are still blocked. The SDK retries that 429 twice (~6 s wasted); it is permanent, not transient.
+
 - **3.2 Planner** (2026-10-04): `app/planner.py` `plan_request(request, llm)` returns a `QueryPlan` or a `Clarification`; `build_plan` holds every rule and needs no LLM.
   - `plan_schema()` is the strict `LLMPlan` schema with `analysis` narrowed to the 22 registered keys. The prompt lists each key from per-intent and per-dimension guides, so a new aggregator fails a test until it is described. Today's date is in the prompt for relative years.
   - Rules: fields override the query with a note; stated iff from a field or verbatim in the query (or an enum's display label, "recruiting" -> `RECRUITING`), else inferred with a Python-written assumption; 2-4 cohorts of one kind, overriding the shared filters; the anchor rule; `unsupported_reason` -> clarification. A rule only the LLM can fix (unknown key, cohorts outside a comparison, reversed merged years) raises `LLMOutputError`, retried once with the error, then `PlanError`. `LLMUpstreamError` is never retried by the planner.

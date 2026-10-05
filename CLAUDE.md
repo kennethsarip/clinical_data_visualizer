@@ -492,7 +492,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) makes results visible for the demo.
 
-**Next move:** replace the rejected `OPENAI_API_KEY` in `.env`, then run `tests/test_live_llm.py` and `tests/test_live_planner.py` (`-m live`) and fix the prompt against any failing eval question; then Phase 3 step 3 (title and notes).
+**Next move:** add credits to the OpenAI account (the new key authenticates but returns 429 `insufficient_quota`), then run `tests/test_live_llm.py` and `tests/test_live_planner.py` (`-m live`) and fix the prompt against any failing eval question; Phase 3 step 4 (the pipeline) can proceed meanwhile.
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
@@ -504,7 +504,6 @@ The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) m
 Goal: a natural-language request returns the right status and a checked spec over HTTP. Decided: §3 model, §7.2 calls and retry, §7.3 stated vs inferred, §7.8 anchor rule and not-found probe, §8.1 endpoint and HTTP codes, §7.2 plan shape, cohorts and title fallback, §7.7 error mapping.
 
 Steps, in order:
-3. **Title and notes.** The LLM part of `viz.py`: title and notes from plan, shape, columns and filters; never data. The `title` check guards it.
 4. **Pipeline.** `pipeline.py`: the §1 steps, per-cohort fetches, the not-found probe, repair-once, and typed error -> status mapping in one place. A result with no trials in any row (or a network with no edges) becomes `no_results` naming the exclusions, before the checks (which would block it as an empty chart). `assemble` refuses `meta.filters` that differ from the filters a single cohort was fetched with, so the planner's stated/inferred split must cover exactly the applied filters.
 5. **Endpoint.** `main.py`: `POST /api/visualize`, one route that calls the pipeline; no branching.
 

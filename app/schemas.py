@@ -92,6 +92,18 @@ class LLMPlan(BaseModel):
     unsupported_reason: str | None  # set when no analysis fits the question
 
 
+ProseNote = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=300)]
+
+
+class LLMProse(BaseModel):
+    """The title-and-notes call's answer (CLAUDE.md §7.2). Written without seeing any row."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    title: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=120)]
+    notes: Annotated[list[ProseNote], Field(max_length=3)]
+
+
 # --- response (SCHEMAS.md §2-§5) ---
 # Models check structure only. Rules that compare values (encoding fields exist in rows,
 # trial_count == len(nct_ids), excerpts match records, ...) are the §7.6 checks in `checks.py`,

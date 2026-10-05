@@ -1,12 +1,16 @@
 """Row shape -> viz type; spec + meta assembly; LLM title + notes (CLAUDE.md §7.2, §7.4).
 
-Everything here is deterministic except the title and notes, which the caller passes in (Phase 3:
-the LLM; until then, `default_title`). The viz type, encoding, sort and every `meta` disclosure
-follow from the aggregator's declaration and result, so the same rows always produce the same
-spec, and a repair (§7.7) can rebuild it without re-querying anything.
+Everything here is deterministic except `write_prose`, the LLM title and notes, which sees the
+plan and never a row, and falls back to `default_title` whenever it fails. The viz type, encoding,
+sort and every `meta` disclosure follow from the aggregator's declaration and result, so the same
+rows always produce the same spec, and a repair (§7.7) can rebuild it without re-querying.
 """
 
-from collections.abc import Mapping, Sequence
+import json
+import logging
+import re
+from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import dataclass
 
 from app.aggregators.registry import (
     Aggregation,
@@ -19,6 +23,7 @@ from app.aggregators.registry import (
     RowShape,
 )
 from app.citations import CITATION_CAP, provenance, trial_summaries
+from app.llm import LLMClient, LLMOutputError, LLMUpstreamError
 from app.normalize import UNREADABLE_RULE
 from app.schemas import (
     Channel,
@@ -29,6 +34,7 @@ from app.schemas import (
     Filters,
     Grouping,
     Interpretation,
+    LLMProse,
     NetworkData,
     NetworkEncoding,
     NetworkVisualization,
@@ -52,6 +58,8 @@ VIZ_TYPE: Mapping[RowShape, str] = {
     RowShape.BINNED_NUMERIC: "histogram",
     RowShape.GRAPH: "network_graph",
 }
+
+logger = logging.getLogger(__name__)
 
 SOURCE = "clinicaltrials.gov"
 UNITS = {"trial_count": "trials"}
@@ -352,3 +360,91 @@ def _subject(cohort: CohortTrials) -> str | None:
     f = cohort.filters
     named = [x for x in (f.drug_name, f.condition, f.sponsor) if x]
     return ", ".join(named) or None
+
+
+# --- LLM title and notes (§7.2) ---
+
+PROSE_SCHEMA_NAME = "chart_prose"
+PROSE_FALLBACK_NOTE = "The title was generated from the plan; the LLM title was unavailable."
+_NUMBER = re.compile(r"\d+")
+
+_PROSE_INSTRUCTIONS = """\
+You write the title and short notes for a chart of ClinicalTrials.gov data. You are told what the
+chart shows and which filters were applied, but you never see the data. Answer with JSON only.
+
+`title`: a plain, specific chart title under 80 characters naming the subject and what is counted.
+Use no numbers except years that appear in the filters.
+
+`notes`: 0-3 short sentences on how the question was interpreted (what is counted, which trials
+are included). Never state counts, trends, rankings or findings: you have not seen the data.
+Counting rules and caps are disclosed elsewhere; do not repeat them.
+"""
+
+
+@dataclass(frozen=True)
+class Prose:
+    title: str
+    notes: tuple[str, ...]
+
+
+def stray_numbers(text: str, sources: Iterable[object]) -> list[str]:
+    """Numbers in `text` that appear in none of `sources`: the §7.6 title rule, shared with
+    `checks._title` so the prose step and the check cannot disagree."""
+    allowed = {n for source in sources for n in _NUMBER.findall(str(source))}
+    return [n for n in _NUMBER.findall(text) if n not in allowed]
+
+
+def write_prose(
+    llm: LLMClient,
+    *,
+    query: str,
+    aggregator: Aggregator,
+    cohorts: Sequence[CohortTrials],
+    filters: Filters,
+) -> Prose:
+    """The LLM's title and notes, checked by the number rule. Any failure keeps the response
+    `ok` with `default_title` (decided 2026-10-04): the rows are verified, prose is not."""
+    fallback = Prose(default_title(aggregator, cohorts), (PROSE_FALLBACK_NOTE,))
+    try:
+        answer = llm.complete(
+            instructions=_PROSE_INSTRUCTIONS,
+            user_input=_prose_input(query, aggregator, cohorts, filters),
+            name=PROSE_SCHEMA_NAME,
+            output_type=LLMProse,
+        )
+    except (LLMOutputError, LLMUpstreamError) as exc:
+        logger.warning("title call failed, using the default title: %s", exc)
+        return fallback
+    sources = _number_sources(cohorts, filters)
+    if stray := stray_numbers(answer.title, sources):
+        logger.warning("LLM title %r has numbers not in the filters: %s", answer.title, stray)
+        return fallback
+    notes = tuple(n for n in answer.notes if not stray_numbers(n, sources))
+    return Prose(answer.title, notes)
+
+
+def _prose_input(
+    query: str, aggregator: Aggregator, cohorts: Sequence[CohortTrials], filters: Filters
+) -> str:
+    """The plan, shape, columns and filters: everything but the rows (§7.2)."""
+    plan = {
+        "question": query,
+        "analysis": f"{aggregator.intent}.{aggregator.dimension}",
+        "chart_type": VIZ_TYPE[aggregator.shape],
+        "columns": list(aggregator.columns),
+        "filters_stated": filters.stated,
+        "filters_inferred": filters.inferred,
+        "cohorts": [
+            {"label": c.label, "filters": _filter_values(c.filters)} for c in cohorts if c.label
+        ],
+    }
+    return json.dumps(plan, indent=1)
+
+
+def _number_sources(cohorts: Sequence[CohortTrials], filters: Filters) -> list[object]:
+    """What `checks._title` allows numbers from: filter values, cohort labels and filters."""
+    sources: list[object] = [*filters.stated.values(), *filters.inferred.values()]
+    for c in cohorts:
+        if c.label is not None:
+            sources += [c.label, *_filter_values(c.filters).values()]
+    return sources

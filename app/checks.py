@@ -9,7 +9,6 @@ The §7.6 WARN items (capped sample, counting-rule exclusions, network pruning) 
 `ok` because `meta` discloses them. The `disclosures` check makes sure it does, consistently.
 """
 
-import re
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from typing import Any
@@ -35,7 +34,7 @@ from app.schemas import (
     OkResponse,
     Provenance,
 )
-from app.viz import VIZ_TYPE
+from app.viz import VIZ_TYPE, stray_numbers
 
 # Dimensions where every trial lands in exactly one row, so rows must sum to the trials charted
 # (§8.5). Multi-valued ones (country, drug, ...) may sum higher, and top-N drops categories.
@@ -44,7 +43,6 @@ SINGLE_VALUED = frozenset({"phase", "overall_status", "sponsor_class", "start_ye
 # Messages kept per check; a broken aggregator would otherwise repeat one message per row.
 MAX_MESSAGES = 5
 
-_NUMBER = re.compile(r"\d+")
 
 # Fields holding codes, numbers or dates: a substring would let "PHASE1" cite "EARLY_PHASE1" or
 # "120" cite 1200, so their excerpts must equal a value. Free-text fields keep substring matching.
@@ -268,8 +266,7 @@ def _title(response: OkResponse, context: CheckContext) -> list[str]:
     sources: list[object] = [*meta.filters.stated.values(), *meta.filters.inferred.values()]
     for cohort in meta.interpretation.cohorts or ():
         sources += [cohort.label, *cohort.filters.values()]
-    allowed = {n for source in sources for n in _NUMBER.findall(str(source))}
-    stray = [n for n in _NUMBER.findall(response.visualization.title) if n not in allowed]
+    stray = stray_numbers(response.visualization.title, sources)
     if stray:
         return [f"title contains numbers not in the filters: {stray}"]
     return []
