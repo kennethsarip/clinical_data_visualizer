@@ -71,3 +71,10 @@ def test_status_enum_carries_the_vocab_display_labels() -> None:
     assert set(status["enum"]) == set(status["x-labels"])
     assert status["x-labels"]["RECRUITING"] == "Recruiting"
     assert status["x-labels"]["ACTIVE_NOT_RECRUITING"] == "Active, not recruiting"
+
+
+def test_schema_lists_the_checks_an_ok_response_passed() -> None:
+    from app.checks import CHECK_RULES, CHECKS
+
+    checks = json.loads(openapi_json())["x-checks"]
+    assert checks == [{"name": name, "rule": CHECK_RULES[name]} for name, _ in CHECKS]

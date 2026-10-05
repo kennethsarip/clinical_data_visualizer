@@ -41,3 +41,6 @@ export function formatFilterValue(key: string, value: string | number): string {
     key === 'trial_phase' ? PHASE['x-labels'] : key === 'overall_status' ? STATUS['x-labels'] : {}
   return labels[String(value)] ?? String(value)
 }
+
+/** The checks every `ok` response passed (app/checks.py CHECK_RULES, published as `x-checks`). */
+export const CHECKS: readonly { name: string; rule: string }[] = (openapi as unknown as { 'x-checks': { name: string; rule: string }[] })['x-checks']

@@ -303,3 +303,18 @@ CHECKS: tuple[tuple[str, Check], ...] = (
     ("title", _title),
     ("disclosures", _disclosures),
 )
+
+
+# What each check guarantees, in plain language, for the frontend's "Checks passed" list (published
+# in the OpenAPI schema as `x-checks`). Wording follows CLAUDE.md §7.6; keys match CHECKS.
+CHECK_RULES: Mapping[str, str] = {
+    "schema": "The response matches the documented schema.",
+    "encoding": "Every field the chart encodes exists in every row.",
+    "shape": "The chart type fits the shape of the data.",
+    "citation ids": "Every cited trial is in its datum and in the retrieved records.",
+    "excerpts": "Every excerpt is the exact text at its field in the trial's record.",
+    "reconciliation": "Each count equals its distinct trials; totals reconcile with the records.",
+    "assumptions": "Every inferred filter is disclosed as an assumption.",
+    "title": "The title contains no number that is not in the filters.",
+    "disclosures": "Sample caps, pruning and top-N limits are disclosed consistently.",
+}

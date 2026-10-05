@@ -379,3 +379,11 @@ def test_free_text_excerpt_may_be_a_substring() -> None:
         armsInterventionsModule={"interventions": [{"name": "Pembrolizumab 200 mg IV"}]},
     )
     assert _errors(payload, records=records) == []
+
+
+def test_every_check_has_a_plain_language_rule_in_order() -> None:
+    # The frontend lists these under "Checks passed"; a new check without a rule fails here.
+    from app.checks import CHECK_RULES, CHECKS
+
+    assert list(CHECK_RULES) == [name for name, _ in CHECKS]
+    assert all(rule.endswith(".") and len(rule) < 120 for rule in CHECK_RULES.values())

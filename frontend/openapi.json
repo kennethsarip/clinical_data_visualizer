@@ -1478,5 +1478,43 @@
         "summary": "Visualize"
       }
     }
-  }
+  },
+  "x-checks": [
+    {
+      "name": "schema",
+      "rule": "The response matches the documented schema."
+    },
+    {
+      "name": "encoding",
+      "rule": "Every field the chart encodes exists in every row."
+    },
+    {
+      "name": "shape",
+      "rule": "The chart type fits the shape of the data."
+    },
+    {
+      "name": "citation ids",
+      "rule": "Every cited trial is in its datum and in the retrieved records."
+    },
+    {
+      "name": "excerpts",
+      "rule": "Every excerpt is the exact text at its field in the trial's record."
+    },
+    {
+      "name": "reconciliation",
+      "rule": "Each count equals its distinct trials; totals reconcile with the records."
+    },
+    {
+      "name": "assumptions",
+      "rule": "Every inferred filter is disclosed as an assumption."
+    },
+    {
+      "name": "title",
+      "rule": "The title contains no number that is not in the filters."
+    },
+    {
+      "name": "disclosures",
+      "rule": "Sample caps, pruning and top-N limits are disclosed consistently."
+    }
+  ]
 }

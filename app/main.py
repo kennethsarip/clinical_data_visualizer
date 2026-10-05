@@ -19,6 +19,7 @@ from fastapi.openapi.utils import get_openapi
 
 from app import aggregators  # noqa: F401  (registers every aggregator)
 from app.cache import TrialCache
+from app.checks import CHECK_RULES, CHECKS
 from app.config import Settings, load_settings
 from app.ctgov import CtgovClient
 from app.llm import LLMClient
@@ -52,6 +53,8 @@ def _openapi() -> dict[str, Any]:
         for enum, labels in ((Phase, PHASE_LABELS), (Status, STATUS_LABELS)):
             components[enum.__name__]["enum"] = [member.value for member in enum]
             components[enum.__name__]["x-labels"] = {m.value: labels[m] for m in enum}
+        # The checks every `ok` response passed, for the frontend's "How this was answered" drawer.
+        schema["x-checks"] = [{"name": name, "rule": CHECK_RULES[name]} for name, _ in CHECKS]
         app.openapi_schema = schema
     return app.openapi_schema
 

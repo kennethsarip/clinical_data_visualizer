@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import type { components } from '../api/types'
 import type { Selection } from '../charts/rendererProps'
 import { ChartCard } from './ChartCard'
+import { HowAnswered } from './HowAnswered'
 import { selectedRow, trialCitations } from './selection'
 import { SourcesPanel, type PanelTab } from './SourcesPanel'
 
@@ -36,6 +37,7 @@ export function Answer({ response }: { response: OkResponse }) {
             setTab('sources')
           }}
         />
+        <HowAnswered meta={response.meta} />
       </div>
       <SourcesPanel
         trials={response.trials}

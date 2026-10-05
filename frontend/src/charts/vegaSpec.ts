@@ -1,5 +1,6 @@
 // Response `encoding` + rows -> a Vega-Lite spec (SCHEMAS.md §3). Reads columns only through the
 // encoding's channels (`x`, `y`, `series`), never by name, so any registered aggregator renders.
+import { humanize } from '../format'
 import { THEME } from './theme'
 import type { Channel, ChartVisualization } from './types'
 
@@ -168,10 +169,6 @@ export function axisTitle(field: string, meta?: AxisMeta): string {
   return name.toLowerCase().includes(stem) ? name : `${name} (${unit})`
 }
 
-export function humanize(field: string): string {
-  const words = field.replace(/_/g, ' ')
-  return words.charAt(0).toUpperCase() + words.slice(1)
-}
 
 const CONFIG = {
   font: THEME.font,
