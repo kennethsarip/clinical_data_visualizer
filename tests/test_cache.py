@@ -141,3 +141,11 @@ def test_records_by_id_matches_exactly(conn: psycopg.Connection) -> None:
     cache.fetch(PEMBRO)
     found = cache.records_by_id(["NCT00000002", "nct00000001", "NCT00000003"])
     assert found == {"NCT00000002": record(2)}
+
+
+def test_count_goes_to_the_api_and_writes_nothing(conn: psycopg.Connection) -> None:
+    api, requests, _ = fake_client(paged({None: page([1], "next", total=57)}))
+    cache = TrialCache(conn, api, ttl_hours=168)
+    assert cache.count(PEMBRO) == 57
+    assert len(requests) == 1
+    assert _count(conn, "api_pages") == 0 and _count(conn, "trials") == 0

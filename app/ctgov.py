@@ -162,6 +162,12 @@ class CtgovClient:
     def params_for(self, filters: RetrievalFilters) -> dict[str, str]:
         return build_params(filters, page_size=min(MAX_PAGE_SIZE, self._fetch_cap))
 
+    def count(self, filters: RetrievalFilters) -> int:
+        """Trials matching `filters`, from one single-ID page: the §7.8 not-found probe needs
+        only `totalCount`, so it never downloads records. Not cached (one small request)."""
+        params = {**build_params(filters, page_size=1), "fields": "NCTId"}
+        return _total_count(self._get_studies(params))
+
     def fetch(self, filters: RetrievalFilters) -> FetchResult:
         params = self.params_for(filters)
         pages: list[Page] = []

@@ -6,6 +6,14 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ### Phase 3: LLM planning and the endpoint (in progress)
 
+- **3.4 Pipeline** (2026-10-04): `app/pipeline.py` `Pipeline(llm, fetcher).run(request)` runs the §1 steps and is the one place errors become outcomes.
+  - Plan -> clarification before any fetch; one fetch per cohort through the cache; zero records -> the not-found probe; aggregate; nothing chartable -> `no_results` naming the exclusion rule; prose; assemble; checks; one repair without the LLM prose; else `degraded`.
+  - `DependencyError` (-> 502) wraps ClinicalTrials.gov `UpstreamError`, a batch over 5% unreadable, and `LLMUpstreamError` while planning. `PlanError` -> `degraded` with check "plan" and the request fields as stated filters. The checker is injected so the repair path is tested.
+  - `CtgovClient.count` / `TrialCache.count`: one single-ID page (`fields=NCTId`), uncached, for the probe; skipped when the entity was the only filter, since that search already ran.
+  - Bug found by the tests: building the record lookup before normalizing made one ID-less record abort the request; normalize now runs first. The cache still raises on such a record (Phase 1 decision, pinned by a test), logged in §13.4 rather than changed.
+  - 17 offline tests, seen red (16 failures) against a stub, plus 3 ctgov and 1 cache test for `count`.
+  - **Live end to end** (`tests/test_live_pipeline.py`): 29/29 plannable eval questions return their expected status, analysis, viz type, not-found names and cap on the first run (172 s; comparisons ~8 s each, single-cohort ~4-6 s).
+
 - **3.3 Title and notes** (2026-10-04): `viz.write_prose(llm, query, aggregator, cohorts, filters)` makes the second LLM call (`LLMProse`: a title of up to 120 characters, up to 3 notes) from the question, analysis key, chart type, columns, filters and cohort labels; rows never reach the prompt (a test asserts no trial ID or title is sent).
   - The §7.6 number rule moved to `viz.stray_numbers`, shared with `checks._title`, so the prose step and the check cannot disagree. A title with a stray number falls back; a note with one is dropped on its own.
   - Any failure (malformed answer, refusal, upstream error, stray number) returns `default_title` plus a note saying so, with no retry, keeping the response `ok`.
