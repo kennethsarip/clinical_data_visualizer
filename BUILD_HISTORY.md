@@ -6,7 +6,12 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ### Phase 2: Aggregation, citations, checks (in progress on `phase-2-core`)
 
-- **2.4 Aggregators** (2026-10-04): 28 registered, covering every §1 class.
+- **2.5 Citations** (2026-10-04): `app/citations.py` turns each row's evidence into `trial_count`, `nct_ids` (sorted descending) and `citations` for the first 25 of those trials. The cap counts trials, so a multi-phase trial keeps both of its phase citations. Null excerpts pass through.
+- `trial_summaries` builds the `trials` lookup (title, status label, phase label, start date). A row trial with no evidence, or a lookup ID outside the retrieved records, raises `CitationError`, since either is a bug, never a user error.
+- Seen red against placeholders (7 failures).
+- **Live core test** `tests/test_live_core.py` (`-m live`) runs all 22 aggregators plus citations on live melanoma, pembrolizumab and nivolumab records (1,000 each; the comparisons use pembrolizumab vs nivolumab). It checks provenance, retrieved IDs, excerpts in raw records, §8.5 reconciliation for phase, status and sponsor class, edges joining kept nodes, and the condition anchor.
+- 23 passed in 3.7 s. Corrupting the country excerpts made it fail on both country aggregators, so it can catch real bugs. Until step 6 the excerpt match is against the whole record.
+- **2.4 Aggregators** (2026-10-04): 22 registered, covering every §1 class (first logged as 28, a miscount).
   - Distribution: phase, status, intervention type, sponsor class, top-20 drug, sponsor and condition. Geographic: top-20 country. Time trend: start year. Comparison: all eight categorical dimensions. Numeric: enrollment scatter and histogram. Networks: sponsor-drug, drug-drug and condition-drug.
   - `common.py` holds one categorizer per dimension (the categories a trial goes in, the evidence, the counting-rule exclusions) and the single `count_by`. Each family module (`categorical`, `comparison`, `time_trend`, `numeric`, `network`) is a thin layer that registers itself on import.
   - Ordering: phase is canonical; everything else is count desc, ties alphabetical. Top-N discloses `categories_total`.

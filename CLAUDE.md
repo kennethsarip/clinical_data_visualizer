@@ -370,6 +370,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 | API client | Param building, pagination and the cap, against small recorded fixtures |
 | Planner / viz | Parsing and validation of LLM output with a stubbed LLM, including malformed output |
 | Frontend | Each viz renderer against the `SCHEMAS.md` examples; status views (Vitest; Phase 4) |
+| Live core | `tests/test_live_core.py` (`-m live`): every registered aggregator plus citations on real records; checks provenance, retrieved IDs, excerpts, §8.5 reconciliation and network edges. Extended by each later step |
 | Eval | 20-25 questions: every §1 class plus ambiguous input, a zero-result combination, a nonexistent entity, a contradictory date range, multi-phase or missing-field records, and a very broad condition. For each question, record the intent, viz type, record count, check pass/fail, latency and failure mode |
 
 **Eval protocol:** run the baseline, fix the largest failure class, rerun, and keep both result sets in `eval/`.
@@ -488,7 +489,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) makes results visible for the demo.
 
-**Next move:** Phase 2 step 5 (citations) on `phase-2-core`. Steps 1-4 shipped (see `BUILD_HISTORY.md`).
+**Next move:** Phase 2 step 6 (checks) on `phase-2-core`. Steps 1-5 shipped (see `BUILD_HISTORY.md`).
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
@@ -500,8 +501,7 @@ The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) m
 Goal: verified rows and complete specs for every question class and every viz type, with no LLM involved. All decisions are made (§6, §7.4, §7.5, SCHEMAS.md).
 
 Steps, in order (each red first, §9):
-5. **Citations.** `citations.py`: each row's evidence -> `{nct_id, excerpt, field}` per row, node and edge, ordered and capped (§7.5); null excerpts for absent fields; the `trials` lookup. Evidence comes from normalized cached records, and the excerpt check verifies it against the raw record.
-6. **Checks.** `checks.py`: every §7.6 BLOCK check plus the WARN disclosures.
+6. **Checks.** `checks.py`: every §7.6 BLOCK check plus the WARN disclosures. Then switch `tests/test_live_core.py` from its whole-record excerpt match to the field-level excerpt check.
 7. **Spec assembly.** `viz.py` (deterministic part): the §7.4 shape -> type table, encoding with channel types, and spec plus `meta` assembly.
 
 Done when: every §1 row has a registered aggregator; all six viz types assemble specs that pass every check; each aggregator test matches rows computed by hand; and each check has a passing and a failing fixture.
