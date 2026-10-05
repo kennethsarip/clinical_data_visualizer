@@ -4,6 +4,67 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ## Shipped
 
+### Phase 2: Aggregation, citations, checks (done 2026-10-04 on `phase-2-core`)
+
+- **Done when, met:** every §1 row has a registered aggregator (22); all six viz types assemble specs that pass every check, offline on the fixture and live on real records; each aggregator test matches hand-computed rows; each check has a passing and a failing fixture.
+- **2.7 Spec assembly** (2026-10-04): `viz.assemble` builds the full `ok` response from an aggregator's result.
+  - Python picks the type (`VIZ_TYPE`) and the encoding per shape: channel types, plus a log scale for scatter enrollment.
+  - Rows carry their citations; the `trials` lookup is built from the cohorts.
+  - `meta` is filled in full: interpretation (cohorts and their filters for comparisons), units, sort (canonical phase, count desc, asc time and bins), time granularity, grouping and series, one sample entry per cohort, citation cap, exclusions (unreadable records added, named per cohort in comparisons), top-N and pruning.
+  - Counting-rule assumptions are written by Python per dimension (multi-phase, "Not specified", drug rule, start-date basis, enrollment split, log-axis zero, edge weight, anchor hub, comparison overlap). Caller assumptions and LLM notes are appended.
+  - `default_title` is a number-free title from the plan, used until Phase 3. `CohortTrials` gained `total` (the API totalCount) for the sample disclosure.
+- **Bug review** (2026-10-04). Six defects found, each fixed red-first with a regression test:
+  1. A stated year range could drop trials outside it; the time trend now spans stated and data years.
+  2. A totalCount read from page 1 could fall below `fetched` if trials were added mid-fetch; it is now raised to `fetched`.
+  3. An empty chart passed every check vacuously; `shape` now blocks a chart with no trials (§7.6).
+  4. Code, number and date excerpts matched as substrings (`PHASE1` inside `EARLY_PHASE1`); they must now equal the value.
+  5. `assemble` accepted `meta.filters` that differed from the filters actually applied. It now raises `AssemblyError`; found by the live sweep, where "COVID-19" in a title failed the title check against undisclosed filters.
+  6. The default time-trend title read "Trials Started per Start Year"; it now reads "per Year".
+- **Robustness:** every aggregator handles an empty cohort and trials with no optional fields. Real charts pass every check, and empty ones are blocked.
+- **Live sweep** (2026-10-04, not committed): all 22 aggregators over 11 live queries were assembled and checked, 128/128 passing.
+  - Queries: broad cancer (2,000 of 123,756), pembrolizumab, Pfizer, diabetes in Germany, melanoma 2015-2020, melanoma Phase 3, recruiting COVID-19, Erdheim-Chester (26), and the comparisons pembrolizumab vs nivolumab and diabetes vs obesity.
+  - Two HTTP 429s were absorbed by the retries (logged in §13.4).
+- **Committed live test** `tests/test_live_core.py`: 45 passed. It assembles every aggregator's response from live records and runs all nine checks.
+
+- **2.6 Checks** (2026-10-04): `app/checks.py` `run_checks(response, CheckContext(shape, records))` returns `CheckError`s from nine checks: schema, encoding, shape, citation ids, excerpts, reconciliation, assumptions, title and disclosures. They read only the response, the declared shape and the raw cached records.
+- Excerpts are matched at their `field` path, descending through lists such as `locations[].country`; a null excerpt must mean the field is absent. Reconciliation enforces `trial_count == len(nct_ids)`, no duplicate IDs, and, for phase, status, sponsor class and start year, rows summing to fetched minus excluded per cohort. The title check allows only numbers that occur in filter values or cohort labels.
+- `disclosures` is new: §7.6's WARN items keep a response `ok` only if `meta` discloses them consistently (capped vs fetched/total, pruning for networks only, top-N bounding the categories), so it is added to the §7.6 table.
+- Messages are capped at 5 per check plus a "... and N more", so a broken aggregator yields a readable `meta.errors`.
+- The passing fixtures are the SCHEMAS.md bar and network examples with matching raw records, so the documented contract passes the checks. Every check has a failing fixture. Seen red (22 failures) against a placeholder.
+- `viz.VIZ_TYPE` (the shape -> type table) shipped early, because the shape check needs it.
+- The live core test now uses the same field-level `excerpt_matches`: 23 passed, so every live excerpt sits in the field it cites.
+- **2.5 Citations** (2026-10-04): `app/citations.py` turns each row's evidence into `trial_count`, `nct_ids` (sorted descending) and `citations` for the first 25 of those trials. The cap counts trials, so a multi-phase trial keeps both of its phase citations. Null excerpts pass through.
+- `trial_summaries` builds the `trials` lookup (title, status label, phase label, start date). A row trial with no evidence, or a lookup ID outside the retrieved records, raises `CitationError`, since either is a bug, never a user error.
+- Seen red against placeholders (7 failures).
+- **Live core test** `tests/test_live_core.py` (`-m live`) runs all 22 aggregators plus citations on live melanoma, pembrolizumab and nivolumab records (1,000 each; the comparisons use pembrolizumab vs nivolumab). It checks provenance, retrieved IDs, excerpts in raw records, §8.5 reconciliation for phase, status and sponsor class, edges joining kept nodes, and the condition anchor.
+- 23 passed in 3.7 s. Corrupting the country excerpts made it fail on both country aggregators, so it can catch real bugs. Until step 6 the excerpt match is against the whole record.
+- **2.4 Aggregators** (2026-10-04): 22 registered, covering every §1 class (first logged as 28, a miscount).
+  - Distribution: phase, status, intervention type, sponsor class, top-20 drug, sponsor and condition. Geographic: top-20 country. Time trend: start year. Comparison: all eight categorical dimensions. Numeric: enrollment scatter and histogram. Networks: sponsor-drug, drug-drug and condition-drug.
+  - `common.py` holds one categorizer per dimension (the categories a trial goes in, the evidence, the counting-rule exclusions) and the single `count_by`. Each family module (`categorical`, `comparison`, `time_trend`, `numeric`, `network`) is a thin layer that registers itself on import.
+  - Ordering: phase is canonical; everything else is count desc, ties alphabetical. Top-N discloses `categories_total`.
+  - Time trend zero-fills from the stated start year (or the first trial) to the stated end year (or the last). The aggregator reads only the bounds from `CohortTrials.filters`.
+  - Comparison zero-fills every category for every cohort, orders by the cohorts combined, and names each exclusion with its cohort ("placebo (Pembrolizumab)").
+  - Histogram: fixed half-open bins, every bin for every enrollment type present. The scatter has one row per trial.
+  - Networks: one `CooccurrenceAggregator` configured with two `Side`s; drug-drug pairs are ordered by id. Pruning: weight >= 2, top 50 by weighted degree with an id tie-break, orphans dropped, a weight-1 fallback. Nodes for the request's named entities get `is_anchor`.
+  - Intervention-type charts leave out unnamed interventions but keep the trial through its named ones; the "unnamed intervention" count discloses it.
+  - Tests were written first from a hand-computed five-trial fixture (`tests/factories.py`). They passed on the first run, so red was shown by mutation instead: eight injected bugs (canonical order, zero-fill, bin edges, fallback, top-N, gap exclusions, comparison zero-fill, anchors) were each caught.
+  - Live check (melanoma, 2,000 of 3,769 trials): the drug-drug network keeps 50 nodes and 174 edges in 50 ms. Its top edges are real regimens: ipilimumab + nivolumab (67), cyclophosphamide + fludarabine (48), dabrafenib + trametinib (28), encorafenib + binimetinib (16). Exclusions: 14 missing start dates, 119 without locations, 57 missing enrollment; 67 countries cut to 20.
+  - `Registry.keys()` was renamed to `registered()` (ruff took it for a dict).
+- **2.3 Entities** (2026-10-04): `app/entities.py` applies the §6 drug rule. DRUG, BIOLOGICAL and COMBINATION_PRODUCT count as drugs; a whole-word placebo/sham/vehicle/saline name does not. `select_drugs` returns one mention per drug key per trial and per-trial counts for `placebo`, `non-drug intervention` and `no drug intervention`.
+- A drug key is the name with case and whitespace folded and trailing brackets, doses and salt words stripped, repeatedly, never down to nothing. Sponsors and conditions only fold case and whitespace. The node label is the most common *cleaned* spelling with case kept (so "Pembrolizumab", not "Pembrolizumab (MK-3475)"), with ties broken alphabetically. A mention keeps the raw name as the excerpt.
+- Live check (1,000 trials each, 2026-10-04): pembrolizumab's 14 registered spellings merge into one node (689 trials), and the top 12 drugs for pembrolizumab and for melanoma are clean names. Unmerged long tail: leading doses ("200 mg pembrolizumab"), combination names ("X + pembrolizumab") and form words ("pembrolizumab injection"). These are mostly single-trial nodes that weight >= 2 pruning removes; a further rule waits for an eval failure.
+- Melanoma: 202 of 1,000 trials have no drug intervention (non-drug only), which is why that count is disclosed.
+- Tests were seen red (38 assertion failures) against placeholders.
+- **2.2 Registry** (2026-10-04): `app/aggregators/registry.py` defines `Intent`, `Dimension` and `RowShape`, the `Aggregator` protocol (intent, dimension, shape, columns, excerpt fields, `aggregate`) and the output types (`AggRow` with per-trial `Evidence`; `Aggregation`; `GraphAggregation` with pruning).
+- `Registry` dispatches on (intent, dimension). An unknown pair raises `UnknownAggregatorError`, and a duplicate pair raises `DuplicateAggregatorError`. `keys()` is sorted, because the Phase 3 planner schema is generated from it.
+- Registration rejects declaration bugs: a shape outside the §1 matrix for its intent, no columns or excerpt fields, or a column that would shadow `trial_count`, `nct_ids` or `citations`.
+- Aggregators carry per-trial evidence because only they know which value placed a trial in a row (e.g. which intervention name normalized to a node). `citations.py` orders and caps that evidence, and the excerpt check verifies it against the raw record.
+- Tests were seen red against a no-op registry.
+- **2.1 Response models** (2026-10-04): `app/schemas.py` implements the locked SCHEMAS.md. Responses form a union keyed on `status`, so an `ok` response must carry a spec and a non-`ok` one must carry `visualization: null` and empty `trials`. Each status has its own `meta` model, and nullable `ok` keys are still required.
+- Models check structure only. Rules that compare values (encoding fields exist, `trial_count == len(nct_ids)`, excerpts) stay in `checks.py`, so each rule has one home.
+- The request and the plan filters share one base model, so the year-order rule and the field names cannot drift apart. `meta.filters` keys are a `Literal` that a test keeps equal to the plan's filter fields.
+- `tests/test_contract.py` validates every SCHEMAS.md JSON example, requires an example for each of the six types and four statuses, and rejects malformed variants. It was seen red against placeholder models; two of its rejection tests were mutation-checked.
+
 ### Phase 1: Foundation (done locally 2026-10-04; CI pending on push)
 
 - **1.8 Normalize** (2026-10-04): `app/normalize.py` maps a record to a frozen `NormalizedTrial` (§6 fields); multi-phase records get one category via `vocab.phase_label`; countries are deduped and sorted.
@@ -64,3 +125,13 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 - **Contract in `SCHEMAS.md`** (user choice, 2026-10-04). It keeps CLAUDE.md small for every session; a contract test validates its examples against `schemas.py` so the doc cannot drift.
 - **Phase 1 review fixes** (user approval, 2026-10-04). Unreadable records are set aside up to 5% of a batch, because one odd record shouldn't cost the user 1,999 good ones, while more than 5% signals an API format change. Rules for no locations and no or unnamed interventions, because live data shows 1-15% of trials have these gaps and silent drops would undercount bars. `enrollment_type` is fetched, because estimated and actual counts must not be mixed unseen. Text filters are capped at 200 characters. `Retry-After`, timeout retries and multi-value filters are deferred with triggers (§13.4), since no failure has been observed.
 - **Phase 1 retrieval policy** (user approval, 2026-10-04). httpx sync, because requests are sequential and FastAPI threads sync routes. `FETCH_CAP` 2000. A 30 s timeout with 2 retries on 5xx/429, because a transient upstream error should not fail a request. Counting rules: a multi-phase record is its own category so phase sums reconcile; missing values get disclosed buckets or counted exclusions, never silent drops.
+- **Phase 2-6 decisions** (user approval, 2026-10-04):
+  - Viz type is Python, a fixed shape -> type table. Each shape maps to one type, so an LLM pick adds a failure mode and no choice; the LLM keeps only the plan and the title and notes.
+  - Drug = DRUG, BIOLOGICAL or COMBINATION_PRODUCT, minus placebo, sham, vehicle and saline; type alone splits pembrolizumab (617 DRUG, 243 BIOLOGICAL). Fixed name rules (case, dose, bracketed alias, salt) keep variants of one drug on one node; brand <-> generic merging is deferred until an eval failure.
+  - Pruning: weight >= 2 and the top 50 nodes, falling back to weight 1 if that empties the graph, because an empty graph is useless to the user. The queried entity is flagged `is_anchor`, since it sits in every trial.
+  - Every row carries all its `nct_ids`, so `trial_count == len(nct_ids)` is checkable; 25 cited trials per row keeps responses small. Absent values are cited as `excerpt: null` and verified absent, rather than with an invented excerpt. Excerpts are checked against the value at their `field`, so short values like `120` cannot match by accident.
+  - Enrollment: fixed log-like bins and a log-scale scatter, split by Actual / Estimated, because enrollment is heavily skewed and the two kinds must not mix unseen.
+  - SCHEMAS.md locked with `meta.interpretation` (the assignment requires the query interpretation in `meta`), a `trials` lookup for the sources panel, typed encoding channels, and top-N bar charts (20 categories) for cheap coverage.
+  - Phase 3: `gpt-5.4-mini` at low reasoning effort (planning is enum classification; latency matters more than depth). Two calls (the plan; title and notes); an invalid plan is retried once with its error. Anchor = drug, condition or sponsor, since a time period alone charts a capped slice of the whole registry. `POST /api/visualize`, 200 for all statuses. Stated filter = from a field or verbatim in the query. Zero results trigger a probe of each entity alone, to tell "not found" from "over-filtered".
+  - Phase 4: a search-first UI following the cited-answer search pattern under its own branding; npm and `openapi-typescript`, so `schemas.py` stays the single source.
+  - Phase 5-6: a 2-3 min demo video, and a README that leads with deep citations and condition-anchored networks. No deploy. The zip includes `.git` history, built from a copy without the interview notes. A model comparison was planned, then dropped by the user the same day: the eval stays one model, baseline and after.
