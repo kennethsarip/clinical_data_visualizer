@@ -1,12 +1,15 @@
 import { useEffect, useImperativeHandle, useLayoutEffect, useRef } from 'react'
 import cytoscape, { type Core, type EdgeSingular, type NodeSingular, type StylesheetJson } from 'cytoscape'
 import { highlightedIndexes } from './highlight'
-import { entityColor, labelledNodes, legendGroups, toCytoscapeElements } from './networkElements'
+import { type LabelCandidate, type Side, placeLabels, sideBoxes } from './labelPlacement'
+import { entityColor, legendGroups, toCytoscapeElements } from './networkElements'
 import type { RendererProps } from './rendererProps'
 import { THEME } from './theme'
 import type { NetworkVisualization } from './types'
 
-const PERMANENT_LABELS = 12
+// Labels keep one on-screen size at every zoom (CLAUDE.md §14 Phase 8.2): fit-to-view shrank a
+// spread-out graph's labels to ~7 px and blew a compact one's up to 18 px.
+const LABEL = { fontPx: 12, gapPx: 4, outlinePx: 2, maxWidthPx: 120 }
 
 export function NetworkGraph({ visualization, highlighted, onSelect, ref }: RendererProps<NetworkVisualization>) {
   const container = useRef<HTMLDivElement>(null)
@@ -30,9 +33,6 @@ export function NetworkGraph({ visualization, highlighted, onSelect, ref }: Rend
   useEffect(() => {
     if (!container.current) return
     const { nodes, edges } = toCytoscapeElements(visualization)
-    const anchor = visualization.data.nodes.findIndex((node) => node.is_anchor)
-    const labelled = labelledNodes(nodes.map((n) => n.data), PERMANENT_LABELS, anchor >= 0 ? anchor : undefined)
-    for (const node of nodes) if (labelled.has(node.data.index)) node.classes = `${node.classes} labelled`.trim()
     const graph = cytoscape({
       container: container.current,
       elements: [...nodes, ...edges],
@@ -57,6 +57,14 @@ export function NetworkGraph({ visualization, highlighted, onSelect, ref }: Rend
         numIter: 2500,
       })
       .run()
+    const host = container.current
+    relabel(graph, host)
+    // Zoom and pan fire many viewport events per frame; place labels once per frame.
+    let frame = 0
+    graph.on('viewport resize', () => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => relabel(graph, host))
+    })
     // Hover focuses a node's neighbourhood: everything else fades and its neighbours show labels.
     graph.on('mouseover', 'node', (event) => {
       const node: NodeSingular = event.target
@@ -78,6 +86,7 @@ export function NetworkGraph({ visualization, highlighted, onSelect, ref }: Rend
     cy.current = graph
     applyHighlight(graph, visualization, highlight.current)
     return () => {
+      cancelAnimationFrame(frame)
       cy.current = null
       graph.destroy()
     }
@@ -124,6 +133,46 @@ function applyHighlight(graph: Core, viz: NetworkVisualization, highlighted: Rea
   })
 }
 
+/** Keeps label text at LABEL.fontPx on screen, then shows only the labels that fit, each on its
+ *  chosen side (labelPlacement). Every node carries its label, drawn transparent unless placed, so
+ *  the renderer reports each label's real box and placement never predicts text metrics. */
+function relabel(graph: Core, host: HTMLElement) {
+  const zoom = graph.zoom()
+  graph.nodes().style({
+    'font-size': LABEL.fontPx / zoom,
+    'text-outline-width': LABEL.outlinePx / zoom,
+    'text-max-width': `${LABEL.maxWidthPx / zoom}px`,
+    ...sideStyle('bottom', zoom), // measured below; placement mirrors it to the other sides
+  })
+  const candidates: LabelCandidate[] = graph.nodes().map((node) => ({
+    index: node.data('index') as number,
+    body: node.renderedBoundingBox({ includeLabels: false }),
+    labels: sideBoxes(node.renderedPosition(), node.renderedBoundingBox({ includeNodes: false, includeEdges: false, includeLabels: true })),
+    priority: node.data('size') as number,
+    anchor: node.hasClass('anchor'),
+  }))
+  const sides = placeLabels(candidates, { width: host.clientWidth, height: host.clientHeight })
+  graph.batch(() => {
+    graph.nodes().forEach((node) => {
+      const side = sides.get(node.data('index') as number)
+      node.toggleClass('labelled', side !== undefined)
+      if (side) node.style(sideStyle(side, zoom))
+    })
+  })
+}
+
+/** Cytoscape's text alignment and margin for a label on one side, a constant gap on screen. */
+function sideStyle(side: Side, zoom: number) {
+  const gap = LABEL.gapPx / zoom
+  const vertical = side === 'bottom' || side === 'top'
+  return {
+    'text-valign': vertical ? side : 'center',
+    'text-halign': vertical ? 'center' : side,
+    'text-margin-x': side === 'right' ? gap : side === 'left' ? -gap : 0,
+    'text-margin-y': side === 'bottom' ? gap : side === 'top' ? -gap : 0,
+  }
+}
+
 /** Sizes scale linearly between the smallest and largest value present, so a graph whose nodes
  *  all share one count still draws (Cytoscape's mapData needs min < max). */
 function scaler(values: number[], low: number, high: number) {
@@ -143,15 +192,14 @@ function stylesheet(sizes: number[], weights: number[]): StylesheetJson {
         'background-color': (n: NodeSingular) => entityColor(n.data('group') as string),
         width: (n: NodeSingular) => nodeSize(n.data('size') as number),
         height: (n: NodeSingular) => nodeSize(n.data('size') as number),
-        label: '',
+        // Every label is laid out (so its box is measurable) but drawn only once placed.
+        label: 'data(label)',
+        'text-opacity': 0,
+        'text-outline-opacity': 0,
         color: THEME.textStrong,
         'font-family': THEME.font,
-        'font-size': 12,
         'font-weight': 500,
-        'text-valign': 'bottom',
-        'text-margin-y': 4,
         'text-wrap': 'ellipsis',
-        'text-max-width': '120px',
         'border-width': 2,
         'border-color': '#ffffff',
       },
@@ -159,13 +207,14 @@ function stylesheet(sizes: number[], weights: number[]): StylesheetJson {
     {
       selector: 'node.labelled, node.hovered, node.neighbour, node:selected',
       style: {
-        label: 'data(label)',
+        'text-opacity': 1,
         // A white halo keeps labels legible where they cross edges, without a boxy background.
         'text-outline-color': '#ffffff',
-        'text-outline-width': 2,
         'text-outline-opacity': 1,
       },
     },
+    // Labelled nodes draw above the rest, so a label may cover an unlabelled node (labelPlacement).
+    { selector: 'node.labelled', style: { 'z-index': 5 } },
     { selector: 'node.hovered, node:selected', style: { 'z-index': 10 } },
     { selector: 'node.anchor', style: { opacity: 0.35, 'font-style': 'italic' } },
     {

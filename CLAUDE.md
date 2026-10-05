@@ -183,7 +183,7 @@ tests/               # unit + contract tests; small synthetic fixtures (§9)
 eval/                # questions.json + questions.py (typed loader); runner.py (scoring, metrics); run.py (CLI); results/ (baseline + after, §9)
 examples/            # 3-5 real request/response JSON pairs from the running system
 docker-compose.yml   # local Postgres
-frontend/            # Vite + React + TS app; renders specs from SCHEMAS.md. src/api/: generated types.ts + client.ts (the only backend caller)
+frontend/            # Vite + React + TS app; renders specs from SCHEMAS.md. src/api/: generated types.ts + client.ts (the only backend caller); scripts/label-audit.mjs: live network label audit (Phase 8.2, not CI)
 docs/                # GITIGNORED, local only: project_details/ (assignment screenshots + assignment.md, source of truth for requirements); product_frontend/ (product reference screenshots, Phase 4)
 ```
 
@@ -538,10 +538,9 @@ Done when: every check catches its seeded fault, the ledger renders for every st
 
 ### Phase 8: Richer networks
 Goal: networks a reviewer can trust and read, made obvious in the README. No new entity types or graph algorithms (§13.4).
-Built alongside Phase 6 in a separate worktree (user decision, 2026-10-05): steps 1-2 do not depend on it; steps 3-4 wait for the finished system.
-2. **Legible labels** (user decision, 2026-10-05). Phase 5.4 found labels overprinting each other and hidden under nodes in 3 of 4 eval networks, and ~5 px after fit-to-view in the fourth. Every shown label must be readable without overlap at the default zoom; test it on those four networks before the showcase.
+Built alongside Phase 6 in a separate worktree (user decision, 2026-10-05): steps 1-2 (done) did not depend on it; steps 3-4 wait for the finished system.
 3. **Showcase.** A condition-anchored drug-drug network captured from the live system into `examples/`, with a screenshot.
-4. **README "Richer networks".** The drug rule, name normalization, co-occurrence counting, pruning by weighted degree with the fallback, the anchor hub, the deterministic layout (concentric seed, then force-directed CoSE), and why no path algorithm; the eval network metrics; brand <-> generic merging as a limitation.
+4. **README "Richer networks".** The drug rule, name normalization, co-occurrence counting, pruning by weighted degree with the fallback, the anchor hub, the deterministic layout (concentric seed, then force-directed CoSE), label placement (constant 12 px, four sides, hubs first, never over a label or labelled node; `BUILD_HISTORY.md` 8.2), and why no path algorithm; the eval network metrics; brand <-> generic merging as a limitation.
 
 Done when: the network checks catch their seeded faults, the four eval networks render with legible labels, and the example, screenshot and README section exist.
 
