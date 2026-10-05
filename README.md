@@ -70,7 +70,7 @@ Live tests (real OpenAI and ClinicalTrials.gov) are excluded by default:
 request ─► validate ─► LLM plan (strict JSON schema) ─► Python guards ─► API params
         ─► ClinicalTrials.gov (paged, Postgres cache) ─► conformance filter
         ─► registered aggregator ─► rows + nct_ids ─► viz type from row shape
-        ─► citations ─► 11 checks ─► (repair once) ─► response
+        ─► citations ─► 15 checks ─► (repair once) ─► response
                          ▲
         LLM title runs in parallel with the fetch; it sees the plan, never the rows
 ```
@@ -133,35 +133,78 @@ appendix questions into six classes, and made each class a combination of an **i
 | **uv, ruff, mypy strict, pytest, GitHub Actions** | One-command reproducible setup from a lockfile; CI runs the same definition of done as local | — |
 | **Vite + React + TS, Vega-Lite, Cytoscape.js** | Vega-Lite covers five chart types declaratively; Cytoscape handles graphs. Types are generated from `/openapi.json`, so `schemas.py` stays the single source and CI fails on drift | A component library: weight and a borrowed look |
 
-### 3. Verification through citations
+### 3. Deep citations, and verification at every step
 
-Hallucination is planned against structurally, then checked:
+**What every datum carries.** Every bar, time bucket, scatter point, histogram bin, network node and
+network edge has `trial_count`, all its `nct_ids` (so `trial_count == len(nct_ids)` by
+construction) and up to 25 citations `{nct_id, excerpt, field}`. The excerpt is the verbatim record
+value that put the trial in that datum (`"PHASE3"`, an intervention name as registered, a start
+date), and `field` is its record path. An edge cites both of its ends for every cited trial. A trial
+in an "absent" bucket (no phase) is cited with `excerpt: null`, and a check confirms the field really
+is absent. Every trial card shows the record's own title, official title, status, phase, sponsor and
+conditions, verbatim.
 
-- **Every row carries all its `nct_ids`**, by construction, and `trial_count == len(nct_ids)`.
-- **Every row carries up to 25 citations** `{nct_id, excerpt, field}`. The excerpt is the verbatim
-  record value that put the trial in that row (e.g. `"PHASE3"`, an intervention name) and `field`
-  is its record path. Network edges cite both endpoints for each shared trial.
-- **Excerpts are checked against the value at `field`, not the whole record**, so a short value
-  like `"120"` cannot match by accident, and `PHASE1` cannot cite `EARLY_PHASE1`. A trial in an
-  "absent" bucket (no phase) is cited with `excerpt: null`, and the check confirms the field really
-  is absent rather than inventing a quote.
-- **Eleven deterministic checks** run on every spec (schema, encoding, shape, citation IDs,
-  excerpts, reconciliation, assumptions, title, disclosures, conformance, membership). A failure
-  rebuilds the spec once from the *same* rows with LLM prose removed, then returns `degraded`.
-  The API is never re-queried to fix a spec.
-- **`membership`** closes a gap I found: the excerpt check proved an excerpt was in its record,
-  not that it supported its bar. A Phase 2 trial placed on the Phase 3 bar and cited as `PHASE2`
-  passed every other check. `membership` re-derives every charted trial's category from its raw
-  record, for all its `nct_ids`, not only the 25 cited.
-- **`conformance`** re-reads raw records to confirm every charted trial meets each exact filter.
-  It exists because of a real bug (see the next section).
-- **The title check** fails a title containing any number not in the filters, so the one piece of
-  LLM prose that reaches the chart cannot introduce a figure.
-- **Fault injection** (`tests/test_fault_injection.py`): one seeded fault per check (an invented
-  NCT ID, a wrong-bucket citation, a miscounted row, an off-filter trial, a stray title number...),
-  each caught by its named check.
-- The frontend shows this: click a datum to filter the sources panel to its trials; the Viewer
-  opens the cached record with the cited field highlighted.
+**Fifteen deterministic checks**, grouped by the pipeline step they verify. None of them reads LLM
+output. A failure rebuilds the spec once from the same rows without LLM prose, then returns
+`degraded`; the API is never re-queried to fix a spec.
+
+| Step | Checks | What they prove |
+|---|---|---|
+| retrieval | `conformance` | every charted trial meets each exact filter (re-read from its raw record), and the filters shown are exactly the API params sent |
+| aggregation | `membership`, `recount`, `reconciliation`, `accounting` | each trial's own record puts it in its datum; every row, node, edge, point, bin and exclusion is rebuilt from the raw records and matches; counts reconcile; every retrieved trial is charted or listed under the reason it is not |
+| citations | `citation ids`, `excerpts`, `coverage`, `summaries` | every cited ID is in its datum and was retrieved; every excerpt is the value at its field; every datum cites `min(trial_count, 25)` trials; every card field equals its record |
+| prose | `title` | the one LLM text on the chart contains no number outside the filters |
+| response | `schema`, `encoding`, `shape`, `assumptions`, `disclosures` | the contract holds and every cap, cutoff, pruning and inferred filter is disclosed |
+
+**Accounting by trial ID.** `meta.excluded` lists every trial it leaves out by NCT ID, under its
+reason: a counting rule (`missing start date`, `placebo`, ...), `outside the country filter`,
+`not in the top 20`, `pruned from the network`. `accounting` then proves every retrieved trial is
+either on the chart or listed, so nothing disappears silently.
+
+**The verification ledger.** `meta.verification`, on every status, lists the eight pipeline steps
+(request, plan, retrieval, records, aggregation, citations, prose, response) with the checks each
+ran, items verified of total, and a one-line result written by Python from counts. A refusal shows
+where it stopped: "Beijing, Japan" stops at `plan` ("Beijing" cannot be applied), and every later
+step is `not_reached`. Under the chart, a badge ("3,770 trials accounted for · 3,387 citations
+verified") opens the ledger.
+
+**Seeded faults** (`tests/test_fault_injection.py`): each corrupts one thing in a valid answer, and
+the named check must catch it. The clean answers pass every check, so each catch is real.
+
+| Fault | Caught by |
+|---|---|
+| an invented NCT ID | `citation ids` |
+| a Phase 2 trial on the Phase 3 bar, cited with its real value `PHASE2` | `membership` (and `summaries`); the excerpt check alone passes it |
+| an excerpt not in its record | `excerpts` |
+| a miscounted row | `reconciliation` |
+| a retrieved trial on no datum and under no reason | `membership`, `accounting` |
+| an exclusion whose count is not its IDs | `accounting` |
+| a trial with no site in the filtered country | `conformance` |
+| a datum citing fewer trials than it holds | `coverage` |
+| a card whose official title is another trial's | `summaries` |
+| a network node cited with another drug's name | `membership` |
+| an edge cited for one end only | `membership` |
+| a node given a trial that never names its drug | `recount` |
+| a stray number in the title | `title` |
+| an undisclosed inferred filter | `assumptions` |
+| a false "capped" disclosure | `disclosures` |
+| an encoding field no row has | `encoding` |
+
+Two of these were found by the new checks themselves. `recount` caught the SCHEMAS.md network
+example listing its nodes out of the contract's own documented order, and a test fixture marking the
+searched drug as not the anchor.
+
+**Eval citation metrics** (`eval/results/phase7_final.json`): 34/34 answers; 4,208 of 4,208 data
+fully cited; 30,896 of 30,896 excerpts hold against their records; 0 of 95,265 charted trials
+outside a filter; every check passed on every answer, with no repairs. The checks cost about 1.6 s
+on the largest answer (a 20,000-trial comparison); warm median latency is 3.9 s.
+
+![The sources panel filtered to one network edge: Ipilimumab – Nivolumab, 115 trials, each card
+citing both drug names verbatim](assets/sources-panel-edge.png)
+
+Clicking the Ipilimumab – Nivolumab edge filters the sources to its 115 trials. The numbered
+markers jump to their cards, and each card quotes both drug names exactly as registered, at their
+field.
 
 ### 4. A frontend that feels like the company's product
 
@@ -228,8 +271,8 @@ The plan changed a lot once it met real data. Each change below was forced by a 
 ## How correctness was validated
 
 **1. Tests written red-first.** Every fix and feature started with a failing test (seen failing for
-the expected reason), then the code. 953 offline backend tests (unit, contract, checks, fault
-injection; no network or LLM needed), 139 live tests against the real APIs, and 131 frontend tests.
+the expected reason), then the code. 974 offline backend tests (unit, contract, checks, fault
+injection; no network or LLM needed), 139 live tests against the real APIs, and 143 frontend tests.
 Expected outputs are computed by hand from the source of truth (the API docs, the counting rules,
 the assignment), never copied from current output.
 
@@ -252,6 +295,7 @@ citation coverage and off-filter trials (re-read from raw records outside `check
 | `pre_phase6.json` (4 new retrieval questions) | 29/34 | — | 1,262 of 88,382 | — | — |
 | `after_phase6_guards.json` | 34/34 | 13/13 | 0 of 95,265 | 30,896 / 30,896 | 3.5 s |
 | `phase7_membership.json` | 34/34 | 13/13 | 0 of 95,265 | 30,896 / 30,896 | 3.8 s |
+| `phase7_final.json` (15 checks, ledger) | 34/34 | 13/13 | 0 of 95,265 | 30,896 / 30,896 | 3.9 s |
 
 Honest caveat: the original pass/fail set is in-sample. The planner prompt was tuned against these
 questions, so 34/34 shows the system meets the spec it was built to, not how it generalizes. The

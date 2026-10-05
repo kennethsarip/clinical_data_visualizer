@@ -4,7 +4,7 @@
 >
 > **The one thing to understand first:** the LLM never produces a number, count, date, NCT ID, excerpt or data row. It does exactly two things: plan the query and write prose (title, notes). Retrieval, aggregation, viz type selection, citations and checks are deterministic Python, so every row traces back to cached API records by NCT ID (§7.2).
 >
-> **Status:** Phases 1-6 are done (each merged and tagged `phase-N`; Phase 6 on 2026-10-05). Phase 7 (deep citations and verification) is in progress on `phase-7-citations`: the `membership` check and the seeded-fault table are in; the live eval is 34/34 with hallucination probes 13/13. `POST /api/visualize` answers end to end and the frontend renders every viz type with clickable citations. The repo is `github.com/kennethsarip/cheiron_task` (private, §12). Runs locally only; no deploy is planned (§13.4).
+> **Status:** Phases 1-6 are done (each merged and tagged `phase-N`). Phase 7 (deep citations and verification) passes its "Done when" on branch `phase-7-citations` (2026-10-05): 15 checks, a verification ledger on every status, accounting by trial ID, 16 seeded faults each caught, eval 34/34 with hallucination probes 13/13; merge pending. `POST /api/visualize` answers end to end and the frontend renders every viz type with clickable citations. The repo is `github.com/kennethsarip/cheiron_task` (private, §12). Runs locally only; no deploy is planned (§13.4).
 >
 > **Definition of done:** `uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest`, plus `cd frontend && npm run lint && npm run typecheck && npm test && npm run check:types`, all green (`check:types` diffs against git, so commit regenerated types first). CI (`.github/workflows/ci.yml`) runs exactly these, so local green means CI green. `main` stays runnable.
 >
@@ -318,7 +318,11 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 | title | The title contains no number that is not in the filters (§7.2) |
 | disclosures | The WARN items are disclosed consistently: `sample.capped` matches `fetched < total`; `pruning` is set for a network and only for a network; `top_n` bounds the categories shown |
 | conformance | Every charted trial's raw record meets each exact filter in `meta` (phase, status, start-year range, country), and `meta`'s filters equal the API params each cohort was fetched with, in both directions |
-| membership | Every trial in every bar, grouped bar and time bucket belongs there by its own raw record, re-derived with the aggregator's categorizer for all `nct_ids`, not only the cited ones; with one cohort, no retrieved trial that meets the filters and belongs to a shown row is missing from it (Phase 7, 2026-10-05). Networks and numeric charts are not covered yet |
+| membership | Every trial in every bar, grouped bar and time bucket belongs there by its own raw record, re-derived with the aggregator's categorizer for all `nct_ids`; with one cohort, no retrieved trial that meets the filters and belongs to a shown row is missing. Network nodes: every excerpt normalizes (§6 name rules) to its node; edges cite both ends for every cited trial |
+| recount | Each cohort is rebuilt from its raw cached records (normalize, the exact filters, the same aggregator), and every row, node, edge, point, bin and exclusion must match the answer, in order: one code path for every shape |
+| coverage | Every row, node and edge cites `min(trial_count, citation_cap)` distinct trials |
+| summaries | Every field of every `trials` card (titles, status, phase, start date, sponsor, conditions) equals its raw record value |
+| accounting | Every retrieved trial is on some datum or listed by NCT ID under a reason in `meta.excluded`; each reason's count is its IDs (an unreadable record may lack one) |
 
 **WARN** (disclosed in `meta`; the response stays `ok`): cap hit, records excluded by a counting rule, network pruned.
 
@@ -352,9 +356,10 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 ### 8.3 Request and response
 **`SCHEMAS.md` is the single source** for the request fields, the response envelope, the citation shape, one example per viz type, the `meta` keys and the non-`ok` responses. Read it before touching `schemas.py`, `viz.py` or `citations.py`. It was locked on 2026-10-04; a change to it is a contract change and updates `schemas.py` in the same commit. The invariants it must keep:
 - `type` values: `bar_chart`, `time_series`, `network_graph` (from the assignment), plus `grouped_bar_chart`, `scatter_plot`, `histogram`.
+- `meta.verification` (every status): the ledger, one entry per pipeline step with the checks run, items verified of total and a Python-written result; `meta.excluded` lists every left-out trial by NCT ID under its reason (Phase 7, user decisions 2026-10-05).
 - `meta` carries filters (stated vs inferred), source, the query interpretation, assumptions, units, sorting, time granularity, grouping, cap disclosure, citation cap, excluded-record counts and pruning.
 - Every encoding channel names its field and a type (`quantitative`, `nominal`, `ordinal`, `temporal`), plus an optional `scale`, so a renderer never infers one.
-- A top-level `trials` map gives each cited NCT ID its title, status, phase and start date, so a sources panel needs no second request.
+- A top-level `trials` map gives each cited NCT ID its title, verbatim official title, status, phase and start date, so a sources panel needs no second request.
 - **Renderer contract bar:** a frontend engineer can implement a renderer without guessing (Objectives). For each viz type it states the `encoding` channels, every row field with its type and unit, the sort order, and how citations attach to rows, nodes and edges.
 - The frontend (`frontend/`) consumes only this contract, which makes it proof that the contract is renderable without guessing. The README links to `SCHEMAS.md` and shows real examples from `examples/`.
 
@@ -506,7 +511,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4, done) makes results visible for the demo.
 
-**Next move:** Phase 7 on branch `phase-7-citations`: steps 1-2 for networks and numeric charts, then steps 3-6 (decide the contract changes first), then 8.
+**Next move:** merge `phase-7-citations` (PR) and tag `phase-7`; then Phase 8 step 1 (network checks: several already exist as `membership` and `recount`, so start by mapping what is left).
 
 Phases 6-9 were planned with the user on 2026-10-05 (reasons in `BUILD_HISTORY.md` → Decisions): fix query understanding and retrieval first, because a citation cannot rescue a trial that should never have been retrieved; then verify every step and show the result to the user; then the network showcase; then submission.
 
@@ -515,19 +520,6 @@ Phases 6-9 were planned with the user on 2026-10-05 (reasons in `BUILD_HISTORY.m
 - **Foundation before features:** a phase starts only when the previous phase's "Done when" passes, because each phase consumes the previous one's output (records -> rows -> responses -> rendered charts -> measured results).
 - **Decide first:** each phase's open decisions are settled before its code is written, and recorded in the section they govern plus `BUILD_HISTORY.md` → Decisions. Items marked PROPOSED are recommendations awaiting the user's yes.
 - **Ship-then-prune:** when a step is done, delete it from its phase here and add a few 1-2 line bullets for it under that phase's heading in `BUILD_HISTORY.md`, in the SAME commit. Remaining steps keep their numbers. When a phase's "Done when" passes, delete the whole phase.
-
-### Phase 7: Deep citations and verification at every step
-Goal: every displayed fact is checked against the cached record it came from, at each pipeline step, and the user can see each step's result. No LLM call is added: card text and citations are verbatim record values.
-1. **Citation coverage** (support shipped as the `membership` check, `BUILD_HISTORY.md` 7.1). Left: a check that every row, node and edge cites `min(trial_count, citation_cap)` distinct trials (the eval measures it), and support for network nodes and edges.
-2. **Full recount for networks and numeric charts.** Bars, grouped bars and time series are recounted by `membership` (7.1). Left: node and edge membership from raw records, scatter points and histogram bins, and each `meta.excluded` count.
-3. **Accounting by ID.** `meta.excluded[]` entries gain `nct_ids`, and a check confirms every retrieved trial is in some datum or listed under a reason (counting rule, off-filter, top-N cutoff, network pruning). Contract change.
-4. **Card description.** Fetch `officialTitle` and add it to the trial summary verbatim (the reference product's ClinicalTrials.gov card shows the same field); a check that every summary field equals its raw record value. Decide first: response size, since the `trials` map holds every charted trial (median 132 characters, ~1.3 MB raw at the 10,000 cap), versus loading descriptions per page of 25 from the cache.
-5. **Verification ledger.** `meta.verification` on every status: for each step (request, plan, retrieval, records, aggregation, citations, prose, response), the checks run, items verified of total, and a one-line result written by Python; steps not reached are marked, so a non-`ok` answer shows where it stopped. The "How this was answered" drawer renders it, and a badge under the chart ("1,994 trials accounted for · 412 citations verified") opens it. Contract change.
-6. **Frontend.** The description line on each source card; a selected-datum header with numbered markers (`Phase 3 · 412 trials [1][2][3] … +387`) that jump to their cards; excluded trials listed by reason.
-7. **Fault injection** (started: `tests/test_fault_injection.py`, 10 seeded faults each caught by its named check, 7.1). Left: an uncited datum (needs the step 1 coverage check), network faults.
-8. **Rerun and README.** Save an eval rerun. Write the README "Deep citations" section: how every bar, bucket, point, node and edge carries `nct_ids` and verbatim `{nct_id, excerpt, field}` citations; the per-step ledger; a fault -> check table; the eval citation metrics; a screenshot of the sources panel filtering on a clicked edge.
-
-Done when: every check catches its seeded fault, the ledger renders for every status, the rerun is saved, and the README section is written.
 
 ### Phase 8: Richer networks
 Goal: networks a reviewer can trust and read, made obvious in the README. No new entity types or graph algorithms (§13.4).
