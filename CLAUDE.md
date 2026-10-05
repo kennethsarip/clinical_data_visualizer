@@ -505,7 +505,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4, done) makes results visible for the demo.
 
-**Next move:** Phase 6 step 5 (rerun the eval), then merge and tag `phase-6`.
+**Next move:** the user decides whether Phase 6 "Done when" holds (the rerun's one miss is an LLM omission at ~1 in 23, `BUILD_HISTORY.md` 6.5); then merge and tag `phase-6`.
 
 Phases 6-9 were planned with the user on 2026-10-05 (reasons in `BUILD_HISTORY.md` → Decisions): fix query understanding and retrieval first, because a citation cannot rescue a trial that should never have been retrieved; then verify every step and show the result to the user; then the network showcase; then submission.
 
@@ -517,7 +517,6 @@ Phases 6-9 were planned with the user on 2026-10-05 (reasons in `BUILD_HISTORY.m
 
 ### Phase 6: Query understanding and retrieval
 Goal: every constraint in the question is either applied exactly or disclosed as not applied, and every charted trial meets the filters applied. Evidence: the country filter is a text search (§8.4), so "breast cancer trials in Japan" charts 9 trials sited only in China, and every §7.6 check passes.
-5. **Rerun** the eval and save it next to the pre-fix run.
 
 Done when: the step-0 questions pass, the off-filter metric is 0 across the eval set, and the pre-fix run and rerun are saved in `eval/results/`.
 
