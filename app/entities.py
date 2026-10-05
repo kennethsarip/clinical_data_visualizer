@@ -10,6 +10,7 @@ excerpt check verifies against the record.
 """
 
 import re
+import unicodedata
 from collections import Counter
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
@@ -48,6 +49,23 @@ _DRUG_SUFFIXES = (_TRAILING_BRACKET, _TRAILING_DOSE, _TRAILING_SALT)
 
 _WHITESPACE = re.compile(r"\s+")
 
+# A key is the name's words, ignoring case, accents, punctuation and symbols: in
+# 85,208 cached live records one drug or condition was registered as "Nab-paclitaxel" and "nab
+# paclitaxel", "Docetaxel®", "5Fluorouracil", "Glargine Insulin", or MeSH's inverted "Carcinoma,
+# Non-Small-Cell Lung" (CLAUDE.md §6). A word is a run of letters or of digits, so "type2" is
+# "type 2". Every letter and digit is kept, so "Type 1" / "Type 2" and "IL-2" / "IL-12" stay apart.
+# Drug and condition keys also ignore word order ("Glargine Insulin", MeSH inversions). Sponsor
+# keys keep it: there it only merged person sponsors ("Yan Li" / "Li Yan"), who may be two people.
+_WORD = re.compile(r"[^\W\d_]+|\d+")
+# Legal-form words that end a sponsor's name: "Celgene" and "Celgene Corporation", "Eisai Inc."
+# and "Eisai Co., Ltd." are one sponsor. Only these trail-end forms go; "Pharmaceuticals" stays,
+# since "Novartis Pharmaceuticals" names a business unit.
+_LEGAL_FORMS = (
+    r"inc|incorporated|llc|l\.l\.c|ltd|limited|corp|corporation|co|company|gmbh|ag|sa|s\.a"
+    r"|plc|bv|b\.v|nv|n\.v|kg|spa|s\.p\.a|srl|s\.r\.l|sas|ab|as|a/s|oy|kk|k\.k|pty|ulc|lp|llp"
+)
+_TRAILING_LEGAL_FORMS = re.compile(rf"(?:[\s,&]+(?:{_LEGAL_FORMS})\.?)+$", re.IGNORECASE)
+
 
 class EntityType(StrEnum):
     """Network node types; values match SCHEMAS.md §3.6 `entity_type`."""
@@ -73,7 +91,7 @@ class DrugSelection:
 
 
 def entity_key(entity_type: EntityType, raw: str) -> str:
-    return _clean(entity_type, raw).casefold()
+    return _key(entity_type, _clean(entity_type, raw))
 
 
 def drug_key(raw: str) -> str:
@@ -137,7 +155,19 @@ def condition_mentions(trial: NormalizedTrial) -> tuple[Mention, ...]:
 
 def _mention(entity_type: EntityType, raw: str) -> Mention:
     label = _clean(entity_type, raw)
-    return Mention(key=label.casefold(), label=label, raw=raw)
+    return Mention(key=_key(entity_type, label), label=label, raw=raw)
+
+
+def _key(entity_type: EntityType, label: str) -> str:
+    """The words of a cleaned name (sorted for drugs and conditions); the folded name itself if it
+    has no words."""
+    text = unicodedata.normalize("NFKD", label)
+    text = "".join(ch for ch in text if not unicodedata.combining(ch)).casefold()
+    if entity_type is EntityType.SPONSOR:
+        words = _WORD.findall(_TRAILING_LEGAL_FORMS.sub("", text) or text)
+    else:
+        words = sorted(_WORD.findall(text))
+    return " ".join(words) or label.casefold()
 
 
 def _clean(entity_type: EntityType, raw: str) -> str:

@@ -190,11 +190,11 @@ def test_sponsor_drug_prunes_weight_one_edges_and_orphan_nodes() -> None:
     # Edges: merck-pembrolizumab {T1, T2}; merck-ipilimumab {T2}; bms-nivolumab {T4};
     # bms-ipilimumab {T4}. Only the first reaches weight 2.
     assert _edges(graph) == [
-        ("sponsor:merck sharp & dohme llc", "drug:pembrolizumab", ["NCT00000001", "NCT00000002"]),
+        ("sponsor:merck sharp dohme", "drug:pembrolizumab", ["NCT00000001", "NCT00000002"]),
     ]
     assert _nodes(graph) == [
         ("drug:pembrolizumab", "Pembrolizumab", 2, False),
-        ("sponsor:merck sharp & dohme llc", "Merck Sharp & Dohme LLC", 2, False),
+        ("sponsor:merck sharp dohme", "Merck Sharp & Dohme LLC", 2, False),
     ]
     # Nodes: merck, bms, nci, pembrolizumab, ipilimumab, nivolumab = 6; 2 kept.
     assert graph.pruning == Pruning(

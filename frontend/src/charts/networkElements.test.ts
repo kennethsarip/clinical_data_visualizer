@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ENTITY_COLORS, entityColor, labelledNodes, legendGroups, toCytoscapeElements } from './networkElements'
+import { ENTITY_COLORS, entityColor, legendGroups, toCytoscapeElements } from './networkElements'
 import type { NetworkVisualization } from './types'
 
 const ENCODING = {
@@ -58,18 +58,6 @@ describe('toCytoscapeElements', () => {
       encoding: { ...ENCODING, nodes: { ...ENCODING.nodes, label: { field: 'id', type: 'nominal' } } },
     } as unknown as NetworkVisualization
     expect(toCytoscapeElements(renamed).nodes[1].data.label).toBe('drug:ipilimumab')
-  })
-})
-
-describe('labelledNodes', () => {
-  it('labels the largest nodes, ties by data order, and always the anchor', () => {
-    const sizes = [{ size: 5 }, { size: 9 }, { size: 1 }, { size: 9 }, { size: 3 }]
-    expect(labelledNodes(sizes, 2)).toEqual(new Set([1, 3]))
-    expect(labelledNodes(sizes, 2, 2)).toEqual(new Set([1, 3, 2]))
-  })
-
-  it('labels every node in a small graph', () => {
-    expect(labelledNodes([{ size: 1 }, { size: 2 }], 12)).toEqual(new Set([0, 1]))
   })
 })
 

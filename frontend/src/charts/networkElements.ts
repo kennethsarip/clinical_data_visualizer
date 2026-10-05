@@ -45,15 +45,6 @@ export function toCytoscapeElements(viz: NetworkVisualization): { nodes: NodeEle
   return { nodes, edges }
 }
 
-/** Indexes of the nodes that keep a permanent label: the `count` largest (ties by data order) and
- *  the anchor. The rest show theirs on hover or selection, so a dense graph stays legible. */
-export function labelledNodes(nodes: readonly { size: number }[], count: number, anchorIndex?: number): Set<number> {
-  const order = nodes.map((node, index) => ({ size: node.size, index })).sort((a, b) => b.size - a.size || a.index - b.index)
-  const labelled = new Set(order.slice(0, count).map((n) => n.index))
-  if (anchorIndex !== undefined) labelled.add(anchorIndex)
-  return labelled
-}
-
 const GROUP_ORDER = ['drug', 'sponsor', 'condition']
 
 /** The entity types present, once each, in a fixed order so the legend reads the same every time. */
