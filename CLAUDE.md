@@ -114,7 +114,7 @@ Happy path (LLM steps marked):
 - Explicit statuses and handling of the edge cases in §7.8.
 - A Vite + React + TypeScript frontend with citation and `meta` panels (`BUILD_HISTORY.md` Phase 4).
 - An eval set of ~20-25 questions with a baseline run and an after run, both kept (§9).
-- Bonuses, shown off in the README (§14 Phase 6): deep citations, condition-anchored networks, a 2-3 min demo video.
+- Bonuses, built and shown off in the README (§14 Phases 7-9): deep citations with verification at every step, condition-anchored networks, a 2-3 min demo video.
 - The submission zip: code; the README (how to run, schemas, design decisions and tradeoffs, limitations and what more time would improve, AI tools used, how correctness was validated, and what was designed deliberately versus generated and adapted); and 3-5 example runs with the actual JSON outputs.
 
 **Out of scope**
@@ -275,7 +275,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 ### 7.3 Retrieval
 - API params come only from the validated plan, never from raw LLM text.
 - `query.*` params are searches, not exact filters, and the API expands drug synonyms. `query.intr` returns 2,968 trials for pembrolizumab, Keytruda and MK-3475 alike. Consequences: a matched record may not contain the user's wording, so excerpts quote the record's own values (§7.5); network nodes need name normalization (§6); and synonym resolution has a lower priority (§13.4).
-- Unambiguous filters (dates, status, phase, country) are applied hard. A filter inferred from ambiguous wording is disclosed as an assumption, because a wrong silent filter removes the correct answer. A filter is **stated** if and only if its value comes from a request field or appears verbatim in `query`; otherwise it is **inferred** (decided 2026-10-04). Python applies this test to the plan's filter values, case-insensitively, and writes the assumption for each inferred filter. When a request field and the query name different values for one filter, Python overwrites the plan's value with the field's and `meta.notes` says so (decided 2026-10-04).
+- Unambiguous filters (dates, status, phase, country) are applied hard. **Known gap (found 2026-10-05):** country is still sent as `query.locn`, a text search over location fields, so it is not yet exact (§8.4); Phase 6 step 4 fixes it behind a conformance check. A filter inferred from ambiguous wording is disclosed as an assumption, because a wrong silent filter removes the correct answer. A filter is **stated** if and only if its value comes from a request field or appears verbatim in `query`; otherwise it is **inferred** (decided 2026-10-04). Python applies this test to the plan's filter values, case-insensitively, and writes the assumption for each inferred filter. When a request field and the query name different values for one filter, Python overwrites the plan's value with the field's and `meta.notes` says so (decided 2026-10-04).
 - Paginate with `nextPageToken` at `pageSize` 1000 (the API clamps larger values to 1000) and stop at `FETCH_CAP` (default 10000, ten pages; raised from 2000 because at 2000, 19/23 charted eval answers were capped samples with understated counts, `BUILD_HISTORY.md` 5.3). A capped chart says so on its count axis and in a caption. Send `countTotal=true` so `meta` can report "fetched N of total M" when capped.
 - Cache by API params (§6).
 - Cohorts download concurrently (pages within one search cannot: each follows the previous page's token); Postgres stays on the request thread.
@@ -358,6 +358,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 ### 8.4 ClinicalTrials.gov API facts (verified 2026-10-04, apiVersion 2.0.5)
 - Base URL `https://clinicaltrials.gov/api/v2`. `GET /studies` returns `{totalCount, studies, nextPageToken}`; `fields=` trims the payload.
 - Verified params: `query.intr`, `query.cond`, `query.spons`, `query.locn`, `filter.overallStatus`, and `filter.advanced` with `AREA[Phase]PHASE3` and `AREA[StartDate]RANGE[2015-01-01,MAX]`.
+- Country (verified 2026-10-05): `query.locn` is a text search over location fields, so "Japan" matches *China-Japan Friendship Hospital* in Beijing (breast cancer: 9 of 336 trials with no site in Japan) and "France" matches a Beirut hospital (diabetes: 4 of 1,062). `filter.advanced=AREA[LocationCountry]<name>` matches the country field: 327 and 1,058 trials, none off-country. It accepts variants ("Korea", "USA" and "Czech Republic" return the same counts as "South Korea", "United States" and "Czechia") and `(France OR Germany)`. `GET /stats/field/values?fields=LocationCountry` lists the 226 country names. Phase, status and start-date filters returned no off-filter trials.
 - Enums (`GET /studies/enums`): Phase, Status, InterventionType, AgencyClass (sponsor class) and StudyType. `app/vocab.py` mirrors them and is the only place their values and display labels (e.g. `PHASE1` -> "Phase 1") are defined.
 - Rate limits (measured 2026-10-05; none published, no rate-limit headers): ~10 requests in a burst, then 429 (an HTML page, no `Retry-After`); 1.0 request/s for 50 requests drew no 429, 1.5/s drew 3 in 40; a 429 cleared after ~8 s. A 1,000-trial page takes ~0.67 s (100-trial pages cost ~1.8 s per 1,000 trials).
 
@@ -484,8 +485,11 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 - Retrying timeouts. Trigger: a logged timeout in an eval or example run. (The 429 half of this item shipped in Phase 5.3: rate limiting, the 8 s recovery and `Retry-After`, §7.3.)
 - Multi-value phase and status filters (e.g. "Phase 2 or 3"). Trigger: an eval question that needs one; the API syntax is unverified.
 - Brand <-> generic and code-name merging of network nodes (Keytruda, MK-3475 -> pembrolizumab). Trigger: an eval network splits one drug across nodes in a way the §6 name rules miss. **Trigger met 2026-10-05** (Phase 5.4): the Novartis condition-drug network shows RAD001 and everolimus, one drug, as two nodes.
-- Investigator and site networks (the assignment lists both entities). Trigger: every Phase 2-6 "Done when" passes with time left. First verify `overallOfficials[].name` and `locations[].facility` on the live API; site names are messy free text.
+- Investigator and site networks (the assignment lists both entities). Trigger: every Phase 2-8 "Done when" passes with time left. First verify `overallOfficials[].name` and `locations[].facility` on the live API; site names are messy free text.
 - A record with no `nctId`: `normalize` sets it aside as unreadable (up to 5%), but `TrialCache._write` raises `UpstreamError` first (a Phase 1 test pins this), so one such record fails the request with 502. Never seen in 6,000 live records. Trigger: a logged occurrence; then decide which rule wins.
+- Region filters ("Europe", "EU5", "APAC") as one multi-country filter through a Python region table (not chosen 2026-10-05). Trigger: an eval question or user request names a region. `AREA[LocationCountry](A OR B)` is verified (§8.4).
+- Non-English questions (not chosen 2026-10-05): entity names translated to English for the API and disclosed as inferred, prose in the question's language, excerpts kept verbatim. Trigger: an eval question or user request in another language.
+- Community detection for network node colour (not chosen 2026-10-05). Trigger: the Phase 8 showcase network renders as an undifferentiated hairball. Path algorithms (Dijkstra) stay out: no question asks for a path, and co-occurrence weights measure closeness, not distance.
 - Deployed endpoint (optional bonus, not chosen 2026-10-04; the demo video covers it). Monitoring, backups and a runbook wait until a deploy exists; the secret rules in §11 apply now.
 
 ### 13.5 Decided by assumption
@@ -499,7 +503,9 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4, done) makes results visible for the demo.
 
-**Next move:** Phase 5 "Done when" (README citations wait for Phase 6/9), then merge PR #6 and tag `phase-5`.
+**Next move:** Phase 5 "Done when" (README citations wait for Phase 6/9), then merge PR #6 and tag `phase-5`, then Phase 6 step 0 before any Phase 6 code.
+
+Phases 6-9 were planned with the user on 2026-10-05 (reasons in `BUILD_HISTORY.md` → Decisions): fix query understanding and retrieval first, because a citation cannot rescue a trial that should never have been retrieved; then verify every step and show the result to the user; then the network showcase; then submission.
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
@@ -513,14 +519,44 @@ Goal: measured evidence of iteration, including evidence for the bonuses.
 
 Done when: the baseline and after results are saved in `eval/` with per-question metrics, and the README cites only comparisons that were actually run.
 
-### Phase 6: Submission and bonuses
+### Phase 6: Query understanding and retrieval
+Goal: every constraint in the question is either applied exactly or disclosed as not applied, and every charted trial meets the filters applied. Evidence: the country filter is a text search (§8.4), so "breast cancer trials in Japan" charts 9 trials sited only in China, and every §7.6 check passes.
+0. **Questions and a pre-fix run.** Add eval questions: breast cancer phases in Japan; a "Korea" country variant; two values for one filter ("trials in Beijing, Japan"); a constraint no filter expresses ("pediatric asthma trials by phase"). Write the expectations from the behavior decided here, never from output. Add an off-filter metric to the runner, computed from the fetched records independently of `checks.py`. Save a run on the current code (`eval/results/pre_phase6.json`) before any other Phase 6 code; this stands in for "before the baseline", which had already run.
+1. **Filter UI.** Remove the Filters panel; the question box is the only input, and filtering comes from the question alone. Read-only chips above the chart show the applied filters, inferred ones marked, so hidden filtering stays visible. The optional request fields stay in the API (the request schema is graded; tests and the eval use them).
+2. **Canonical countries.** `country` becomes one of ClinicalTrials.gov's 226 country names (§8.4), mirrored in `vocab.py` with a live parity test and enforced by the plan schema, so "Korea", "USA" or "한국" map to one name and the §7.3 verbatim test discloses the mapping as inferred.
+3. **Constraint accounting.** The plan lists every constraint in the question, quoted verbatim, as applied or not applied; Python checks that each quote is a substring of `query`. Two values for one filter -> `clarification_needed` naming both; a constraint no filter expresses (a city, an age group) -> `clarification_needed` with a suggested rephrase, written by the same plan call, that the frontend offers as one click. Contract change (SCHEMAS.md §4-5). The LLM can still leave a constraint out; the step-0 questions measure that.
+4. **Retrieval conformance, then the fix.** A check that every record meets each filter sent (phase, status, start-year range, country) and that every filter in `meta` traces to a sent param. Write it red-first against the Japan question, then send country as `filter.advanced=AREA[LocationCountry]<name>`. Off-filter trials are dropped and counted in `meta.excluded`; over 5% of a batch -> `degraded`, since the param mapping is probably wrong. Remove the §7.3 known-gap note.
+5. **Rerun** the eval and save it next to the pre-fix run.
+
+Done when: the step-0 questions pass, the off-filter metric is 0 across the eval set, and the pre-fix run and rerun are saved in `eval/results/`.
+
+### Phase 7: Deep citations and verification at every step
+Goal: every displayed fact is checked against the cached record it came from, at each pipeline step, and the user can see each step's result. No LLM call is added: card text and citations are verbatim record values.
+1. **Citation support and coverage.** Each excerpt maps to its own datum through the aggregator's categorizer: a start date's year equals its bucket, a phase excerpt yields its bar's label, a drug name normalizes to its node, and each edge cites both ends for every cited trial. Today a Phase 2 trial wrongly placed on the Phase 3 bar and cited as `PHASE2` passes the excerpt check. Coverage: every row, node and edge cites `min(trial_count, citation_cap)` distinct trials (the eval measures this; no check enforces it yet).
+2. **Full recount.** Re-derive every row's, node's and edge's membership from the raw records for all its `nct_ids`, not only the 25 cited, plus each `meta.excluded` count. One code path for every row shape, graphs included.
+3. **Accounting by ID.** `meta.excluded[]` entries gain `nct_ids`, and a check confirms every retrieved trial is in some datum or listed under a reason (counting rule, off-filter, top-N cutoff, network pruning). Contract change.
+4. **Card description.** Fetch `officialTitle` and add it to the trial summary verbatim (the reference product's ClinicalTrials.gov card shows the same field); a check that every summary field equals its raw record value. Decide first: response size, since the `trials` map holds every charted trial (median 132 characters, ~1.3 MB raw at the 10,000 cap), versus loading descriptions per page of 25 from the cache.
+5. **Verification ledger.** `meta.verification` on every status: for each step (request, plan, retrieval, records, aggregation, citations, prose, response), the checks run, items verified of total, and a one-line result written by Python; steps not reached are marked, so a non-`ok` answer shows where it stopped. The "How this was answered" drawer renders it, and a badge under the chart ("1,994 trials accounted for · 412 citations verified") opens it. Contract change.
+6. **Frontend.** The description line on each source card; a selected-datum header with numbered markers (`Phase 3 · 412 trials [1][2][3] … +387`) that jump to their cards; excluded trials listed by reason.
+7. **Fault injection.** One seeded fault per check (an invented NCT ID, a wrong-bucket citation, an uncited datum, an off-filter trial, a miscounted row, an unaccounted trial, a stray title number), each caught by its named check.
+8. **Rerun and README.** Save an eval rerun. Write the README "Deep citations" section: how every bar, bucket, point, node and edge carries `nct_ids` and verbatim `{nct_id, excerpt, field}` citations; the per-step ledger; a fault -> check table; the eval citation metrics; a screenshot of the sources panel filtering on a clicked edge.
+
+Done when: every check catches its seeded fault, the ledger renders for every status, the rerun is saved, and the README section is written.
+
+### Phase 8: Richer networks
+Goal: networks a reviewer can trust and read, made obvious in the README. No new entity types or graph algorithms (§13.4).
+1. **Network checks.** Every kept edge meets `meta.pruning`'s weight threshold, at most the top-N nodes remain, no node is orphaned, removed counts reconcile with `meta.pruning`, and `is_anchor` matches the query's entity. Each gets a seeded fault (Phase 7 step 7).
+2. **Legible labels** (user decision, 2026-10-05). Phase 5.4 found labels overprinting each other and hidden under nodes in 3 of 4 eval networks, and ~5 px after fit-to-view in the fourth. Every shown label must be readable without overlap at the default zoom; test it on those four networks before the showcase.
+3. **Showcase.** A condition-anchored drug-drug network captured from the live system into `examples/`, with a screenshot.
+4. **README "Richer networks".** The drug rule, name normalization, co-occurrence counting, pruning by weighted degree with the fallback, the anchor hub, the deterministic layout (concentric seed, then force-directed CoSE), and why no path algorithm; the eval network metrics; brand <-> generic merging as a limitation.
+
+Done when: the network checks catch their seeded faults, the four eval networks render with legible labels, and the example, screenshot and README section exist.
+
+### Phase 9: Submission
 Goal: the zip, with the bonuses made obvious to a reviewer.
-1. **README** (§2 In scope sections, linking `SCHEMAS.md`), with a "Bonuses" section that leads:
-   - **Deep citations:** how every bar, bucket, point, node and edge carries `nct_ids` and verbatim `{nct_id, excerpt, field}` citations; how the excerpt check proves them; the Phase 5 citation metrics; a screenshot of the sources panel filtering on a clicked edge.
-   - **Richer networks:** the drug rule, name normalization, pruning with fallback and the anchor hub, shown on a condition-anchored drug-drug network (screenshot + the example JSON); the Phase 5 network metrics; brand <-> generic merging listed as a limitation.
-   - **Demo video** link.
+1. **README** (§2 In scope sections, linking `SCHEMAS.md`), led by a "Bonuses" section that links the Phase 7 and 8 sections and the demo video.
 2. **Examples.** 3-5 runs captured from the live system into `examples/`, including one condition-anchored network and one non-`ok` status.
-3. **Demo video** (2-3 min): one question per class, click a datum to show its citations, open the drawer, and show a failure case (clarification or not found).
+3. **Demo video** (2-3 min): one question per class, click a datum to show its citations, open the verification badge and drawer, and show a failure case (clarification or not found).
 4. **Zip.** Built from a clean copy whose history holds no §2 Context notes (§12); excludes `.env`, caches and dependencies.
 
 Done when: the zip, unpacked fresh, runs per the README (`docker compose up -d`, migrate, backend, frontend) and contains the code, README, SCHEMAS.md, examples and the video link.
