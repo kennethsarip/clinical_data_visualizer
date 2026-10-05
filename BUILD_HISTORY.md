@@ -4,7 +4,13 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ## Shipped
 
-### Phase 3: LLM planning and the endpoint (in progress)
+### Phase 3: LLM planning and the endpoint (done 2026-10-04; tagged `phase-3`)
+
+- **Done when, met:** one query per §1 class returns `ok` with every check passing and each §7.8 case returns its behavior (live end to end, 29/29 eval questions); planner tests pass against a stubbed LLM, including malformed output.
+- **3.5 Endpoint** (2026-10-04): `app/main.py` has one route, `POST /api/visualize`, which calls `Pipeline.run`. Every status is 200, `VisualizeRequest` failures are 422 before the pipeline runs, and `DependencyError` is 502 with `{"detail": ...}`.
+  - One DB connection per request (psycopg connections are not thread-safe; sync routes run in a threadpool); settings and the HTTP and LLM clients are built once and shared.
+  - `logging.basicConfig` in `main.py`, because uvicorn configures only its own loggers and the app's INFO logs (cache hits, retries, repairs) were dropped.
+  - 10 offline tests via a dependency override, seen red (10 failures). Live over HTTP: an `ok` pembrolizumab time series (2,000 of 2,968, capped and disclosed) in 7.9 s cold and 4.7 s from the cache; clarification for "Show me trials"; 422 for reversed years.
 
 - **3.4 Pipeline** (2026-10-04): `app/pipeline.py` `Pipeline(llm, fetcher).run(request)` runs the §1 steps and is the one place errors become outcomes.
   - Plan -> clarification before any fetch; one fetch per cohort through the cache; zero records -> the not-found probe; aggregate; nothing chartable -> `no_results` naming the exclusion rule; prose; assemble; checks; one repair without the LLM prose; else `degraded`.

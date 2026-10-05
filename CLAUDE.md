@@ -4,7 +4,7 @@
 >
 > **The one thing to understand first:** the LLM never produces a number, count, date, NCT ID, excerpt or data row. It does exactly two things: plan the query and write prose (title, notes). Retrieval, aggregation, viz type selection, citations and checks are deterministic Python, so every row traces back to cached API records by NCT ID (§7.2).
 >
-> **Status:** Phases 1-2 are done (merged, tagged `phase-2`); Phase 3 decisions are recorded and its build is next (§14). The repo is `github.com/kennethsarip/cheiron_task` (private, §12). Runs locally only; no deploy is planned (§13.4).
+> **Status:** Phases 1-3 are done (Phase 3 tagged `phase-3`): `POST /api/visualize` answers end to end, live 29/29 on the eval questions. Phase 4 (frontend) is next (§14). The repo is `github.com/kennethsarip/cheiron_task` (private, §12). Runs locally only; no deploy is planned (§13.4).
 >
 > **Definition of done:** `uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest`, all green. CI (`.github/workflows/ci.yml`) runs exactly these, so local green means CI green. `main` stays runnable.
 >
@@ -494,21 +494,13 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) makes results visible for the demo.
 
-**Next move:** Phase 3 step 5 (the endpoint).
+**Next move:** Phase 4 step 1 (frontend scaffold).
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
 - **Foundation before features:** a phase starts only when the previous phase's "Done when" passes, because each phase consumes the previous one's output (records -> rows -> responses -> rendered charts -> measured results).
 - **Decide first:** each phase's open decisions are settled before its code is written, and recorded in the section they govern plus `BUILD_HISTORY.md` → Decisions. Items marked PROPOSED are recommendations awaiting the user's yes.
 - **Ship-then-prune:** when a step is done, delete it from its phase here and add a few 1-2 line bullets for it under that phase's heading in `BUILD_HISTORY.md`, in the SAME commit. Remaining steps keep their numbers. When a phase's "Done when" passes, delete the whole phase.
-
-### Phase 3: LLM planning and the endpoint (end to end)
-Goal: a natural-language request returns the right status and a checked spec over HTTP. Decided: §3 model, §7.2 calls and retry, §7.3 stated vs inferred, §7.8 anchor rule and not-found probe, §8.1 endpoint and HTTP codes, §7.2 plan shape, cohorts and title fallback, §7.7 error mapping.
-
-Steps, in order:
-5. **Endpoint.** `main.py`: `POST /api/visualize`, one route that calls the pipeline; no branching.
-
-Done when: one query per §1 class returns `ok` with all checks passing; each §7.8 case returns its specified behavior; the planner tests pass against a stubbed LLM, including malformed output.
 
 ### Phase 4: Frontend (render every viz type)
 Goal: a search-first app where a user asks a question, sees the chart as the answer, and inspects the trials behind any datum. It follows the interaction pattern of a cited-answer search product (query -> answer -> sources) under its own branding: no Cheiron name, logo or copied styling (§2).
