@@ -230,12 +230,12 @@ Fixed bins, because enrollment is heavily skewed: 0, 1-9, 10-49, 50-99, 100-249,
              "weight": {"field": "trial_count", "type": "quantitative"}}},
  "data": {
    "nodes": [
-     {"id": "drug:pembrolizumab", "label": "Pembrolizumab", "entity_type": "drug", "is_anchor": false,
-      "trial_count": 1, "nct_ids": ["NCT00000007"],
-      "citations": [{"nct_id": "NCT00000007", "excerpt": "Pembrolizumab (MK-3475)", "field": "armsInterventionsModule.interventions.name"}]},
      {"id": "drug:ipilimumab", "label": "Ipilimumab", "entity_type": "drug", "is_anchor": false,
       "trial_count": 1, "nct_ids": ["NCT00000007"],
-      "citations": [{"nct_id": "NCT00000007", "excerpt": "Ipilimumab", "field": "armsInterventionsModule.interventions.name"}]}],
+      "citations": [{"nct_id": "NCT00000007", "excerpt": "Ipilimumab", "field": "armsInterventionsModule.interventions.name"}]},
+     {"id": "drug:pembrolizumab", "label": "Pembrolizumab", "entity_type": "drug", "is_anchor": false,
+      "trial_count": 1, "nct_ids": ["NCT00000007"],
+      "citations": [{"nct_id": "NCT00000007", "excerpt": "Pembrolizumab (MK-3475)", "field": "armsInterventionsModule.interventions.name"}]}],
    "edges": [
      {"source": "drug:ipilimumab", "target": "drug:pembrolizumab", "trial_count": 1, "nct_ids": ["NCT00000007"],
       "citations": [{"nct_id": "NCT00000007", "excerpt": "Ipilimumab", "field": "armsInterventionsModule.interventions.name"},

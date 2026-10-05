@@ -10,13 +10,14 @@ from typing import Any
 
 import pytest
 
+import app.aggregators  # noqa: F401  (registers every aggregator)
 from app.aggregators.common import PHASE
-from app.aggregators.registry import RowShape
+from app.aggregators.registry import REGISTRY, Dimension, Intent, RowShape
 from app.checks import CheckContext, run_checks
 from app.ctgov import build_params
 from app.schemas import RESPONSE_ADAPTER, OkResponse, RetrievalFilters
 from tests.factories import make_trial, raw_record
-from tests.test_checks import _bar, _with, bar_records
+from tests.test_checks import NETWORK_RECORDS, _bar, _network, _with, bar_records
 
 PHASES = ["NCT00000001", "NCT00000002", "NCT00000003", "NCT00000004"]
 Payload = dict[str, Any]
@@ -131,3 +132,67 @@ def test_the_clean_answer_passes_every_check() -> None:
 @pytest.mark.parametrize(("fault", "check"), FAULTS, ids=[f.__name__ for f, _ in FAULTS])
 def test_each_seeded_fault_is_caught_by_its_check(fault: Fault, check: str) -> None:
     assert check in _failed(fault)
+
+
+# --- network faults: the SCHEMAS.md network example, with its raw record ---
+
+
+def _node(p: Payload, node_id: str) -> dict[str, Any]:
+    node: dict[str, Any] = next(
+        n for n in p["visualization"]["data"]["nodes"] if n["id"] == node_id
+    )
+    return node
+
+
+def node_cited_with_another_drug(p: Payload, r: Records) -> None:
+    _node(p, "drug:pembrolizumab")["citations"][0]["excerpt"] = "Ipilimumab"
+
+
+def edge_cites_one_end(p: Payload, r: Records) -> None:
+    edge = p["visualization"]["data"]["edges"][0]
+    edge["citations"] = edge["citations"][:1]
+
+
+def node_given_an_unrelated_trial(p: Payload, r: Records) -> None:
+    # NCT00000008 was retrieved (no interventions, so listed under that rule) but names no drug.
+    node = _node(p, "drug:pembrolizumab")
+    node["nct_ids"] = sorted([*node["nct_ids"], "NCT00000008"], reverse=True)
+    node["trial_count"] += 1
+    r["NCT00000008"] = raw_record(make_trial("NCT00000008", brief_title="u"))
+    p["meta"]["excluded"] = [{"rule": "no interventions", "count": 1, "nct_ids": ["NCT00000008"]}]
+    p["meta"]["sample"][0]["fetched"] = p["meta"]["sample"][0]["total"] = 2
+    p["trials"]["NCT00000008"] = p["trials"]["NCT00000007"] | {
+        "brief_title": "u",
+        "phase": "Not specified",
+    }
+
+
+NETWORK_FAULTS: list[tuple[Fault, str]] = [
+    (node_cited_with_another_drug, "membership"),
+    (edge_cites_one_end, "membership"),
+    (node_given_an_unrelated_trial, "recount"),
+]
+
+
+def _network_failed(fault: Fault | None) -> set[str]:
+    payload = _network()
+    records = dict(NETWORK_RECORDS)
+    if fault:
+        fault(payload, records)
+    response = RESPONSE_ADAPTER.validate_python(payload)
+    assert isinstance(response, OkResponse)
+    aggregator = REGISTRY.get(Intent.NETWORK, Dimension.DRUG_DRUG)
+    ids = [frozenset(records)]
+    context = CheckContext(RowShape.GRAPH, records, aggregator=aggregator, cohort_ids=ids)
+    return {e.check for e in run_checks(response, context)}
+
+
+def test_the_clean_network_passes_every_check() -> None:
+    assert _network_failed(None) == set()
+
+
+@pytest.mark.parametrize(
+    ("fault", "check"), NETWORK_FAULTS, ids=[f.__name__ for f, _ in NETWORK_FAULTS]
+)
+def test_each_seeded_network_fault_is_caught_by_its_check(fault: Fault, check: str) -> None:
+    assert check in _network_failed(fault)

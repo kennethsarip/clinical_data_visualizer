@@ -109,6 +109,9 @@ def _network() -> dict[str, Any]:
         "dimension": "drug_drug",
         "cohorts": None,
     }
+    # A condition-anchored network: no drug is the searched entity, so no node is an anchor.
+    response["meta"]["filters"] = {"stated": {"condition": "melanoma"}, "inferred": {}}
+    response["visualization"]["title"] = "Melanoma drug combinations"
     response["meta"]["grouping"] = {"dimension": "drug_drug", "series": None}
     response["meta"]["sort"] = {"field": "trial_count", "order": "desc"}
     response["meta"]["sample"] = [{"cohort": None, "fetched": 1, "total": 1, "capped": False}]
@@ -445,7 +448,8 @@ def test_the_citation_cap_bounds_coverage() -> None:
 
 def test_a_node_cited_with_another_drugs_name_fails_membership() -> None:
     payload = _network()
-    node = payload["visualization"]["data"]["nodes"][0]  # pembrolizumab
+    nodes = payload["visualization"]["data"]["nodes"]
+    node = next(n for n in nodes if n["id"] == "drug:pembrolizumab")
     node["citations"][0]["excerpt"] = "Ipilimumab"
     context = CheckContext(RowShape.GRAPH, NETWORK_RECORDS, categorizer=None)
     response = RESPONSE_ADAPTER.validate_python(payload)
