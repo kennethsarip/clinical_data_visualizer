@@ -317,6 +317,69 @@ large because the `trials` map holds every charted trial):
 | `5_clarification_beijing_japan` | clarification_needed | — | "Beijing" cannot be applied; offers "How are lung cancer trials in Japan distributed across phases?" |
 | `6_not_found_zorblaxumab` | no_results | — | "No trial on ClinicalTrials.gov lists Zorblaxumab. No similar name was substituted." |
 
+### Excerpts from those outputs
+
+**A network edge with its deep citations** (`3_network_melanoma_drug_drug.response.json`, trimmed:
+one of 238 edges, 3 of its 115 `nct_ids`, 4 of its citations). Weight is the number of trials in
+which both drugs appear, and each citation quotes the registered intervention name for one endpoint:
+
+```json
+{
+  "source": "drug:ipilimumab",
+  "target": "drug:nivolumab",
+  "trial_count": 115,
+  "nct_ids": ["NCT07838974", "NCT07504796", "NCT07422779", "…"],
+  "citations": [
+    {"nct_id": "NCT07838974", "excerpt": "Ipilimumab", "field": "armsInterventionsModule.interventions.name"},
+    {"nct_id": "NCT07838974", "excerpt": "Nivolumab", "field": "armsInterventionsModule.interventions.name"},
+    {"nct_id": "NCT07504796", "excerpt": "Ipilimumab", "field": "armsInterventionsModule.interventions.name"},
+    {"nct_id": "NCT07504796", "excerpt": "Nivolumab", "field": "armsInterventionsModule.interventions.name"}
+  ]
+}
+```
+
+The same response discloses its pruning in `meta.pruning`:
+`{"min_edge_weight": 2, "top_n_nodes": 50, "fallback_used": false, "nodes_removed": 2471, "edges_removed": 4445}`.
+
+**A clarification** (`5_clarification_beijing_japan.response.json`, complete). The question names a
+city, which no filter can express, so the system asks instead of charting Japan alone:
+
+```json
+{
+  "status": "clarification_needed",
+  "visualization": null,
+  "trials": {},
+  "meta": {
+    "source": "clinicaltrials.gov",
+    "filters": {"stated": {"condition": "lung cancer", "country": "Japan"}, "inferred": {}},
+    "assumptions": [],
+    "notes": ["\"Beijing\" cannot be applied: no filter for city."],
+    "missing": [],
+    "unapplied": [{"quote": "Beijing", "reason": "no filter for city"}],
+    "conflicts": [],
+    "suggested_query": "How are lung cancer trials in Japan distributed across phases?"
+  }
+}
+```
+
+**Not found** (`6_not_found_zorblaxumab.response.json`, complete). A made-up drug is reported as
+not found; no similar name is substituted:
+
+```json
+{
+  "status": "no_results",
+  "visualization": null,
+  "trials": {},
+  "meta": {
+    "source": "clinicaltrials.gov",
+    "filters": {"stated": {"drug_name": "Zorblaxumab"}, "inferred": {}},
+    "assumptions": [],
+    "notes": ["No trial on ClinicalTrials.gov lists Zorblaxumab. No similar name was substituted."],
+    "not_found": ["Zorblaxumab"]
+  }
+}
+```
+
 ## Limitations and what more time would improve
 
 - **Brand, generic and code names are not merged** in networks: the Novartis network shows RAD001
