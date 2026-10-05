@@ -6,6 +6,11 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ### Phase 2: Aggregation, citations, checks (in progress on `phase-2-core`)
 
+- **2.3 Entities** (2026-10-04): `app/entities.py` applies the §6 drug rule. DRUG, BIOLOGICAL and COMBINATION_PRODUCT count as drugs; a whole-word placebo/sham/vehicle/saline name does not. `select_drugs` returns one mention per drug key per trial and per-trial counts for `placebo`, `non-drug intervention` and `no drug intervention`.
+- A drug key is the name with case and whitespace folded and trailing brackets, doses and salt words stripped, repeatedly, never down to nothing. Sponsors and conditions only fold case and whitespace. The node label is the most common *cleaned* spelling with case kept (so "Pembrolizumab", not "Pembrolizumab (MK-3475)"), with ties broken alphabetically. A mention keeps the raw name as the excerpt.
+- Live check (1,000 trials each, 2026-10-04): pembrolizumab's 14 registered spellings merge into one node (689 trials), and the top 12 drugs for pembrolizumab and for melanoma are clean names. Unmerged long tail: leading doses ("200 mg pembrolizumab"), combination names ("X + pembrolizumab") and form words ("pembrolizumab injection"). These are mostly single-trial nodes that weight >= 2 pruning removes; a further rule waits for an eval failure.
+- Melanoma: 202 of 1,000 trials have no drug intervention (non-drug only), which is why that count is disclosed.
+- Tests were seen red (38 assertion failures) against placeholders.
 - **2.2 Registry** (2026-10-04): `app/aggregators/registry.py` defines `Intent`, `Dimension` and `RowShape`, the `Aggregator` protocol (intent, dimension, shape, columns, excerpt fields, `aggregate`) and the output types (`AggRow` with per-trial `Evidence`; `Aggregation`; `GraphAggregation` with pruning).
 - `Registry` dispatches on (intent, dimension). An unknown pair raises `UnknownAggregatorError`, and a duplicate pair raises `DuplicateAggregatorError`. `keys()` is sorted, because the Phase 3 planner schema is generated from it.
 - Registration rejects declaration bugs: a shape outside the §1 matrix for its intent, no columns or excerpt fields, or a column that would shadow `trial_count`, `nct_ids` or `citations`.

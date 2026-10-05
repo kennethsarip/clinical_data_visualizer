@@ -242,7 +242,7 @@ API probe: `curl -s 'https://clinicaltrials.gov/api/v2/studies?query.intr=pembro
 - Countries are deduped per trial (multi-valued, §8.5).
 - No locations -> excluded from geographic charts and counted. No interventions, or an unnamed intervention -> excluded from intervention-type and drug charts and networks, and counted (user approval, 2026-10-04).
 - "Not specified" phase is mostly observational studies; `assumptions` says so wherever it appears.
-- **Drug** (decided 2026-10-04): an intervention typed `DRUG`, `BIOLOGICAL` or `COMBINATION_PRODUCT`, because type alone splits one drug (pembrolizumab: 617 DRUG, 243 BIOLOGICAL). Names matching `placebo`, `sham`, `vehicle` or `saline` as whole words, case-insensitive, are not drugs. Both exclusions are counted (`placebo`, `non-drug intervention`).
+- **Drug** (decided 2026-10-04): an intervention typed `DRUG`, `BIOLOGICAL` or `COMBINATION_PRODUCT`, because type alone splits one drug (pembrolizumab: 617 DRUG, 243 BIOLOGICAL). Names matching `placebo`, `sham`, `vehicle` or `saline` as whole words, case-insensitive, are not drugs. Both exclusions are counted per trial (`placebo`, `non-drug intervention`), as are trials left with no drug (`no drug intervention`); trials with no named intervention are already a normalize gap and are not counted again.
 - **Entity names** (decided 2026-10-04), for network nodes and top-N bars. Drugs: case-fold, collapse whitespace, then strip a trailing dose (`200 mg`, `10 mg/kg`), a trailing bracketed alias (`(MK-3475)`) and salt words (`hydrochloride`, `sodium`, `mesylate`, ...). Sponsors and conditions: case-fold and trim. The label is the most common original spelling; excerpts stay the raw registered name. Brand <-> generic merging is deferred (§13.4) and disclosed.
 - **Enrollment** (decided 2026-10-04): numeric charts split by `enrollment_type` as a series (Actual, Estimated, "Type not reported"), so estimated and actual counts are never mixed unseen. Enrollment 0 is kept; on a log axis it is pinned to the axis floor and `meta.notes` says so.
 - An unreadable record (a missing always-present field, a value outside `vocab.py`, an unexpected date format) is set aside and counted as "unreadable record". Over 5% of a batch -> the batch fails, because the API format has probably changed.
@@ -488,7 +488,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) makes results visible for the demo.
 
-**Next move:** Phase 2 step 3 (entities) on `phase-2-core`. Steps 1-2 shipped (see `BUILD_HISTORY.md`).
+**Next move:** Phase 2 step 4 (aggregators) on `phase-2-core`. Steps 1-3 shipped (see `BUILD_HISTORY.md`).
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
@@ -500,7 +500,6 @@ The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) m
 Goal: verified rows and complete specs for every question class and every viz type, with no LLM involved. All decisions are made (§6, §7.4, §7.5, SCHEMAS.md).
 
 Steps, in order (each red first, §9):
-3. **Entities.** `entities.py`: the §6 drug rule (with its exclusion counts) and the §6 name normalization, each tested on names shaped like the §6 evidence.
 4. **Aggregators**, one module each, built on one shared count-by-key helper, registered into `REGISTRY`; each emits `AggRow`s with `nct_ids` and per-trial evidence (the record value that placed the trial in the row); expected rows computed by hand:
    - time trend by start year (zero-filled);
    - distribution by phase, status, intervention type and sponsor class; top-N drugs, sponsors and conditions;
