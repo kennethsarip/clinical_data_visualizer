@@ -182,6 +182,7 @@ eval/                # eval questions, runner, baseline + after results (§9)
 examples/            # 3-5 real request/response JSON pairs from the running system
 docker-compose.yml   # local Postgres
 frontend/            # Vite + React + TS app; renders specs from SCHEMAS.md (Phase 4)
+docs/                # GITIGNORED, local only: assignment screenshots + assignment.md (source of truth for requirements)
 ```
 
 ## 5. Commands
@@ -453,7 +454,7 @@ Items marked **ask first** are hard to reverse; ask the user before choosing the
 |---|---|
 | Internal ID scheme (**ask first**) | IDs for requests and eval runs (§8.2) |
 | Auth model (**ask first**) | Who may call the endpoint |
-| Source documents | Save the assignment prompt and project brief in the repo; they are the source of truth for tests and README claims |
+| Source documents | The assignment is saved in `docs/` (screenshots + `assignment.md` transcription), gitignored at the user's request so it never reaches GitHub (2026-10-04). The project brief is not saved yet |
 | Per-bucket totals | Alternative to the capped sample: exact per-bucket totals via `countTotal=true` queries, with citations from the sample (§13.5) |
 
 Decided 2026-10-04 and recorded where they govern: LLM model and calls (§3, §7.2), viz type by Python (§7.4), drug rule, name normalization and enrollment split (§6), pruning (§7.4), citations (§7.5), stated vs inferred and field-vs-query conflicts (§7.3), plan shape, cohorts and title fallback (§7.2), error mapping (§7.7), date basis (§7.4), request fields and `query` cap of 1,000 (SCHEMAS.md §1), anchor rule and not-found probe (§7.8), endpoint and HTTP codes (§8.1), response contract (SCHEMAS.md), zip contents (§12), hosting (not planned, §13.4).
@@ -490,7 +491,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) makes results visible for the demo.
 
-**Next move:** save the assignment prompt and project brief in the repo (§13.1), then Phase 3 step 0 (the eval question set).
+**Next move:** Phase 3 step 0 (the eval question set).
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
