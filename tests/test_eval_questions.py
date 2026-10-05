@@ -33,7 +33,8 @@ def _is_stated(question: EvalQuestion, key: str, value: str | int) -> bool:
 
 
 def test_set_size_and_unique_ids() -> None:
-    assert 20 <= len(QUESTIONS) <= 30
+    # ~20-25 from Phase 3 step 0, plus the four Phase 6 step 0 retrieval questions.
+    assert 20 <= len(QUESTIONS) <= 35
     assert len(set(_ids(QUESTIONS))) == len(QUESTIONS)
 
 

@@ -275,6 +275,40 @@
       "expected": {"status": "ok", "analysis": "time_trend.start_year", "viz_type": "time_series",
                    "stated": {"condition": "lung cancer"}, "inferred": {"start_year": [2021, 2022]}},
       "why": "'Last five years' has no verbatim year, so start_year is inferred and must appear in assumptions; 2021 or 2022 depending on whether the current year counts."
+    },
+    {
+      "id": "dist_phase_country_japan",
+      "question_class": "distribution",
+      "source": "extension",
+      "request": {"query": "How are breast cancer trials in Japan distributed across phases?"},
+      "expected": {"status": "ok", "analysis": "distribution.phase", "viz_type": "bar_chart",
+                   "stated": {"condition": "breast cancer", "country": "Japan"}},
+      "why": "Phase 6 step 0 (written 2026-10-05). Country as a text search charts 9 of 336 trials with no site in Japan (China-Japan Friendship Hospital, §8.4); a correct answer charts only trials with a Japanese site, so its off-filter count is 0."
+    },
+    {
+      "id": "tt_condition_country_variant",
+      "question_class": "time_trend",
+      "source": "extension",
+      "request": {"query": "How has the number of lung cancer trials in Korea changed per year?"},
+      "expected": {"status": "ok", "analysis": "time_trend.start_year", "viz_type": "time_series",
+                   "stated": {"condition": "lung cancer"}, "inferred": {"country": ["South Korea"]}},
+      "why": "Phase 6 step 0 (written 2026-10-05). 'Korea' is not one of the registry's 226 country names; the canonical name is 'South Korea' (North Korea is listed separately), which is not in the query verbatim, so the mapping is disclosed as inferred (§7.3)."
+    },
+    {
+      "id": "edge_two_values_one_filter",
+      "question_class": "edge_case",
+      "source": "edge_case",
+      "request": {"query": "How are lung cancer trials in Beijing, Japan distributed across phases?"},
+      "expected": {"status": "clarification_needed", "analysis": null, "viz_type": null},
+      "why": "Phase 6 step 0 (written 2026-10-05). Beijing is in China, so the question names two places for one location filter; picking either silently answers a different question, so the answer asks which one, naming both (step 3). No anchor is missing."
+    },
+    {
+      "id": "edge_unexpressible_constraint",
+      "question_class": "edge_case",
+      "source": "edge_case",
+      "request": {"query": "How are pediatric asthma trials distributed across phases?"},
+      "expected": {"status": "clarification_needed", "analysis": null, "viz_type": null},
+      "why": "Phase 6 step 0 (written 2026-10-05). No filter expresses an age group, so charting asthma trials would silently drop 'pediatric'; the answer asks, with a suggested rephrase (step 3). No anchor is missing."
     }
   ]
 }

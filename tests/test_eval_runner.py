@@ -21,11 +21,12 @@ from eval.runner import (
     RunResult,
     citation_metrics,
     network_metrics,
+    off_filter_metrics,
     run_all,
     run_question,
     summarize,
 )
-from tests.factories import FIXTURE
+from tests.factories import FIXTURE, make_trial, raw_record
 from tests.llm_fakes import fake_llm, json_reply, replies
 from tests.test_contract import _network_example, _ok_example
 from tests.test_pipeline import PROSE, FakeFetcher
@@ -128,7 +129,10 @@ def test_an_inferred_value_must_be_one_of_the_accepted() -> None:
     narrow = ok.model_copy(
         update={"expected": ok.expected.model_copy(update={"inferred": {"start_year": [2020]}})}
     )
-    fetcher = FakeFetcher({RetrievalFilters(condition="melanoma", start_year=2021): FIXTURE})
+    since_2021 = [
+        t.model_copy(update={"start_date": "2021-03", "start_year": 2021}) for t in FIXTURE
+    ]
+    fetcher = FakeFetcher({RetrievalFilters(condition="melanoma", start_year=2021): since_2021})
     for q, failures in ((ok, []), (narrow, ["wrong_inferred"])):
         pipeline = factory([json_reply(plan), json_reply(PROSE)], fetcher)
         assert run_question(q, pipeline, clock=clock(0, 1)).failures == failures
@@ -323,6 +327,106 @@ def test_network_metrics_read_pruning_and_drug_exclusions() -> None:
     assert network_metrics(ok_response()) is None
 
 
+# --- off-filter (Phase 6 step 0) ---
+# Expected counts are worked out by hand from each record against the filter's meaning in §8.4.
+
+
+def _filtered(stated: dict[str, Any], inferred: dict[str, Any] | None = None) -> OkResponse:
+    body = _ok_example()
+    body["meta"]["filters"] = {"stated": stated, "inferred": inferred or {}}
+    return ok_response(meta=body["meta"])
+
+
+def _charted(response: OkResponse) -> list[str]:
+    return sorted({n for row in response.visualization.data for n in row.nct_ids})  # type: ignore[union-attr]
+
+
+def _records(fields: dict[str, dict[str, Any]] | None = None) -> dict[str, dict[str, Any]]:
+    """One raw record per charted trial of the ok example; `fields` overrides by NCT ID."""
+    ids = _charted(_filtered({}))
+    return {n: raw_record(make_trial(n, **(fields or {}).get(n, {}))) for n in ids}
+
+
+def test_entity_filters_are_searches_so_nothing_is_checked_against_them() -> None:
+    m = off_filter_metrics(_filtered({"drug_name": "Pembrolizumab"}), _records())
+    assert (m.trials_checked, m.off_filter, m.by_filter) == (len(_charted(_filtered({}))), 0, {})
+
+
+def test_a_country_filter_needs_a_site_in_that_country() -> None:
+    ids = _charted(_filtered({}))
+    records = _records(
+        {
+            ids[0]: {"countries": ["Japan", "China"]},
+            ids[1]: {"countries": ["China"]},  # the Beijing hospital case
+            ids[2]: {"countries": []},  # no locations
+        }
+    )
+    m = off_filter_metrics(_filtered({"country": "japan"}), records)
+    assert (m.off_filter, m.by_filter) == (len(ids) - 1, {"country": len(ids) - 1})
+
+
+def test_a_variant_country_name_is_off_filter_because_records_use_registry_names() -> None:
+    ids = _charted(_filtered({}))
+    records = _records({n: {"countries": ["South Korea"]} for n in ids})
+    m = off_filter_metrics(_filtered({}, {"country": "Korea"}), records)
+    assert m.off_filter == len(ids)
+
+
+def test_phase_status_and_year_filters() -> None:
+    ids = _charted(_filtered({}))
+    good: dict[str, Any] = {
+        "phases": ["PHASE1", "PHASE2"],
+        "overall_status": "RECRUITING",
+        "start_date": "2016-05",
+    }
+    off = good | {"phases": ["PHASE3"], "start_date": "2014-12-31"}
+    records = _records({n: good for n in ids[1:]} | {ids[0]: off})
+    stated = {"trial_phase": "PHASE2", "start_year": 2015, "end_year": 2016}
+    m = off_filter_metrics(_filtered(stated, {"overall_status": "RECRUITING"}), records)
+    assert (m.off_filter, m.by_filter) == (1, {"trial_phase": 1, "start_year": 1})
+    late = _records({n: good | {"start_date": "2017-01"} for n in ids})
+    m = off_filter_metrics(_filtered(stated), late)
+    assert m.by_filter == {"end_year": len(ids)}
+    stopped = _records({n: good | {"overall_status": "COMPLETED"} for n in ids})
+    m = off_filter_metrics(_filtered({}, {"overall_status": "RECRUITING"}), stopped)
+    assert m.by_filter == {"overall_status": len(ids)}
+
+
+def test_a_year_filter_is_not_met_by_a_trial_with_no_start_date() -> None:
+    ids = _charted(_filtered({}))
+    m = off_filter_metrics(_filtered({"start_year": 2015}), _records())
+    assert m.by_filter == {"start_year": len(ids)}
+
+
+def test_a_charted_trial_missing_from_the_records_is_off_filter() -> None:
+    records = _records()
+    records.pop(_charted(_filtered({}))[0])
+    m = off_filter_metrics(_filtered({}), records)
+    assert (m.off_filter, m.by_filter) == (1, {"no_record": 1})
+
+
+def test_an_off_filter_trial_fails_the_question() -> None:
+    """FIXTURE sites by hand: T1 and T5 have a site in Germany; T2 (US), T3 (none), T4 (France)
+    do not, and all five are charted on the phase bars."""
+    germany = RetrievalFilters(condition="melanoma", country="Germany")
+    expected = question(
+        {"query": "Phases of melanoma trials in Germany"},
+        status="ok",
+        analysis="distribution.phase",
+        viz_type="bar_chart",
+        stated={"condition": "melanoma", "country": "Germany"},
+    )
+    pipeline = factory(
+        [json_reply(reply(condition="melanoma", country="Germany")), json_reply(PROSE)],
+        FakeFetcher({germany: FIXTURE}),
+    )
+    result = run_question(expected, pipeline, clock=clock(0.0, 1.0))
+    assert result.off_filter is not None
+    assert (result.off_filter.trials_checked, result.off_filter.off_filter) == (5, 3)
+    assert result.failures == ["off_filter"]
+    assert run_phases().off_filter is not None and run_phases().off_filter.off_filter == 0  # type: ignore[union-attr]
+
+
 # --- summary ---
 
 
@@ -373,6 +477,30 @@ def test_summary_rolls_up_by_class_failure_mode_and_latency() -> None:
     assert (s.latency_p50_s, s.latency_max_s) == (2.5, 4.0)
     assert (s.items_fully_cited, s.items) == (6, 8)
     assert (s.excerpts_passed, s.citations) == (18, 20)
+
+
+def test_summary_totals_trials_checked_and_off_filter() -> None:
+    results = [
+        _result(
+            "a",
+            "geographic",
+            True,
+            1.0,
+            [],
+            off_filter={"trials_checked": 10, "off_filter": 0, "by_filter": {}},
+        ),
+        _result(
+            "b",
+            "distribution",
+            False,
+            1.0,
+            ["off_filter"],
+            off_filter={"trials_checked": 336, "off_filter": 9, "by_filter": {"country": 9}},
+        ),
+        _result("c", "edge_case", True, 1.0, []),
+    ]
+    s = summarize(results)
+    assert (s.off_filter_trials_checked, s.off_filter_trials) == (346, 9)
 
 
 @pytest.mark.parametrize("latencies,p50", [([5.0], 5.0), ([1.0, 9.0, 2.0], 2.0)])
@@ -438,7 +566,8 @@ def test_an_inferred_value_compares_case_insensitively_like_a_stated_one() -> No
     )
     plan = reply(condition="melanoma", overall_status="RECRUITING")
     filters = RetrievalFilters(condition="melanoma", overall_status="RECRUITING")
-    pipeline = factory([json_reply(plan), json_reply(PROSE)], FakeFetcher({filters: FIXTURE}))
+    recruiting = [t for t in FIXTURE if t.overall_status == "RECRUITING"]
+    pipeline = factory([json_reply(plan), json_reply(PROSE)], FakeFetcher({filters: recruiting}))
     assert run_question(q, pipeline, clock=clock(0, 1)).failures == []
 
 
