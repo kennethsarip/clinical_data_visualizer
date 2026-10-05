@@ -21,7 +21,7 @@ from app.ctgov import (
     params_key,
     record_nct_id,
 )
-from app.schemas import RetrievalFilters
+from app.schemas import RetrievalFilters, StoredTrial
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +54,17 @@ class TrialCache:
             "SELECT nct_id, record FROM trials WHERE nct_id = ANY(%s)", (list(nct_ids),)
         )
         return {nct_id: record for nct_id, record in rows}
+
+    def stored_trial(self, nct_id: str) -> StoredTrial | None:
+        """The cached record whatever its age: a viewer must show the record an answer was checked
+        against, not a refetch. Rows are upserted, so a later query may have replaced it."""
+        row = self._conn.execute(
+            "SELECT record, fetched_at FROM trials WHERE nct_id = %s", (nct_id,)
+        ).fetchone()
+        if row is None:
+            return None
+        record, fetched_at = row
+        return StoredTrial(nct_id=nct_id, record=record, fetched_at=fetched_at)
 
     def _read_pages(self, key: str) -> list[Page]:
         rows = self._conn.execute(

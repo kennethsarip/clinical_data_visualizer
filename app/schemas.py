@@ -1,6 +1,7 @@
 """Single source of request, plan, LLM-output and response models (CLAUDE.md §8)."""
 
-from typing import Annotated, Literal, Self
+from datetime import datetime
+from typing import Annotated, Any, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, TypeAdapter, model_validator
 
@@ -109,7 +110,8 @@ class LLMProse(BaseModel):
 # trial_count == len(nct_ids), excerpts match records, ...) are the §7.6 checks in `checks.py`,
 # so each rule has exactly one home.
 
-NctId = Annotated[str, Field(pattern=r"^NCT\d{8}$")]
+NCT_ID_PATTERN = r"^NCT\d{8}$"
+NctId = Annotated[str, Field(pattern=NCT_ID_PATTERN)]
 Count = Annotated[int, Field(ge=0)]
 
 # Every key a filter can appear under in `meta.filters`; a test keeps it equal to the
@@ -204,6 +206,23 @@ class TrialSummary(_Contract):
     overall_status: str  # display label
     phase: str  # display label, e.g. "Phase 1/Phase 2"
     start_date: str | None  # as registered
+    sponsor_name: str  # lead sponsor, as registered
+    conditions: list[str]  # as registered
+
+
+class ErrorDetail(_Contract):
+    """The body of a 404 or 502 (SCHEMAS.md §1, §6). A 422 uses FastAPI's own validation body."""
+
+    detail: str
+
+
+class StoredTrial(_Contract):
+    """`GET /api/trials/{nct_id}`: a cited trial's record as cached now, which a later
+    fetch may have replaced since the citation was checked (SCHEMAS.md §6)."""
+
+    nct_id: NctId
+    record: dict[str, Any]  # verbatim API record
+    fetched_at: datetime
 
 
 class Filters(_Contract):

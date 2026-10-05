@@ -67,7 +67,8 @@ def test_a_trial_without_evidence_is_a_bug_not_an_uncited_row() -> None:
 # --- trial lookup ---
 
 
-def test_trial_summaries_use_display_labels() -> None:
+def test_trial_summaries_use_display_labels_and_registered_names() -> None:
+    # Sponsor and conditions stay as registered, unnormalized: they label a source card.
     summaries = trial_summaries(FIXTURE, ["NCT00000002", "NCT00000003"])
     assert summaries == {
         "NCT00000002": TrialSummary(
@@ -75,12 +76,16 @@ def test_trial_summaries_use_display_labels() -> None:
             overall_status="Completed",
             phase="Phase 1/Phase 2",
             start_date="2017-06-01",
+            sponsor_name="merck sharp & dohme llc",
+            conditions=["melanoma", "Lung Cancer"],
         ),
         "NCT00000003": TrialSummary(
             brief_title="Trial NCT00000003",
             overall_status="Completed",
             phase="Not specified",
             start_date=None,
+            sponsor_name="National Cancer Institute (NCI)",
+            conditions=["Lung Cancer"],
         ),
     }
 

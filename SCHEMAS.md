@@ -92,7 +92,7 @@ Excerpt source per dimension:
 | enrollment | `designModule.enrollmentInfo.count` | `120` |
 | enrollment_type | `designModule.enrollmentInfo.type` | `ACTUAL` |
 
-**Trial summary** (`trials[nct_id]`): `brief_title` (string), `overall_status` (display label), `phase` (display label, e.g. "Phase 1/Phase 2"), `start_date` (string or null, as registered). The link to a trial is `https://clinicaltrials.gov/study/<nct_id>`.
+**Trial summary** (`trials[nct_id]`): `brief_title` (string), `overall_status` (display label), `phase` (display label, e.g. "Phase 1/Phase 2"), `start_date` (string or null, as registered), `sponsor_name` (lead sponsor, as registered), `conditions` (string[], as registered, possibly empty). Sponsor and condition names are not normalized here: they label a source card, while network nodes and top-N bars use the normalized names. The link to a trial is `https://clinicaltrials.gov/study/<nct_id>`; the cached record is `GET /api/trials/<nct_id>` (§6).
 
 ## 3. Visualization types
 
@@ -119,10 +119,14 @@ One row per category. Sort: count descending, ties alphabetical; phase uses its 
      {"phase": "Not specified", "trial_count": 1, "nct_ids": ["NCT00000004"],
       "citations": [{"nct_id": "NCT00000004", "excerpt": null, "field": "designModule.phases"}]}]},
  "trials": {
-   "NCT00000001": {"brief_title": "Pembrolizumab in Advanced Melanoma", "overall_status": "Completed", "phase": "Phase 3", "start_date": "2015-03"},
-   "NCT00000002": {"brief_title": "Pembrolizumab Versus Chemotherapy in NSCLC", "overall_status": "Active, not recruiting", "phase": "Phase 3", "start_date": "2016-07-12"},
-   "NCT00000003": {"brief_title": "Pembrolizumab Plus Lenvatinib in Solid Tumors", "overall_status": "Recruiting", "phase": "Phase 1/Phase 2", "start_date": "2019-01"},
-   "NCT00000004": {"brief_title": "Real-World Outcomes of Pembrolizumab", "overall_status": "Completed", "phase": "Not specified", "start_date": "2018-05"}},
+   "NCT00000001": {"brief_title": "Pembrolizumab in Advanced Melanoma", "overall_status": "Completed", "phase": "Phase 3", "start_date": "2015-03",
+                   "sponsor_name": "Merck Sharp & Dohme LLC", "conditions": ["Melanoma"]},
+   "NCT00000002": {"brief_title": "Pembrolizumab Versus Chemotherapy in NSCLC", "overall_status": "Active, not recruiting", "phase": "Phase 3", "start_date": "2016-07-12",
+                   "sponsor_name": "Merck Sharp & Dohme LLC", "conditions": ["Non-small Cell Lung Cancer"]},
+   "NCT00000003": {"brief_title": "Pembrolizumab Plus Lenvatinib in Solid Tumors", "overall_status": "Recruiting", "phase": "Phase 1/Phase 2", "start_date": "2019-01",
+                   "sponsor_name": "Eisai Inc.", "conditions": ["Solid Tumor", "Endometrial Cancer"]},
+   "NCT00000004": {"brief_title": "Real-World Outcomes of Pembrolizumab", "overall_status": "Completed", "phase": "Not specified", "start_date": "2018-05",
+                   "sponsor_name": "University of Texas MD Anderson Cancer Center", "conditions": ["Melanoma", "Lung Cancer"]}},
  "meta": {
    "source": "clinicaltrials.gov",
    "interpretation": {"intent": "distribution", "dimension": "phase", "cohorts": null},
@@ -302,3 +306,17 @@ An entity that matches no trial on its own:
 ```
 
 `degraded` has two causes, named by `errors[].check`: `plan` when the LLM's plan still fails validation after one retry (`visualization` is null and `filters` holds only the request fields), or a §7.6 check name when the spec still fails after one repair. A failed title is not a cause: the response stays `ok` with a plain generated title and a note.
+
+## 6. Cached trial record
+
+`GET /api/trials/{nct_id}` returns the record behind a citation, for a record viewer that highlights each excerpt in place. It reads the response cache only and never calls ClinicalTrials.gov, so it serves the record as cached, whatever its age: the one the excerpt check ran against, unless a later request replaced it (below).
+
+| Field | Type | Notes |
+|---|---|---|
+| nct_id | string | `^NCT\d{8}$`, as requested |
+| record | object | The verbatim API record; a citation's `field` is a path under `record.protocolSection` |
+| fetched_at | string | ISO 8601 timestamp with time zone, when the cache stored this record |
+
+**HTTP codes:** 200 with the body above; 404 `{"detail": "<nct_id> is not in the cache."}` when no request has fetched the trial; 422 when the ID does not match `^NCT\d{8}$` (matched exactly, so `nct00000001` is a 422, never a lookup of the nearest ID).
+
+**Staleness:** the cache keeps one record per trial and a later request that fetches the same trial replaces it. A viewer should check each excerpt against the value at its `field` before highlighting it and, on a mismatch, say the record has changed since the answer rather than highlight other text. Matching excerpts show the cited values still hold, not that the record is the same version: responses carry no record version.

@@ -1,0 +1,1520 @@
+{
+  "components": {
+    "schemas": {
+      "Channel": {
+        "additionalProperties": false,
+        "properties": {
+          "field": {
+            "title": "Field",
+            "type": "string"
+          },
+          "scale": {
+            "default": "linear",
+            "enum": [
+              "linear",
+              "log"
+            ],
+            "title": "Scale",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "quantitative",
+              "nominal",
+              "ordinal",
+              "temporal"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "field",
+          "type"
+        ],
+        "title": "Channel",
+        "type": "object"
+      },
+      "ChartVisualization": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/Row"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "encoding": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Channel"
+            },
+            "title": "Encoding",
+            "type": "object"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "bar_chart",
+              "grouped_bar_chart",
+              "time_series",
+              "scatter_plot",
+              "histogram"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "encoding",
+          "data"
+        ],
+        "title": "ChartVisualization",
+        "type": "object"
+      },
+      "CheckError": {
+        "additionalProperties": false,
+        "properties": {
+          "check": {
+            "title": "Check",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "check",
+          "message"
+        ],
+        "title": "CheckError",
+        "type": "object"
+      },
+      "Citation": {
+        "additionalProperties": false,
+        "properties": {
+          "excerpt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Excerpt"
+          },
+          "field": {
+            "title": "Field",
+            "type": "string"
+          },
+          "nct_id": {
+            "pattern": "^NCT\\d{8}$",
+            "title": "Nct Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "nct_id",
+          "excerpt",
+          "field"
+        ],
+        "title": "Citation",
+        "type": "object"
+      },
+      "ClarificationMeta": {
+        "additionalProperties": false,
+        "properties": {
+          "assumptions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Assumptions",
+            "type": "array"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/Filters"
+          },
+          "missing": {
+            "items": {
+              "enum": [
+                "drug_name",
+                "condition",
+                "sponsor"
+              ],
+              "type": "string"
+            },
+            "title": "Missing",
+            "type": "array"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "source": {
+            "const": "clinicaltrials.gov",
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "filters",
+          "assumptions",
+          "notes",
+          "missing"
+        ],
+        "title": "ClarificationMeta",
+        "type": "object"
+      },
+      "ClarificationResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/ClarificationMeta"
+          },
+          "status": {
+            "const": "clarification_needed",
+            "title": "Status",
+            "type": "string"
+          },
+          "trials": {
+            "maxProperties": 0,
+            "patternProperties": {
+              "^NCT\\d{8}$": {
+                "$ref": "#/components/schemas/TrialSummary"
+              }
+            },
+            "title": "Trials",
+            "type": "object"
+          },
+          "visualization": {
+            "title": "Visualization",
+            "type": "null"
+          }
+        },
+        "required": [
+          "status",
+          "visualization",
+          "trials",
+          "meta"
+        ],
+        "title": "ClarificationResponse",
+        "type": "object"
+      },
+      "Cohort": {
+        "additionalProperties": false,
+        "properties": {
+          "filters": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "propertyNames": {
+              "enum": [
+                "drug_name",
+                "condition",
+                "sponsor",
+                "country",
+                "trial_phase",
+                "overall_status",
+                "start_year",
+                "end_year"
+              ]
+            },
+            "title": "Filters",
+            "type": "object"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "filters"
+        ],
+        "title": "Cohort",
+        "type": "object"
+      },
+      "DegradedMeta": {
+        "additionalProperties": false,
+        "properties": {
+          "assumptions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Assumptions",
+            "type": "array"
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/CheckError"
+            },
+            "title": "Errors",
+            "type": "array"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/Filters"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "source": {
+            "const": "clinicaltrials.gov",
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "filters",
+          "assumptions",
+          "notes",
+          "errors"
+        ],
+        "title": "DegradedMeta",
+        "type": "object"
+      },
+      "DegradedResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/DegradedMeta"
+          },
+          "status": {
+            "const": "degraded",
+            "title": "Status",
+            "type": "string"
+          },
+          "trials": {
+            "maxProperties": 0,
+            "patternProperties": {
+              "^NCT\\d{8}$": {
+                "$ref": "#/components/schemas/TrialSummary"
+              }
+            },
+            "title": "Trials",
+            "type": "object"
+          },
+          "visualization": {
+            "title": "Visualization",
+            "type": "null"
+          }
+        },
+        "required": [
+          "status",
+          "visualization",
+          "trials",
+          "meta"
+        ],
+        "title": "DegradedResponse",
+        "type": "object"
+      },
+      "Edge": {
+        "additionalProperties": false,
+        "properties": {
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "nct_ids": {
+            "items": {
+              "pattern": "^NCT\\d{8}$",
+              "type": "string"
+            },
+            "title": "Nct Ids",
+            "type": "array"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "target": {
+            "title": "Target",
+            "type": "string"
+          },
+          "trial_count": {
+            "minimum": 0.0,
+            "title": "Trial Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "trial_count",
+          "nct_ids",
+          "citations",
+          "source",
+          "target"
+        ],
+        "title": "Edge",
+        "type": "object"
+      },
+      "ErrorDetail": {
+        "additionalProperties": false,
+        "description": "The body of a 404 or 502 (SCHEMAS.md \u00a71, \u00a76). A 422 uses FastAPI's own validation body.",
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "ErrorDetail",
+        "type": "object"
+      },
+      "Exclusion": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "minimum": 0.0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "rule": {
+            "title": "Rule",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rule",
+          "count"
+        ],
+        "title": "Exclusion",
+        "type": "object"
+      },
+      "Filters": {
+        "additionalProperties": false,
+        "properties": {
+          "inferred": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "propertyNames": {
+              "enum": [
+                "drug_name",
+                "condition",
+                "sponsor",
+                "country",
+                "trial_phase",
+                "overall_status",
+                "start_year",
+                "end_year"
+              ]
+            },
+            "title": "Inferred",
+            "type": "object"
+          },
+          "stated": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "propertyNames": {
+              "enum": [
+                "drug_name",
+                "condition",
+                "sponsor",
+                "country",
+                "trial_phase",
+                "overall_status",
+                "start_year",
+                "end_year"
+              ]
+            },
+            "title": "Stated",
+            "type": "object"
+          }
+        },
+        "required": [
+          "stated",
+          "inferred"
+        ],
+        "title": "Filters",
+        "type": "object"
+      },
+      "Grouping": {
+        "additionalProperties": false,
+        "properties": {
+          "dimension": {
+            "title": "Dimension",
+            "type": "string"
+          },
+          "series": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Series"
+          }
+        },
+        "required": [
+          "dimension",
+          "series"
+        ],
+        "title": "Grouping",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "Interpretation": {
+        "additionalProperties": false,
+        "properties": {
+          "cohorts": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/Cohort"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cohorts"
+          },
+          "dimension": {
+            "title": "Dimension",
+            "type": "string"
+          },
+          "intent": {
+            "title": "Intent",
+            "type": "string"
+          }
+        },
+        "required": [
+          "intent",
+          "dimension",
+          "cohorts"
+        ],
+        "title": "Interpretation",
+        "type": "object"
+      },
+      "NetworkData": {
+        "additionalProperties": false,
+        "properties": {
+          "edges": {
+            "items": {
+              "$ref": "#/components/schemas/Edge"
+            },
+            "title": "Edges",
+            "type": "array"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/Node"
+            },
+            "title": "Nodes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "nodes",
+          "edges"
+        ],
+        "title": "NetworkData",
+        "type": "object"
+      },
+      "NetworkEncoding": {
+        "additionalProperties": false,
+        "properties": {
+          "edges": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Channel"
+            },
+            "title": "Edges",
+            "type": "object"
+          },
+          "nodes": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Channel"
+            },
+            "title": "Nodes",
+            "type": "object"
+          }
+        },
+        "required": [
+          "nodes",
+          "edges"
+        ],
+        "title": "NetworkEncoding",
+        "type": "object"
+      },
+      "NetworkVisualization": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/NetworkData"
+          },
+          "encoding": {
+            "$ref": "#/components/schemas/NetworkEncoding"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "const": "network_graph",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "encoding",
+          "data"
+        ],
+        "title": "NetworkVisualization",
+        "type": "object"
+      },
+      "NoResultsMeta": {
+        "additionalProperties": false,
+        "properties": {
+          "assumptions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Assumptions",
+            "type": "array"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/Filters"
+          },
+          "not_found": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Not Found",
+            "type": "array"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "source": {
+            "const": "clinicaltrials.gov",
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "filters",
+          "assumptions",
+          "notes",
+          "not_found"
+        ],
+        "title": "NoResultsMeta",
+        "type": "object"
+      },
+      "NoResultsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/NoResultsMeta"
+          },
+          "status": {
+            "const": "no_results",
+            "title": "Status",
+            "type": "string"
+          },
+          "trials": {
+            "maxProperties": 0,
+            "patternProperties": {
+              "^NCT\\d{8}$": {
+                "$ref": "#/components/schemas/TrialSummary"
+              }
+            },
+            "title": "Trials",
+            "type": "object"
+          },
+          "visualization": {
+            "title": "Visualization",
+            "type": "null"
+          }
+        },
+        "required": [
+          "status",
+          "visualization",
+          "trials",
+          "meta"
+        ],
+        "title": "NoResultsResponse",
+        "type": "object"
+      },
+      "Node": {
+        "additionalProperties": false,
+        "properties": {
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "entity_type": {
+            "enum": [
+              "drug",
+              "sponsor",
+              "condition"
+            ],
+            "title": "Entity Type",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "is_anchor": {
+            "title": "Is Anchor",
+            "type": "boolean"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "nct_ids": {
+            "items": {
+              "pattern": "^NCT\\d{8}$",
+              "type": "string"
+            },
+            "title": "Nct Ids",
+            "type": "array"
+          },
+          "trial_count": {
+            "minimum": 0.0,
+            "title": "Trial Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "trial_count",
+          "nct_ids",
+          "citations",
+          "id",
+          "label",
+          "entity_type",
+          "is_anchor"
+        ],
+        "title": "Node",
+        "type": "object"
+      },
+      "OkMeta": {
+        "additionalProperties": false,
+        "properties": {
+          "assumptions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Assumptions",
+            "type": "array"
+          },
+          "citation_cap": {
+            "minimum": 0.0,
+            "title": "Citation Cap",
+            "type": "integer"
+          },
+          "excluded": {
+            "items": {
+              "$ref": "#/components/schemas/Exclusion"
+            },
+            "title": "Excluded",
+            "type": "array"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/Filters"
+          },
+          "grouping": {
+            "$ref": "#/components/schemas/Grouping"
+          },
+          "interpretation": {
+            "$ref": "#/components/schemas/Interpretation"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "pruning": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Pruning"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sample": {
+            "items": {
+              "$ref": "#/components/schemas/SampleEntry"
+            },
+            "title": "Sample",
+            "type": "array"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/Sort"
+          },
+          "source": {
+            "const": "clinicaltrials.gov",
+            "title": "Source",
+            "type": "string"
+          },
+          "time_granularity": {
+            "anyOf": [
+              {
+                "const": "year",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Granularity"
+          },
+          "top_n": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TopN"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "units": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Units",
+            "type": "object"
+          }
+        },
+        "required": [
+          "source",
+          "filters",
+          "assumptions",
+          "notes",
+          "interpretation",
+          "units",
+          "sort",
+          "time_granularity",
+          "grouping",
+          "sample",
+          "citation_cap",
+          "excluded",
+          "top_n",
+          "pruning"
+        ],
+        "title": "OkMeta",
+        "type": "object"
+      },
+      "OkResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/OkMeta"
+          },
+          "status": {
+            "const": "ok",
+            "title": "Status",
+            "type": "string"
+          },
+          "trials": {
+            "patternProperties": {
+              "^NCT\\d{8}$": {
+                "$ref": "#/components/schemas/TrialSummary"
+              }
+            },
+            "title": "Trials",
+            "type": "object"
+          },
+          "visualization": {
+            "discriminator": {
+              "mapping": {
+                "bar_chart": "#/components/schemas/ChartVisualization",
+                "grouped_bar_chart": "#/components/schemas/ChartVisualization",
+                "histogram": "#/components/schemas/ChartVisualization",
+                "network_graph": "#/components/schemas/NetworkVisualization",
+                "scatter_plot": "#/components/schemas/ChartVisualization",
+                "time_series": "#/components/schemas/ChartVisualization"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ChartVisualization"
+              },
+              {
+                "$ref": "#/components/schemas/NetworkVisualization"
+              }
+            ],
+            "title": "Visualization"
+          }
+        },
+        "required": [
+          "status",
+          "visualization",
+          "trials",
+          "meta"
+        ],
+        "title": "OkResponse",
+        "type": "object"
+      },
+      "Phase": {
+        "enum": [
+          "NA",
+          "EARLY_PHASE1",
+          "PHASE1",
+          "PHASE2",
+          "PHASE3",
+          "PHASE4"
+        ],
+        "title": "Phase",
+        "type": "string",
+        "x-labels": {
+          "EARLY_PHASE1": "Early Phase 1",
+          "NA": "Not Applicable",
+          "PHASE1": "Phase 1",
+          "PHASE2": "Phase 2",
+          "PHASE3": "Phase 3",
+          "PHASE4": "Phase 4"
+        }
+      },
+      "Pruning": {
+        "additionalProperties": false,
+        "properties": {
+          "edges_removed": {
+            "minimum": 0.0,
+            "title": "Edges Removed",
+            "type": "integer"
+          },
+          "fallback_used": {
+            "title": "Fallback Used",
+            "type": "boolean"
+          },
+          "min_edge_weight": {
+            "minimum": 0.0,
+            "title": "Min Edge Weight",
+            "type": "integer"
+          },
+          "nodes_removed": {
+            "minimum": 0.0,
+            "title": "Nodes Removed",
+            "type": "integer"
+          },
+          "top_n_nodes": {
+            "minimum": 0.0,
+            "title": "Top N Nodes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "min_edge_weight",
+          "top_n_nodes",
+          "fallback_used",
+          "nodes_removed",
+          "edges_removed"
+        ],
+        "title": "Pruning",
+        "type": "object"
+      },
+      "Row": {
+        "additionalProperties": true,
+        "description": "One chart row. Its dimension fields vary by aggregator, so extra fields are allowed.",
+        "properties": {
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "nct_ids": {
+            "items": {
+              "pattern": "^NCT\\d{8}$",
+              "type": "string"
+            },
+            "title": "Nct Ids",
+            "type": "array"
+          },
+          "trial_count": {
+            "minimum": 0.0,
+            "title": "Trial Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "trial_count",
+          "nct_ids",
+          "citations"
+        ],
+        "title": "Row",
+        "type": "object"
+      },
+      "SampleEntry": {
+        "additionalProperties": false,
+        "properties": {
+          "capped": {
+            "title": "Capped",
+            "type": "boolean"
+          },
+          "cohort": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cohort"
+          },
+          "fetched": {
+            "minimum": 0.0,
+            "title": "Fetched",
+            "type": "integer"
+          },
+          "total": {
+            "minimum": 0.0,
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "cohort",
+          "fetched",
+          "total",
+          "capped"
+        ],
+        "title": "SampleEntry",
+        "type": "object"
+      },
+      "Sort": {
+        "additionalProperties": false,
+        "properties": {
+          "field": {
+            "title": "Field",
+            "type": "string"
+          },
+          "order": {
+            "enum": [
+              "asc",
+              "desc",
+              "canonical"
+            ],
+            "title": "Order",
+            "type": "string"
+          }
+        },
+        "required": [
+          "field",
+          "order"
+        ],
+        "title": "Sort",
+        "type": "object"
+      },
+      "Status": {
+        "enum": [
+          "ACTIVE_NOT_RECRUITING",
+          "COMPLETED",
+          "ENROLLING_BY_INVITATION",
+          "NOT_YET_RECRUITING",
+          "RECRUITING",
+          "SUSPENDED",
+          "TERMINATED",
+          "WITHDRAWN",
+          "AVAILABLE",
+          "NO_LONGER_AVAILABLE",
+          "TEMPORARILY_NOT_AVAILABLE",
+          "APPROVED_FOR_MARKETING",
+          "WITHHELD",
+          "UNKNOWN"
+        ],
+        "title": "Status",
+        "type": "string",
+        "x-labels": {
+          "ACTIVE_NOT_RECRUITING": "Active, not recruiting",
+          "APPROVED_FOR_MARKETING": "Approved for marketing",
+          "AVAILABLE": "Available",
+          "COMPLETED": "Completed",
+          "ENROLLING_BY_INVITATION": "Enrolling by invitation",
+          "NOT_YET_RECRUITING": "Not yet recruiting",
+          "NO_LONGER_AVAILABLE": "No longer available",
+          "RECRUITING": "Recruiting",
+          "SUSPENDED": "Suspended",
+          "TEMPORARILY_NOT_AVAILABLE": "Temporarily not available",
+          "TERMINATED": "Terminated",
+          "UNKNOWN": "Unknown status",
+          "WITHDRAWN": "Withdrawn",
+          "WITHHELD": "Withheld"
+        }
+      },
+      "StoredTrial": {
+        "additionalProperties": false,
+        "description": "`GET /api/trials/{nct_id}`: a cited trial's record as cached now, which a later\nfetch may have replaced since the citation was checked (SCHEMAS.md \u00a76).",
+        "properties": {
+          "fetched_at": {
+            "format": "date-time",
+            "title": "Fetched At",
+            "type": "string"
+          },
+          "nct_id": {
+            "pattern": "^NCT\\d{8}$",
+            "title": "Nct Id",
+            "type": "string"
+          },
+          "record": {
+            "additionalProperties": true,
+            "title": "Record",
+            "type": "object"
+          }
+        },
+        "required": [
+          "nct_id",
+          "record",
+          "fetched_at"
+        ],
+        "title": "StoredTrial",
+        "type": "object"
+      },
+      "TopN": {
+        "additionalProperties": false,
+        "properties": {
+          "categories_total": {
+            "minimum": 0.0,
+            "title": "Categories Total",
+            "type": "integer"
+          },
+          "limit": {
+            "minimum": 0.0,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "limit",
+          "categories_total"
+        ],
+        "title": "TopN",
+        "type": "object"
+      },
+      "TrialSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "brief_title": {
+            "title": "Brief Title",
+            "type": "string"
+          },
+          "conditions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Conditions",
+            "type": "array"
+          },
+          "overall_status": {
+            "title": "Overall Status",
+            "type": "string"
+          },
+          "phase": {
+            "title": "Phase",
+            "type": "string"
+          },
+          "sponsor_name": {
+            "title": "Sponsor Name",
+            "type": "string"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          }
+        },
+        "required": [
+          "brief_title",
+          "overall_status",
+          "phase",
+          "start_date",
+          "sponsor_name",
+          "conditions"
+        ],
+        "title": "TrialSummary",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "VisualizeRequest": {
+        "additionalProperties": false,
+        "description": "The `POST /api/visualize` body (SCHEMAS.md \u00a71). Only `query` is required.",
+        "properties": {
+          "condition": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Condition"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "drug_name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Drug Name"
+          },
+          "end_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Year"
+          },
+          "query": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Query",
+            "type": "string"
+          },
+          "sponsor": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sponsor"
+          },
+          "start_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Year"
+          },
+          "trial_phase": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Phase"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "VisualizeRequest",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "ClinicalTrials.gov Query-to-Visualization Agent",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/trials/{nct_id}": {
+      "get": {
+        "description": "The cached record behind a citation, for the frontend's record viewer. Read-only: it never\ncalls ClinicalTrials.gov, so it shows the record the excerpt check ran against.",
+        "operationId": "stored_trial_api_trials__nct_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "nct_id",
+            "required": true,
+            "schema": {
+              "pattern": "^NCT\\d{8}$",
+              "title": "Nct Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoredTrial"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            },
+            "description": "The trial is not in the cache"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Stored Trial"
+      }
+    },
+    "/api/visualize": {
+      "post": {
+        "operationId": "visualize_api_visualize_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisualizeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "discriminator": {
+                    "mapping": {
+                      "clarification_needed": "#/components/schemas/ClarificationResponse",
+                      "degraded": "#/components/schemas/DegradedResponse",
+                      "no_results": "#/components/schemas/NoResultsResponse",
+                      "ok": "#/components/schemas/OkResponse"
+                    },
+                    "propertyName": "status"
+                  },
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/OkResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ClarificationResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/NoResultsResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/DegradedResponse"
+                    }
+                  ],
+                  "title": "Response Visualize Api Visualize Post"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            },
+            "description": "ClinicalTrials.gov or the LLM failed"
+          }
+        },
+        "summary": "Visualize"
+      }
+    }
+  },
+  "x-checks": [
+    {
+      "name": "schema",
+      "rule": "The response matches the documented schema."
+    },
+    {
+      "name": "encoding",
+      "rule": "Every field the chart encodes exists in every row."
+    },
+    {
+      "name": "shape",
+      "rule": "The chart type fits the shape of the data."
+    },
+    {
+      "name": "citation ids",
+      "rule": "Every cited trial is in its datum and in the retrieved records."
+    },
+    {
+      "name": "excerpts",
+      "rule": "Every excerpt is the exact text at its field in the trial's record."
+    },
+    {
+      "name": "reconciliation",
+      "rule": "Each count equals its distinct trials; totals reconcile with the records."
+    },
+    {
+      "name": "assumptions",
+      "rule": "Every inferred filter is disclosed as an assumption."
+    },
+    {
+      "name": "title",
+      "rule": "The title contains no number that is not in the filters."
+    },
+    {
+      "name": "disclosures",
+      "rule": "Sample caps, pruning and top-N limits are disclosed consistently."
+    }
+  ]
+}

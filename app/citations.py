@@ -57,4 +57,6 @@ def _summary(trial: NormalizedTrial) -> TrialSummary:
         overall_status=label(trial.overall_status),
         phase=trial.phase_label,
         start_date=trial.start_date,
+        sponsor_name=trial.sponsor_name,
+        conditions=list(trial.conditions),
     )
