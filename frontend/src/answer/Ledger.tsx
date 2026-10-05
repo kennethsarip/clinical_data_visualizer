@@ -18,11 +18,8 @@ export function Ledger({ steps }: { steps: Step[] }) {
         <li key={step.step} className={`ledger-step ledger-${step.status}`}>
           <span className="ledger-name">{step.step}</span>
           <span className="ledger-status">{STATUS_TEXT[step.status]}</span>
-          {step.total > 0 && (
-            <span className="ledger-count">
-              {step.verified} / {step.total}
-            </span>
-          )}
+          {/* Always rendered, so every row keeps the same columns. */}
+          <span className="ledger-count">{step.total > 0 ? `${step.verified} / ${step.total}` : ''}</span>
           <span className="ledger-result">{step.result}</span>
           {step.checks.length > 0 && step.status !== 'not_reached' && (
             <span className="ledger-checks">{step.checks.join(' · ')}</span>
