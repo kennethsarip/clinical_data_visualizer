@@ -10,11 +10,19 @@ const BAR = exampleWith((r) => r.status === 'ok' && r.visualization?.type === 'b
 const TRIALS = BAR.trials as Record<string, TrialSummary>
 const VIZ = BAR.visualization as Visualization
 
-function show(selection: SelectedRow | null = null, trials = TRIALS) {
-  const onClearSelection = vi.fn()
-  const onHover = vi.fn()
-  render(<SourcesPanel trials={trials} selection={selection} onClearSelection={onClearSelection} onHover={onHover} />)
-  return { onClearSelection, onHover }
+function show(selection: SelectedRow | null = null, trials = TRIALS, viewing: string | null = null, tab: 'sources' | 'viewer' = 'sources') {
+  const handlers = { onClearSelection: vi.fn(), onHover: vi.fn(), onOpen: vi.fn(), onTab: vi.fn() }
+  render(
+    <SourcesPanel
+      trials={trials}
+      selection={selection}
+      tab={tab}
+      viewing={viewing}
+      citationsFor={() => []}
+      {...handlers}
+    />,
+  )
+  return handlers
 }
 
 // Direct children only: each card holds its own nested list of chips.
@@ -84,8 +92,26 @@ describe('SourcesPanel', () => {
     expect(cards()).toHaveLength(30)
   })
 
-  it('keeps the Viewer tab for the record viewer (Phase 4 step 8)', () => {
+  it('opens a card in the viewer on click or Enter, but not from its external link', async () => {
+    const { onOpen } = show()
+    await userEvent.click(within(cards()[1]).getByText('Pembrolizumab Versus Chemotherapy in NSCLC'))
+    expect(onOpen).toHaveBeenLastCalledWith('NCT00000002')
+    cards()[2].focus()
+    await userEvent.keyboard('{Enter}')
+    expect(onOpen).toHaveBeenLastCalledWith('NCT00000003')
+    onOpen.mockClear()
+    await userEvent.click(within(cards()[0]).getByRole('link', { name: 'NCT00000001' }))
+    expect(onOpen).not.toHaveBeenCalled()
+  })
+
+  it('enables the Viewer tab once a trial is open', async () => {
     show()
-    expect(screen.getByRole('tab', { name: /Viewer/ })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /Viewer/ })).toBeDisabled()
+  })
+
+  it('switches tabs', async () => {
+    const { onTab } = show(null, TRIALS, 'NCT00000001')
+    await userEvent.click(screen.getByRole('tab', { name: /Viewer\s*1/ }))
+    expect(onTab).toHaveBeenCalledWith('viewer')
   })
 })

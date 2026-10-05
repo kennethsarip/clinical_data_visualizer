@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Visualization } from '../charts/types'
 import { VISUALIZATION_EXAMPLES } from '../test/schemasExamples'
-import { selectedRow, trialNumbers } from './selection'
+import { selectedRow, trialCitations, trialNumbers } from './selection'
 
 const example = (type: string) => VISUALIZATION_EXAMPLES.find((v) => v.type === type) as Visualization
 
@@ -38,5 +38,19 @@ describe('trialNumbers', () => {
         ['NCT00000005', 3],
       ]),
     )
+  })
+})
+
+describe('trialCitations', () => {
+  it('collects one trial\'s citations across every datum, without duplicates', () => {
+    // NCT00000007 is cited on both nodes and the edge; the edge repeats the node excerpts.
+    expect(trialCitations(example('network_graph'), 'NCT00000007')).toEqual([
+      { nct_id: 'NCT00000007', excerpt: 'Pembrolizumab (MK-3475)', field: 'armsInterventionsModule.interventions.name' },
+      { nct_id: 'NCT00000007', excerpt: 'Ipilimumab', field: 'armsInterventionsModule.interventions.name' },
+    ])
+  })
+
+  it('is empty for a trial no datum quotes', () => {
+    expect(trialCitations(example('bar_chart'), 'NCT00000099')).toEqual([])
   })
 })

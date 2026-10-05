@@ -40,6 +40,23 @@ export function selectedRow(viz: Visualization, selection: Selection): SelectedR
   return { label, nctIds: row.nct_ids, citations: row.citations }
 }
 
+/** Every citation of one trial across the chart's data (rows, or nodes then edges), without
+ *  duplicates: what the viewer highlights when no datum is selected. */
+export function trialCitations(viz: Visualization, nctId: string): Citation[] {
+  const items: { citations: Citation[] }[] = viz.type === 'network_graph' ? [...viz.data.nodes, ...viz.data.edges] : viz.data
+  const seen = new Set<string>()
+  const found: Citation[] = []
+  for (const item of items) {
+    for (const citation of item.citations) {
+      const key = `${citation.field}\u0000${citation.excerpt}`
+      if (citation.nct_id !== nctId || seen.has(key)) continue
+      seen.add(key)
+      found.push(citation)
+    }
+  }
+  return found
+}
+
 /** Source numbers 1..n in the order of the response's `trials` map; a card keeps its number
  *  however the list is filtered. */
 export function trialNumbers(trials: Record<string, unknown>): Map<string, number> {

@@ -497,7 +497,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) makes results visible for the demo.
 
-**Next move:** Phase 4 step 8 (sources panel, Viewer tab).
+**Next move:** Phase 4 step 9 ("How this was answered" drawer).
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
@@ -515,7 +515,6 @@ Goal: a search-first app where a user asks a question, sees the chart as the ans
 **Decided from the reference pass** (user, 2026-10-04; patterns in `BUILD_HISTORY.md` → Decisions): a right panel with **Sources | Viewer** tabs; numbered source cards; a datum tooltip of "N trials, click to see sources"; reverse highlight (hovering a card highlights every row whose `nct_ids` holds that trial); a Viewer showing the cached record with the cited field highlighted; export as chart SVG/PNG plus response JSON. Two of these changed the backend contract (step 1, shipped: `BUILD_HISTORY.md`).
 
 Steps, in order:
-8. **Sources panel, Viewer tab.** Clicking a card opens its record from `GET /api/trials/{nct_id}` with the cited fields highlighted and scrolled into view, plus "Open on ClinicalTrials.gov" (`https://clinicaltrials.gov/study/<nct_id>`). It shows a mismatch notice when the cached record has changed (SCHEMAS.md §6).
 9. **"How this was answered" drawer.** Interpretation, stated vs inferred filters, assumptions, "fetched N of M", citation cap, exclusions, pruning, and the checks that passed.
 10. **Raw JSON toggle and export.** A "Response JSON" tab beside the chart that shows the exact response, so a reviewer can check the spec and citations against `SCHEMAS.md`, with copy and download buttons; chart SVG/PNG download sits in the chart header.
 

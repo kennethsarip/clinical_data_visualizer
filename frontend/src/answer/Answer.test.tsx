@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { RendererProps } from '../charts/rendererProps'
 import type { Visualization } from '../charts/types'
 import { exampleWith } from '../test/schemasExamples'
@@ -16,6 +16,8 @@ vi.mock('../charts/ChartView', () => ({
     </div>
   ),
 }))
+
+afterEach(() => vi.unstubAllGlobals())
 
 const BAR = exampleWith((r) => r.status === 'ok' && r.visualization?.type === 'bar_chart')
 
@@ -46,5 +48,21 @@ describe('Answer', () => {
     expect(screen.getByLabelText('highlighted')).toHaveTextContent('NCT00000003')
     await user.unhover(screen.getByText('Pembrolizumab Plus Lenvatinib in Solid Tumors'))
     expect(screen.getByLabelText('highlighted')).toHaveTextContent('')
+  })
+})
+
+describe('Answer viewer', () => {
+  it('a card opens its cached record with the selected datum\'s excerpt highlighted; a new click returns to sources', async () => {
+    const record = { protocolSection: { designModule: { phases: ['PHASE3'] } } }
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ nct_id: 'NCT00000002', record, fetched_at: '2026-10-05T00:00:00Z' }), { status: 200 })))
+    const user = userEvent.setup()
+    render(<Answer response={BAR as never} />)
+    await user.click(await screen.findByText('select row 1'))
+    await user.click(screen.getByText('Pembrolizumab Versus Chemotherapy in NSCLC'))
+    expect(screen.getByRole('tab', { name: /Viewer/ })).toHaveAttribute('aria-selected', 'true')
+    expect(await screen.findByText('PHASE3', { selector: 'mark' })).toBeInTheDocument()
+
+    await user.click(screen.getByText('select row 1'))
+    expect(screen.getByRole('tab', { name: /Sources/ })).toHaveAttribute('aria-selected', 'true')
   })
 })

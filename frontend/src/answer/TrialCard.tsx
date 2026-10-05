@@ -7,12 +7,13 @@ interface Props {
   /** Set while a datum is selected: this trial's citations in that datum ([] if capped out). */
   citations: Citation[] | null
   onHover: (nctId: string | null) => void
+  onOpen: (nctId: string) => void
 }
 
 const STUDY_URL = 'https://clinicaltrials.gov/study/'
 const MAX_CONDITIONS = 3
 
-export function TrialCard({ nctId, number, trial, citations, onHover }: Props) {
+export function TrialCard({ nctId, number, trial, citations, onHover, onOpen }: Props) {
   const extra = trial.conditions.length - MAX_CONDITIONS
   return (
     <li
@@ -22,6 +23,14 @@ export function TrialCard({ nctId, number, trial, citations, onHover }: Props) {
       onMouseLeave={() => onHover(null)}
       onFocus={() => onHover(nctId)}
       onBlur={() => onHover(null)}
+      // The NCT ID link opens ClinicalTrials.gov itself; anywhere else opens the cached record.
+      onClick={(event) => {
+        if (!(event.target as HTMLElement).closest('a')) onOpen(nctId)
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' && event.target === event.currentTarget) onOpen(nctId)
+      }}
+      aria-label={`Source ${number}: ${trial.brief_title}. Press Enter to view the record.`}
     >
       <div className="source-head">
         <span className="source-number" data-testid="source-number">
