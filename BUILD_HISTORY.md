@@ -6,6 +6,9 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ### Phase 4: Frontend (in progress)
 
+- **4.1 Contract additions** (2026-10-04): the trial summary gains `sponsor_name` and `conditions`, as registered, for source-card chips. New `GET /api/trials/{nct_id}` (`StoredTrial`) serves the verbatim cached record and its `fetched_at`; 404 if not cached, 422 on a malformed ID. SCHEMAS.md §2 and the new §6 updated in the same commit.
+  - It reads the cache regardless of TTL and never calls the API, so the Viewer shows the record the excerpt check ran against. `TrialCache.stored_trial` does the lookup; `get_cache` is now the per-request connection dependency, and `get_pipeline` builds on it.
+  - Smoke-tested on the dev cache with a running server: 200 with the verbatim record, 404 for an uncached ID, 422 for a lowercase ID.
 - **4.0 Reference pass** (2026-10-04): read the two product screenshots in `docs/product_frontend/` and settled the interaction patterns taken from them and the visual elements left out (Decisions below), plus two contract additions (Phase 4 step 1).
 
 ### Phase 3: LLM planning and the endpoint (done 2026-10-04; tagged `phase-3`)

@@ -143,6 +143,36 @@ def test_records_by_id_matches_exactly(conn: psycopg.Connection) -> None:
     assert found == {"NCT00000002": record(2)}
 
 
+def test_stored_trial_is_the_verbatim_record_with_its_fetch_time(conn: psycopg.Connection) -> None:
+    api, _, _ = fake_client(paged({None: page([1, 2], None, total=2)}))
+    cache = TrialCache(conn, api, 168)
+    cache.fetch(PEMBRO)
+    stored = cache.stored_trial("NCT00000002")
+    assert stored is not None
+    assert (stored.nct_id, stored.record) == ("NCT00000002", record(2))
+    assert stored.fetched_at.tzinfo is not None
+
+
+def test_stored_trial_ignores_the_ttl(conn: psycopg.Connection) -> None:
+    # The viewer shows the record an answer was checked against, however old (CLAUDE.md §14).
+    api, requests, _ = fake_client(paged({None: page([1], None, total=1)}))
+    cache = TrialCache(conn, api, ttl_hours=1)
+    cache.fetch(PEMBRO)
+    conn.execute("UPDATE trials SET fetched_at = now() - interval '30 days'")
+    stored = cache.stored_trial("NCT00000001")
+    assert stored is not None and stored.record == record(1)
+    assert len(requests) == 1  # never refetched
+
+
+def test_stored_trial_is_none_when_not_cached(conn: psycopg.Connection) -> None:
+    api, requests, _ = fake_client(paged({None: page([1], None, total=1)}))
+    cache = TrialCache(conn, api, 168)
+    cache.fetch(PEMBRO)
+    assert cache.stored_trial("NCT00000009") is None
+    assert cache.stored_trial("nct00000001") is None  # exact match only (§8.2)
+    assert len(requests) == 1
+
+
 def test_count_goes_to_the_api_and_writes_nothing(conn: psycopg.Connection) -> None:
     api, requests, _ = fake_client(paged({None: page([1], "next", total=57)}))
     cache = TrialCache(conn, api, ttl_hours=168)

@@ -60,6 +60,8 @@ def _network() -> dict[str, Any]:
             "overall_status": "Completed",
             "phase": "Phase 2",
             "start_date": None,
+            "sponsor_name": "s",
+            "conditions": [],
         }
     }
     response["meta"]["interpretation"] = {

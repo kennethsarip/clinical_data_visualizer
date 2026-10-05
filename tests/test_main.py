@@ -2,13 +2,14 @@
 request validation before the pipeline runs, 502 for a dependency failure."""
 
 from collections.abc import Iterator
+from datetime import UTC, datetime
 from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.aggregators.registry import Dimension, Intent
-from app.main import app, get_pipeline
+from app.main import app, get_cache, get_pipeline
 from app.pipeline import DependencyError
 from app.schemas import (
     RESPONSE_ADAPTER,
@@ -16,6 +17,7 @@ from app.schemas import (
     ClarificationMeta,
     ClarificationResponse,
     Filters,
+    StoredTrial,
     VisualizeRequest,
 )
 from tests.test_viz import _assemble
@@ -101,6 +103,60 @@ def test_invalid_request_is_422_before_the_pipeline(serve: Any, body: dict[str, 
     assert fake.requests == []
 
 
-def test_the_only_api_route_is_visualize() -> None:
+# --- GET /api/trials/{nct_id}: the cached record behind a citation (CLAUDE.md §14 Phase 4) ---
+
+STORED = StoredTrial(
+    nct_id="NCT00000001",
+    record={"protocolSection": {"designModule": {"phases": ["PHASE3"]}}},
+    fetched_at=datetime(2026, 10, 4, 12, 0, tzinfo=UTC),
+)
+
+
+class FakeCache:
+    def __init__(self) -> None:
+        self.lookups: list[str] = []
+
+    def stored_trial(self, nct_id: str) -> StoredTrial | None:
+        self.lookups.append(nct_id)
+        return STORED if nct_id == STORED.nct_id else None
+
+
+@pytest.fixture
+def cached() -> Iterator[tuple[TestClient, FakeCache]]:
+    fake = FakeCache()
+    app.dependency_overrides[get_cache] = lambda: fake
+    yield TestClient(app), fake
+    app.dependency_overrides.clear()
+
+
+def test_cached_trial_is_returned_verbatim(cached: tuple[TestClient, FakeCache]) -> None:
+    client, _ = cached
+    reply = client.get("/api/trials/NCT00000001")
+    assert reply.status_code == 200
+    assert reply.json() == {
+        "nct_id": "NCT00000001",
+        "record": {"protocolSection": {"designModule": {"phases": ["PHASE3"]}}},
+        "fetched_at": "2026-10-04T12:00:00Z",
+    }
+
+
+def test_uncached_trial_is_404(cached: tuple[TestClient, FakeCache]) -> None:
+    client, fake = cached
+    reply = client.get("/api/trials/NCT00000009")
+    assert reply.status_code == 404
+    assert reply.json() == {"detail": "NCT00000009 is not in the cache."}
+    assert fake.lookups == ["NCT00000009"]
+
+
+@pytest.mark.parametrize("nct_id", ["nct00000001", "NCT0000001", "NCT000000011", "12345678"])
+def test_malformed_nct_id_is_422_before_the_cache(
+    cached: tuple[TestClient, FakeCache], nct_id: str
+) -> None:
+    client, fake = cached
+    assert client.get(f"/api/trials/{nct_id}").status_code == 422
+    assert fake.lookups == []
+
+
+def test_api_routes_are_visualize_and_trials() -> None:
     paths = {route.path for route in app.routes if route.path.startswith("/api")}  # type: ignore[attr-defined]
-    assert paths == {"/api/visualize"}
+    assert paths == {"/api/visualize", "/api/trials/{nct_id}"}
