@@ -86,6 +86,7 @@ request ─► validate ─► LLM plan (strict JSON schema) ─► Python guard
 | Viz type and encoding, read off the row shape | `viz.py` | no |
 | Citations `{nct_id, excerpt, field}` | `citations.py` | no |
 | Checks, repair, status selection | `checks.py`, `pipeline.py` | no |
+| Verification ledger (`meta.verification`, every status) | `verification.py` | no |
 | Title and notes | `viz.py`, `llm.py` | **yes** (no row values) |
 
 Four statuses, all HTTP 200: `ok`, `clarification_needed`, `no_results` and `degraded`. A dependency
@@ -260,6 +261,9 @@ The plan changed a lot once it met real data. Each change below was forced by a 
 | Age words caught by the name guard | "pediatric asthma" was quoted as the condition while the search used "asthma", and passed | An age or sex word counts only if quoted as *not* applied; 20/20 after |
 | LLM at `low` reasoning effort | Misrouted 3 of 15 enrollment questions | `medium` for the plan (0 of 15); the title call at `none` (1.06 s vs 2.0 s, equivalent titles) |
 | Excerpt check = enough citation verification | A wrong-bar trial cited with its real value passed every check | `membership` check re-derives every charted trial's category |
+| Exclusions reported as counts | Nothing proved every retrieved trial was either charted or deliberately left out | Exclusions list their NCT IDs (plus "not in the top N" and "pruned from the network"); the `accounting` check proves every trial is accounted for |
+| Trust the aggregation once its unit tests pass | Nothing compared the shipped answer with what the records actually give, for networks and numeric charts | `recount` rebuilds every datum from the raw records and must match; it caught the contract's own network example breaking its documented sort |
+| "15 checks passed" as the only signal | A reader could not see what was verified, or where a refusal stopped | A per-step verification ledger on every status, with a badge under the chart |
 | Sequential pipeline | The two LLM calls were 80-99% of warm latency | The title call runs while trials are fetched; cohorts download concurrently. Warm median 4.9 s -> 3.1 s |
 | Concurrent downloads | Three 429s in a row failed a comparison: the API allows a ~10-request burst then ~1 request/s, and a 429 takes ~8 s to clear | A token-bucket rate limiter (burst 8, then 1/s) and an 8 s retry after a 429 |
 | Large responses | The `trials` map made a capped comparison 6.9 MB of JSON | gzip middleware (1.4 MB on the wire), sources panel paged 25 at a time |
@@ -356,10 +360,10 @@ large because the `trials` map holds every charted trial):
 |---|---|---|---|
 | `1_time_series_pembrolizumab` | ok | `time_series` | 2,904 trials since 2015, zero-filled years, start-date basis disclosed |
 | `2_grouped_bar_pembrolizumab_vs_nivolumab` | ok | `grouped_bar_chart` | Two cohorts, one fetch each, per-cohort sample disclosure |
-| `3_network_melanoma_drug_drug` | ok | `network_graph` | Condition-anchored drug-drug network, 50 nodes and 238 edges after pruning, 105 placebo trials excluded and listed |
+| `3_network_melanoma_drug_drug` | ok | `network_graph` | Condition-anchored drug-drug network, 50 nodes and 238 edges after pruning; all 3,770 trials accounted for (1,163 charted, the rest listed by ID under 5 reasons, e.g. 105 placebo, 1,611 pruned); 3,387 citations verified |
 | `4_bar_breast_cancer_japan` | ok | `bar_chart` | Exact country filter: 327 trials, every one with a site in Japan |
-| `5_clarification_beijing_japan` | clarification_needed | — | "Beijing" cannot be applied; offers "How are lung cancer trials in Japan distributed across phases?" |
-| `6_not_found_zorblaxumab` | no_results | — | "No trial on ClinicalTrials.gov lists Zorblaxumab. No similar name was substituted." |
+| `5_clarification_beijing_japan` | clarification_needed | — | "Beijing" cannot be applied; offers "How are lung cancer trials in Japan distributed across phases?"; the ledger stops at `plan` |
+| `6_not_found_zorblaxumab` | no_results | — | "No trial on ClinicalTrials.gov lists Zorblaxumab. No similar name was substituted."; the ledger stops at `retrieval` |
 
 ### Excerpts from those outputs
 
@@ -382,11 +386,15 @@ which both drugs appear, and each citation quotes the registered intervention na
 }
 ```
 
-The same response discloses its pruning in `meta.pruning`:
-`{"min_edge_weight": 2, "top_n_nodes": 50, "fallback_used": false, "nodes_removed": 2471, "edges_removed": 4445}`.
+The same response discloses its pruning in `meta.pruning`
+(`{"min_edge_weight": 2, "top_n_nodes": 50, "fallback_used": false, "nodes_removed": 2471, "edges_removed": 4445}`),
+lists the 1,611 trials whose drugs were all pruned by ID under `pruned from the network`, and its
+ledger reads: "All 3770 trials accounted for: 1163 charted in 288 data, the rest listed under 5
+reasons; each datum recounted from its records." and "3387 citations verified".
 
-**A clarification** (`5_clarification_beijing_japan.response.json`, complete). The question names a
-city, which no filter can express, so the system asks instead of charting Japan alone:
+**A clarification** (`5_clarification_beijing_japan.response.json`, trimmed: the ledger's last six
+steps are all `not_reached`). The question names a city, which no filter can express, so the system
+asks instead of charting Japan alone, and the ledger shows where it stopped:
 
 ```json
 {
@@ -398,6 +406,16 @@ city, which no filter can express, so the system asks instead of charting Japan 
     "filters": {"stated": {"condition": "lung cancer", "country": "Japan"}, "inferred": {}},
     "assumptions": [],
     "notes": ["\"Beijing\" cannot be applied: no filter for city."],
+    "verification": [
+      {"step": "request", "status": "passed", "checks": ["request schema", "year range"],
+       "verified": 1, "total": 1, "result": "The request fields are valid."},
+      {"step": "plan", "status": "stopped",
+       "checks": ["plan schema", "registered analysis", "constraint quotes", "name coverage", "anchor"],
+       "verified": 0, "total": 1, "result": "Stopped: \"Beijing\" cannot be applied: no filter for city."},
+      {"step": "retrieval", "status": "not_reached", "checks": ["conformance"],
+       "verified": 0, "total": 0, "result": "Not reached."},
+      "…"
+    ],
     "missing": [],
     "unapplied": [{"quote": "Beijing", "reason": "no filter for city"}],
     "conflicts": [],
@@ -406,23 +424,10 @@ city, which no filter can express, so the system asks instead of charting Japan 
 }
 ```
 
-**Not found** (`6_not_found_zorblaxumab.response.json`, complete). A made-up drug is reported as
-not found; no similar name is substituted:
-
-```json
-{
-  "status": "no_results",
-  "visualization": null,
-  "trials": {},
-  "meta": {
-    "source": "clinicaltrials.gov",
-    "filters": {"stated": {"drug_name": "Zorblaxumab"}, "inferred": {}},
-    "assumptions": [],
-    "notes": ["No trial on ClinicalTrials.gov lists Zorblaxumab. No similar name was substituted."],
-    "not_found": ["Zorblaxumab"]
-  }
-}
-```
+**Not found** (`6_not_found_zorblaxumab.response.json`). A made-up drug is reported as not found; no
+similar name is substituted, and the ledger stops at `retrieval` with "Stopped: No trial on
+ClinicalTrials.gov lists Zorblaxumab. No similar name was substituted." The `not_found` list names
+it: `["Zorblaxumab"]`.
 
 ## Limitations and what more time would improve
 

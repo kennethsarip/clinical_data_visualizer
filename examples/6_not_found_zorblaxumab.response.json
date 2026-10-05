@@ -14,6 +14,103 @@
     "notes": [
       "No trial on ClinicalTrials.gov lists Zorblaxumab. No similar name was substituted."
     ],
+    "verification": [
+      {
+        "step": "request",
+        "status": "passed",
+        "checks": [
+          "request schema",
+          "year range"
+        ],
+        "verified": 1,
+        "total": 1,
+        "result": "The request fields are valid."
+      },
+      {
+        "step": "plan",
+        "status": "passed",
+        "checks": [
+          "plan schema",
+          "registered analysis",
+          "constraint quotes",
+          "name coverage",
+          "anchor"
+        ],
+        "verified": 1,
+        "total": 1,
+        "result": "Read as time_trend.start_year; 1 filter or cohort applied."
+      },
+      {
+        "step": "retrieval",
+        "status": "stopped",
+        "checks": [
+          "conformance"
+        ],
+        "verified": 0,
+        "total": 0,
+        "result": "Stopped: No trial on ClinicalTrials.gov lists Zorblaxumab. No similar name was substituted."
+      },
+      {
+        "step": "records",
+        "status": "not_reached",
+        "checks": [
+          "normalize"
+        ],
+        "verified": 0,
+        "total": 0,
+        "result": "Not reached."
+      },
+      {
+        "step": "aggregation",
+        "status": "not_reached",
+        "checks": [
+          "membership",
+          "recount",
+          "reconciliation",
+          "accounting"
+        ],
+        "verified": 0,
+        "total": 0,
+        "result": "Not reached."
+      },
+      {
+        "step": "citations",
+        "status": "not_reached",
+        "checks": [
+          "citation ids",
+          "excerpts",
+          "coverage",
+          "summaries"
+        ],
+        "verified": 0,
+        "total": 0,
+        "result": "Not reached."
+      },
+      {
+        "step": "prose",
+        "status": "not_reached",
+        "checks": [
+          "title"
+        ],
+        "verified": 0,
+        "total": 0,
+        "result": "Not reached."
+      },
+      {
+        "step": "response",
+        "status": "not_reached",
+        "checks": [
+          "schema",
+          "encoding",
+          "shape",
+          "assumptions",
+          "disclosures"
+        ],
+        "verified": 0,
+        "total": 0,
+        "result": "Not reached."
+      }
+    ],
     "not_found": [
       "Zorblaxumab"
     ]

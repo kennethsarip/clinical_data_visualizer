@@ -4,7 +4,9 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ## Shipped
 
-### Phase 7: Deep citations and verification at every step (done 2026-10-05 on `phase-7-citations`; merge pending)
+### Phase 7: Deep citations and verification at every step (done 2026-10-05; merged in PR #8 and tagged `phase-7`)
+
+- **Examples re-captured** (2026-10-05, on `main`): all six `examples/` responses re-run through the live API on the Phase 7 code, so they carry `meta.verification`, excluded-trial IDs and official titles; the README excerpts were updated to match them.
 
 - **Done when, checked** (2026-10-05): every check catches its seeded fault (16 faults, `tests/test_fault_injection.py`; the membership, accounting and recount faults were also run with their check removed and passed every other check); the ledger renders for every status (Vitest, and live in headless Chromium for `ok` and a clarification); the rerun is saved (`eval/results/phase7_final.json`, commit `b5c632f`: 34/34, probes 13/13, 4,208/4,208 data fully cited, 30,896/30,896 excerpts, off-filter 0 of 95,265, warm median 3.9 s, max 7.8 s); the README "Deep citations" section is written, with a screenshot of the sources panel filtered to a clicked edge.
 - **7.8 Rerun and README**: a cold run on `2a6eae9` (`phase7_after.json`, every cache key new because `officialTitle` joined the fetched fields: median 5.3 s, max 28.2 s on the 20,000-trial comparison), a warm one (`phase7_after_warm.json`: 4.1 s, max 13.0 s), then a profile of that comparison: the checks cost 2.2 s, mostly `recount` and `membership` normalizing the same records twice. Each record is now normalized once per answer (checks 1.6 s); `phase7_final.json` on the final code.

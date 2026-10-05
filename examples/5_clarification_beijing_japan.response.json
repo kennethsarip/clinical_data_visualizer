@@ -15,6 +15,103 @@
     "notes": [
       "\"Beijing\" cannot be applied: no filter for city."
     ],
+    "verification": [
+      {
+        "step": "request",
+        "status": "passed",
+        "checks": [
+          "request schema",
+          "year range"
+        ],
+        "verified": 1,
+        "total": 1,
+        "result": "The request fields are valid."
+      },
+      {
+        "step": "plan",
+        "status": "stopped",
+        "checks": [
+          "plan schema",
+          "registered analysis",
+          "constraint quotes",
+          "name coverage",
+          "anchor"
+        ],
+        "verified": 0,
+        "total": 1,
+        "result": "Stopped: \"Beijing\" cannot be applied: no filter for city."
+      },
+      {
+        "step": "retrieval",
+        "status": "not_reached",
+        "checks": [
+          "conformance"
+        ],
+        "verified": 0,
+        "total": 0,
+        "result": "Not reached."
+      },
+      {
+        "step": "records",
+        "status": "not_reached",
+        "checks": [
+          "normalize"
+        ],
+        "verified": 0,
+        "total": 0,
+        "result": "Not reached."
+      },
+      {
+        "step": "aggregation",
+        "status": "not_reached",
+        "checks": [
+          "membership",
+          "recount",
+          "reconciliation",
+          "accounting"
+        ],
+        "verified": 0,
+        "total": 0,
+        "result": "Not reached."
+      },
+      {
+        "step": "citations",
+        "status": "not_reached",
+        "checks": [
+          "citation ids",
+          "excerpts",
+          "coverage",
+          "summaries"
+        ],
+        "verified": 0,
+        "total": 0,
+        "result": "Not reached."
+      },
+      {
+        "step": "prose",
+        "status": "not_reached",
+        "checks": [
+          "title"
+        ],
+        "verified": 0,
+        "total": 0,
+        "result": "Not reached."
+      },
+      {
+        "step": "response",
+        "status": "not_reached",
+        "checks": [
+          "schema",
+          "encoding",
+          "shape",
+          "assumptions",
+          "disclosures"
+        ],
+        "verified": 0,
+        "total": 0,
+        "result": "Not reached."
+      }
+    ],
     "missing": [],
     "unapplied": [
       {

@@ -4,7 +4,7 @@
 >
 > **The one thing to understand first:** the LLM never produces a number, count, date, NCT ID, excerpt or data row. It does exactly two things: plan the query and write prose (title, notes). Retrieval, aggregation, viz type selection, citations and checks are deterministic Python, so every row traces back to cached API records by NCT ID (§7.2).
 >
-> **Status:** Phases 1-6 are done (each merged and tagged `phase-N`). Phase 7 (deep citations and verification) passes its "Done when" on branch `phase-7-citations` (2026-10-05): 15 checks, a verification ledger on every status, accounting by trial ID, 16 seeded faults each caught, eval 34/34 with hallucination probes 13/13; merge pending. `POST /api/visualize` answers end to end and the frontend renders every viz type with clickable citations. The repo is `github.com/kennethsarip/cheiron_task` (private, §12). Runs locally only; no deploy is planned (§13.4).
+> **Status:** Phases 1-7 are done, each merged and tagged `phase-N` (Phase 7 on 2026-10-05, PR #8): 15 checks, a verification ledger on every status, accounting by trial ID, 16 seeded faults each caught, eval 34/34 with hallucination probes 13/13. Remaining work goes straight to `main`, with no Phase 8 branch (user decision, 2026-10-05: time). `POST /api/visualize` answers end to end and the frontend renders every viz type with clickable citations. The repo is `github.com/kennethsarip/cheiron_task` (private, §12). Runs locally only; no deploy is planned (§13.4).
 >
 > **Definition of done:** `uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest`, plus `cd frontend && npm run lint && npm run typecheck && npm test && npm run check:types`, all green (`check:types` diffs against git, so commit regenerated types first). CI (`.github/workflows/ci.yml`) runs exactly these, so local green means CI green. `main` stays runnable.
 >
@@ -455,7 +455,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 
 ## 12. Repo & GitHub practices
 
-- One short branch per phase; merge only when its "Done when" passes and CI is green, then tag `main` (`phase-N`).
+- One short branch per phase; merge only when its "Done when" passes and CI is green, then tag `main` (`phase-N`). Exception (user decision, 2026-10-05): after Phase 7, work is committed directly to `main` because of the time box.
 - Commits are small, present tense and scoped (`feat:`, `fix:`, `docs:`, `test:`, `chore:`), referencing the milestone.
 - PR descriptions cover what changed, why, and how it was tested.
 - Remote `origin` is `github.com/kennethsarip/cheiron_task`. It is private because this file holds interview and company notes (§2 Context); keep it private unless those notes move out.
@@ -511,7 +511,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4, done) makes results visible for the demo.
 
-**Next move:** merge `phase-7-citations` (PR) and tag `phase-7`; then Phase 8 step 1 (network checks: several already exist as `membership` and `recount`, so start by mapping what is left).
+**Next move:** Phase 8 and 9 items as time allows, committed directly to `main` (no phase branch); keep the Definition of done green before every push.
 
 Phases 6-9 were planned with the user on 2026-10-05 (reasons in `BUILD_HISTORY.md` → Decisions): fix query understanding and retrieval first, because a citation cannot rescue a trial that should never have been retrieved; then verify every step and show the result to the user; then the network showcase; then submission.
 

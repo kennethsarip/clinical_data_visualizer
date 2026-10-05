@@ -1212,6 +1212,7 @@
   "trials": {
     "NCT07806266": {
       "brief_title": "EORTC Metastatic Breast Cancer Module Development",
+      "official_title": "The European Organisation for Research and Treatment of Cancer: Module Development for Metastatic Breast Cancer (Phase I-IIIa/b)",
       "overall_status": "Recruiting",
       "phase": "Not specified",
       "start_date": "2020-05-01",
@@ -1222,6 +1223,7 @@
     },
     "NCT07801508": {
       "brief_title": "A Study of [68Ga]Ga-DWJ155 in Adult Patients With Solid Tumors",
+      "official_title": "A Phase I, Open Label Study to Evaluate the Imaging Characteristics, Safety, Biodistribution and Pharmacokinetics of [68Ga]Ga-DWJ155 in Adult Patients With Solid Tumors",
       "overall_status": "Recruiting",
       "phase": "Phase 1",
       "start_date": "2026-09-08",
@@ -1235,6 +1237,7 @@
     },
     "NCT07766018": {
       "brief_title": "A Phase 2 Bridging Study of Elacestrant Monotherapy in Advanced or Metastatic Breast Cancer",
+      "official_title": "A Phase 2 Open-Label, Single-Arm, Multicenter Trial to Evaluate the Efficacy and Safety of Elacestrant Monotherapy for the Treatment of Japanese Participants With ER+/HER2- Advanced or Metastatic Breast Cancer With ESR1-mutation Following CDK4/6 Inhibitor Therapy",
       "overall_status": "Recruiting",
       "phase": "Phase 2",
       "start_date": "2026-08-18",
@@ -1245,6 +1248,7 @@
     },
     "NCT07701941": {
       "brief_title": "A Study of Patritumab Deruxtecan (HER3-DXd) in Combination With Trastuzumab Deruxtecan (T-DXd) in Participants With HR-Positive, HER2-Low or HER2-Ultralow Unresectable or Metastatic Breast Cancer",
+      "official_title": "A Phase 1b/2, Multicenter, Open-label, Dose Regimen Determination and Dose Expansion Trial to Evaluate the Safety, Tolerability, Anti-tumor Activity, and an Optimal Dose Regimen of Patritumab Deruxtecan (HER3-DXd) With Trastuzumab Deruxtecan (T-DXd) in Participants With Hormone Receptor Positive, HER2-low or HER2-ultralow, Unresectable or Metastatic Breast Cancer (HERTHENA-Breast02)",
       "overall_status": "Recruiting",
       "phase": "Phase 1/Phase 2",
       "start_date": "2026-09-17",
@@ -1257,6 +1261,7 @@
     },
     "NCT07671885": {
       "brief_title": "Evaluating the Response-Guided Therapy With Neoadjuvant Endocrine Therapy to Optimize Adjuvant Treatment in Premenopausal HR+/HER2- Breast Cancer (JCOG2402, Young HOPE)",
+      "official_title": "A Randomized Phase III Study of Response-Guided Therapy Following Neoadjuvant Endocrine Therapy to Optimize Adjuvant Treatment in Premenopausal HR+/HER2- Breast Cancer (JCOG2402, Young HOPE)",
       "overall_status": "Recruiting",
       "phase": "Phase 3",
       "start_date": "2026-01-28",
@@ -1267,6 +1272,7 @@
     },
     "NCT07660055": {
       "brief_title": "Study of [177Lu]Lu-DWJ155 and [68Ga]Ga-DWJ155 in Patients With Solid Tumors",
+      "official_title": "A Phase I Open-label, Multi-center Study to Evaluate the Safety, Tolerability, Dosimetry, and Preliminary Activity of [177Lu]Lu-DWJ155 and Safety and Imaging Properties of [68Ga]Ga-DWJ155 in Patients With Solid Tumors",
       "overall_status": "Recruiting",
       "phase": "Phase 1",
       "start_date": "2026-06-16",
@@ -1280,6 +1286,7 @@
     },
     "NCT07630961": {
       "brief_title": "Phase I Study of JFI447 [68Ga]Ga-DFC413 and Comparison to FFG233 [68Ga]Ga-NNS309 in Patients With Solid Tumors",
+      "official_title": "Phase I, Open Label First in Human Study to Evaluate the Imaging Characteristics, Safety, Biodistribution and Pharmacokinetics of JFI447 [68Ga]Ga-DFC413, and Compare to FFG233 [68Ga]Ga-NNS309 in Patients With Solid Tumors",
       "overall_status": "Recruiting",
       "phase": "Phase 1",
       "start_date": "2026-06-23",
@@ -1296,6 +1303,7 @@
     },
     "NCT07604571": {
       "brief_title": "Study of IEV407 as Single Agent or in Combination in Patients With Advanced HR+/HER2- Breast Cancer",
+      "official_title": "An Open-label, Multi-center, Phase I/Ib Study of IEV407 as a Single Agent and in Combination With Endocrine Therapy in Patients With Advanced Hormone Receptor Positive, HER2- Negative Breast Cancer",
       "overall_status": "Recruiting",
       "phase": "Phase 1",
       "start_date": "2026-05-28",
@@ -1306,6 +1314,7 @@
     },
     "NCT07492641": {
       "brief_title": "BGB-43395 Plus Letrozole Versus CDK4/6i Plus Letrozole for Patients With Advanced or Metastatic HR+/HER2- Breast Cancer Who Have Not Received Prior Treatment for Advanced or Metastatic Disease",
+      "official_title": "An Open-Label, Randomized, Multicenter Phase 3 Study Investigating the Efficacy and Safety of BGB-43395 Plus Letrozole Versus CDK4/6 Inhibitors (Abemaciclib, Palbociclib, Ribociclib) Plus Letrozole in Patients With Advanced or Metastatic HR+/HER2- Breast Cancer Who Have Not Received Prior Systemic Anticancer Treatment for Advanced or Metastatic Disease",
       "overall_status": "Recruiting",
       "phase": "Phase 3",
       "start_date": "2026-05-22",
@@ -1316,6 +1325,7 @@
     },
     "NCT07488676": {
       "brief_title": "A Study of ASP546C in Adults With Gastroesophageal Cancer, Pancreatic Cancer or Other Solid Tumors",
+      "official_title": "A Phase 1b/2 Open-label Study to Assess the Safety and Efficacy of ASP546C in Participants With CLDN18.2-expressing Locally Advanced Unresectable or Metastatic Gastroesophageal Adenocarcinoma, Pancreatic Adenocarcinoma or Other Solid Tumor Types",
       "overall_status": "Recruiting",
       "phase": "Phase 1/Phase 2",
       "start_date": "2026-05-04",
@@ -1327,6 +1337,7 @@
     },
     "NCT07465172": {
       "brief_title": "GDF-15 and Its Relationship With Treatment-related ADverse Events in Breast Cancer",
+      "official_title": "A Multi-centre, Prospective Cohort Study to Explore the Relationship Between Changes in GDF-15 Levels and Treatment-related Adverse Events During T-DXd Treatment in Breast Cancer Patients.",
       "overall_status": "Not yet recruiting",
       "phase": "Not Applicable",
       "start_date": "2026-10",
@@ -1337,6 +1348,7 @@
     },
     "NCT07360314": {
       "brief_title": "Anti-Ly6E Exatecan ADC M7437 in Advanced Solid Tumors",
+      "official_title": "A Phase 1, 2-Part, Multicenter, Open-Label, First-in-Human Study of the Anti-Ly6E Exatecan Antibody-Drug Conjugate M7437 in Participants With Advanced Solid Tumors",
       "overall_status": "Recruiting",
       "phase": "Phase 1",
       "start_date": "2026-02-13",
@@ -1347,6 +1359,7 @@
     },
     "NCT07292207": {
       "brief_title": "Abemaciclib for Molecular Residual Disease Detected by Circulating Tumor DNA in HR+/HER2- Early Breast Cancer",
+      "official_title": "Phase 2 Study of Abemaciclib for Molecular Residual Disease Detected by Circulating Tumor DNA in HR+/HER2- Early Breast Cancer",
       "overall_status": "Not yet recruiting",
       "phase": "Phase 2",
       "start_date": "2026-01-10",
@@ -1358,6 +1371,7 @@
     },
     "NCT07288359": {
       "brief_title": "Study of GVV858 as a Single Agent or in Combination With Endocrine Therapy in Patients With HR+/HER2- Breast Cancer and Other Advanced Solid Tumors",
+      "official_title": "An Open-label, Multi-center, Phase I/II Study of GVV858 as a Single Agent and in Combination With Endocrine Therapy in Patients With Advanced Hormone Receptor Positive, HER2- Negative Breast Cancer and Other Advanced Solid Tumors",
       "overall_status": "Recruiting",
       "phase": "Phase 1/Phase 2",
       "start_date": "2025-12-29",
@@ -1370,6 +1384,7 @@
     },
     "NCT07287995": {
       "brief_title": "A Study of ASP2998 Given by Itself and Given With Standard Therapies in People With Solid Tumors",
+      "official_title": "A Phase 1b/2 Study of ASP2998 as Monotherapy and in Combination With Standard Therapies in Participants With Locally Advanced Unresectable or Metastatic Solid Tumors",
       "overall_status": "Recruiting",
       "phase": "Phase 1/Phase 2",
       "start_date": "2026-02-05",
@@ -1380,6 +1395,7 @@
     },
     "NCT07213791": {
       "brief_title": "A Study of LY4337713 in Participants With FAP-Positive Solid Tumors",
+      "official_title": "A Dose Escalation and Dose Optimization Phase 1a/1b Study to Evaluate Safety, Tolerability and Dosimetry of Radioligand Therapy With LY4337713 in Adults With FAP-Positive Solid Tumors (FiREBOLT)",
       "overall_status": "Recruiting",
       "phase": "Phase 1",
       "start_date": "2025-10-22",
@@ -1396,6 +1412,7 @@
     },
     "NCT07190443": {
       "brief_title": "Adjuvant Abemaciclib for Locoregional Recurrence of HR-positive, HER2-negative Breast Cancer (JCOG2313, AURA)",
+      "official_title": "Randomized Phase III Trial for Evaluating the Efficacy of Adjuvant Abemaciclib in Patients With Locoregional Recurrence of Hormone Receptor-positive, HER2-negative Breast Cancer. JCOG2313, AURA Trial.",
       "overall_status": "Recruiting",
       "phase": "Phase 3",
       "start_date": "2025-02-07",
@@ -1409,6 +1426,7 @@
     },
     "NCT07174336": {
       "brief_title": "A Study of Tersolisib (LY4064809/STX-478) With Other Anti-Cancer Treatments in Participants With Advanced Breast Cancer With a Genetic Change (PIK3CA)",
+      "official_title": "A Phase 2, Randomized, Open-Label Dose Optimization and Phase 3, Randomized, Double-Blind, Placebo-Controlled Study of LY4064809 Combined With a CDK4/6 Inhibitor and Endocrine Therapy in Adults With HR+, HER2-Advanced Breast Cancer With a PIK3CA Mutation Who Received No Prior Treatment for Advanced Breast Cancer (PIKALO-2)",
       "overall_status": "Recruiting",
       "phase": "Phase 3",
       "start_date": "2025-12-22",
@@ -1420,6 +1438,7 @@
     },
     "NCT07173751": {
       "brief_title": "ROSETTA Breast-01: The Effects and Safety of Pumitamig in Patients With Triple-Negative Breast Cancer",
+      "official_title": "A Phase III, Multisite, Randomized, Double-Blind Trial of BNT327 in Combination With Chemotherapy Versus Placebo With Chemotherapy in Patients With Previously Untreated Locally Recurrent Inoperable or Metastatic TNBC Determined Ineligible for PD(L)1 Therapy Based on PD-L1 Negative Disease",
       "overall_status": "Recruiting",
       "phase": "Phase 3",
       "start_date": "2025-10-30",
@@ -1430,6 +1449,7 @@
     },
     "NCT07164976": {
       "brief_title": "Ribociclib for HR-positive HER2-negative Metastatic Breast Cancer",
+      "official_title": "Phase Ib/II Trial of Ribociclib Plus Anastrozole in Patients With Hormone Receptor-Positive, HER2-Negative Metastatic or Recurrent Breast Cancer",
       "overall_status": "Recruiting",
       "phase": "Phase 1/Phase 2",
       "start_date": "2025-10-01",
@@ -1440,6 +1460,7 @@
     },
     "NCT07115043": {
       "brief_title": "A Study to Investigate Safety of AZD6750 in Adult Participants With Select Advanced or Metastatic Solid Tumors",
+      "official_title": "A Phase I/II Open-label Dose Escalation and Expansion Study to Evaluate the Safety, Pharmacokinetics, Pharmacodynamics, and Efficacy of AZD6750, a CD8 Guided IL-2 Agent Alone and in Combination With Other Anti-cancer Agents in Participants With Select Advanced or Metastatic Solid Tumors",
       "overall_status": "Recruiting",
       "phase": "Phase 1/Phase 2",
       "start_date": "2025-07-29",
@@ -1458,6 +1479,7 @@
     },
     "NCT07114601": {
       "brief_title": "A Study of LY4257496 in Participants With Cancer (OMNIRAY)",
+      "official_title": "A Phase 1a/b Multicenter, Open-Label Trial to Evaluate Safety, Tolerability, and Dosimetry of LY4257496, a GRPR-Targeted Radioligand Therapy, in Adults With GRPR-Positive Advanced Solid Tumors (OMNIRAY)",
       "overall_status": "Recruiting",
       "phase": "Phase 1",
       "start_date": "2025-08-06",
@@ -1474,6 +1496,7 @@
     },
     "NCT07062965": {
       "brief_title": "A Study to Learn About the Study Medicine Called PF-07248144 in Combination With Fulvestrant in People With HR-positive, HER2-negative Advanced or Metastatic Breast Cancer Who Progressed After a Prior Line of Treatment.",
+      "official_title": "An Interventional, Open-Label, Randomized, Multicenter, Phase 3 Study of PF-07248144 Plus Fulvestrant Compared to Investigator's Choice of Therapy in Adult Participants With Hormone Receptor-Positive, HER2-Negative Advanced/Metastatic Breast Cancer Whose Disease Progressed After Prior CDK4/6 Inhibitor-based Therapy",
       "overall_status": "Recruiting",
       "phase": "Phase 3",
       "start_date": "2025-08-05",
@@ -1484,6 +1507,7 @@
     },
     "NCT07060807": {
       "brief_title": "A Clinical Study of Patritumab Deruxtecan to Treat Breast Cancer (MK-1022-016)",
+      "official_title": "An Open-label, Randomized, Phase 3 Study to Evaluate Patritumab Deruxtecan Monotherapy Versus Treatment of Physician's Choice in Hormone Receptor-positive, HER2-negative Unresectable Locally Advanced or Metastatic Breast Cancer (HERTHENA-Breast04).",
       "overall_status": "Recruiting",
       "phase": "Phase 3",
       "start_date": "2025-07-21",
@@ -1494,6 +1518,7 @@
     },
     "NCT07046923": {
       "brief_title": "A Study of LY4175408 in Participants With Advanced Cancer",
+      "official_title": "A First-in-Human, Phase 1a/1b Trial to Assess the Safety, Tolerability and Preliminary Efficacy of LY4175408, an Antibody Drug Conjugate Targeting Protein Tyrosine Kinase 7-Expressing Tumor Cells, in Participants With Selected Advanced Solid Tumors",
       "overall_status": "Recruiting",
       "phase": "Phase 1",
       "start_date": "2025-07-28",
@@ -1508,6 +1533,7 @@
     },
     "NCT06997029": {
       "brief_title": "A Phase 1 Study of BMS-986500 as Monotherapy or Combination Therapy in Advanced Solid Tumors",
+      "official_title": "A Phase 1 First-in-human Study of BMS-986500 as Monotherapy in Advanced Solid Tumors and as Combination Therapy in CDK4/6 Inhibitor Pre-treated Advanced Breast Cancer",
       "overall_status": "Recruiting",
       "phase": "Phase 1",
       "start_date": "2025-08-01",
@@ -1520,6 +1546,7 @@
     },
     "NCT06976944": {
       "brief_title": "Pembrolizumab + Paclitaxel +/- Bevacizumab for Triple-negative Breast Cancer",
+      "official_title": "Randomized Phase II Study of Pembrolizumab + Paclitaxel +/- Bevacizumab in Patients With Recurrent Triple-Negative Breast Cancer Who Received Perioperative Immunotherapy",
       "overall_status": "Recruiting",
       "phase": "Phase 2",
       "start_date": "2025-06-24",
@@ -1530,6 +1557,7 @@
     },
     "NCT06966700": {
       "brief_title": "A Clinical Study of Sacituzumab Tirumotecan (Sac-TMT, MK-2870) in People With Breast Cancer (MK-2870-032)",
+      "official_title": "A Phase 3, Randomized, Open-label Study to Evaluate the Efficacy and Safety of Sac-TMT (Sacituzumab Tirumotecan, MK-2870) Followed by Carboplatin/Paclitaxel vs Chemotherapy, Both in Combination With Pembrolizumab as Neoadjuvant Therapy for High-Risk, Early-Stage, Triple-Negative Breast Cancer or Hormone Receptor-low Positive/Human Epidermal Growth Factor Receptor-2 Negative Breast Cancer",
       "overall_status": "Recruiting",
       "phase": "Phase 3",
       "start_date": "2025-06-30",
@@ -1542,6 +1570,7 @@
     },
     "NCT06966453": {
       "brief_title": "A Study of Disitamab Vedotin in Adults With HER2 Expressing Advanced Breast Cancer",
+      "official_title": "A PHASE 1B/2, OPEN-LABEL, MULTICOHORT STUDY OF DISITAMAB VEDOTIN IN ADULTS WITH HER2 EXPRESSING ADVANCED BREAST CANCER",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 1/Phase 2",
       "start_date": "2025-06-30",
@@ -1553,6 +1582,7 @@
     },
     "NCT06952803": {
       "brief_title": "A Study of Metastases Free Survival With Saruparib vs Placebo Added to a Standard RT/ADT in Men With High-risk Prostate Cancer With a BRCA Mutation",
+      "official_title": "A Randomised, Double-blind, Placebo-controlled, Phase III Study of Adjuvant Saruparib (AZD5305) in Patients With BRCAm Localised High-Risk Prostate Cancer Receiving Radiotherapy With Androgen Deprivation Therapy (EvoPAR-Prostate02).",
       "overall_status": "Recruiting",
       "phase": "Phase 3",
       "start_date": "2025-08-06",
@@ -1563,6 +1593,7 @@
     },
     "NCT06943521": {
       "brief_title": "A Study of MT-4561 in Patients With Various Advanced Solid Tumors",
+      "official_title": "A Phase I/II, Dose-escalation and Dose-optimization Study to Evaluate Safety, Tolerability, Pharmacokinetics, Pharmacodynamics, and Efficacy of MT-4561 in Patients With Various Advanced Solid Tumors and to Evaluate Effect of MT-4561 on Pharmacokinetics of Oral Midazolam",
       "overall_status": "Recruiting",
       "phase": "Phase 1/Phase 2",
       "start_date": "2025-04-18",
@@ -1588,6 +1619,7 @@
     },
     "NCT06926868": {
       "brief_title": "A Study of Izalontamab Brengitecan Versus Chemotherapy in Participants With Previously Untreated, Locally Advanced, Recurrent Inoperable, or Metastatic Triple-negative Breast Cancer Ineligible for Anti-PD(L)1 Drugs (IZABRIGHT-Breast01)",
+      "official_title": "IZABRIGHT-Breast01: A Randomized, Open-label, Phase 2/3 Study of Izalontamab Brengitecan (BMS-986507) Versus Treatment of Physician's Choice in Patients With Previously Untreated, Locally Advanced, Recurrent Inoperable, or Metastatic Triple-negative Breast Cancer (TNBC) or ER-low, HER2-negative BC Who Are Ineligible for Anti-PD1/PD-L1 Treatment",
       "overall_status": "Recruiting",
       "phase": "Phase 2/Phase 3",
       "start_date": "2025-09-11",
@@ -1598,6 +1630,7 @@
     },
     "NCT06888388": {
       "brief_title": "Long-term Safety of Nipple Sparing Mastectomy in Women With High Penetrance Breast Cancer Susceptibility Genes in Breast Cancer",
+      "official_title": "Long-term Oncologic Safety of Nipple Sparing Mastectomy in Women With High Penetrance Germline Pathogenic Variants in Breast Cancer Susceptibility Genes",
       "overall_status": "Recruiting",
       "phase": "Not specified",
       "start_date": "2025-02-01",
@@ -1608,6 +1641,7 @@
     },
     "NCT06841354": {
       "brief_title": "A Study of Sacituzumab Tirumotecan (Sac-TMT, MK-2870) as Monotherapy and in Combination With Pembrolizumab (MK-3475) in Participants With Triple-Negative Breast Cancer (MK-2870-011/TroFuse-011)",
+      "official_title": "A Phase 3, Randomized, Open-label Study Comparing Efficacy and Safety of Sacituzumab Tirumotecan (Sac-TMT, MK-2870) as a Monotherapy and in Combination With Pembrolizumab (MK-3475) Versus Treatment of Physician's Choice in Participants With Previously Untreated Locally Recurrent Unresectable or Metastatic Triple-Negative Breast Cancer Expressing PD-L1 at CPS Less Than 10 (TroFuse-011)",
       "overall_status": "Recruiting",
       "phase": "Phase 3",
       "start_date": "2025-03-16",
@@ -1618,6 +1652,7 @@
     },
     "NCT06793553": {
       "brief_title": "Induction Therapy of PTX+BV Followed by Atezolizumab+Nab-PTX for PD-L1+ TNBC",
+      "official_title": "Randomized Phase II Trial Evaluating the Efficacy of Paclitaxel+Bevacizumab INDUCtion Followed by at atEzolizumab+Nab-paclitaxel for PD-L1-positive Metastatic Triple Negative Breast Cancer (JBCRG-M10, CMA-0196) (INDUCE Trial)",
       "overall_status": "Recruiting",
       "phase": "Phase 2",
       "start_date": "2024-09-13",
@@ -1628,6 +1663,7 @@
     },
     "NCT06790693": {
       "brief_title": "A Study Evaluating the Efficacy and Safety of Inavolisib Plus CDK4/6 Inhibitor and Letrozole vs Placebo + CDK4/6i and Letrozole in Participants With Endocrine-Sensitive PIK3CA-Mutated, Hormone Receptor-Positive, HER2-Negative Advanced Breast Cancer",
+      "official_title": "A Phase III, Multicenter, Randomized, Double-Blind, Placebo-Controlled Study Evaluating the Efficacy and Safety of Inavolisib Plus a CDK4/6 Inhibitor and Letrozole Versus Placebo Plus a CDK4/6 Inhibitor and Letrozole in Patients With Endocrine-Sensitive PIK3CA-Mutated, Hormone Receptor-Positive, HER2-Negative Advanced Breast Cancer",
       "overall_status": "Recruiting",
       "phase": "Phase 3",
       "start_date": "2025-04-09",
@@ -1638,6 +1674,7 @@
     },
     "NCT06760819": {
       "brief_title": "A Study to Learn More About How Well Treatment With Sevabertinib (BAY 2927088) Tablets Works and How Safe it is in Participants Who Have a Solid Tumor With Mutations of the Human Epidermal Growth Factor Receptor 2 (HER2)",
+      "official_title": "A Phase 2 Open-label Basket Study to Evaluate the Efficacy and Safety of Orally Administered Reversible Tyrosine Kinase Inhibitor BAY 2927088 in Participants With Metastatic or Unresectable Solid Tumors With HER2-activating Mutations",
       "overall_status": "Recruiting",
       "phase": "Phase 2",
       "start_date": "2025-02-13",
@@ -1649,6 +1686,7 @@
     },
     "NCT06760637": {
       "brief_title": "Study of PF-07220060 With Letrozole in Adults With HR-positive HER2-negative Breast Cancer Who Have Not Received Anticancer Treatment for Advanced/Metastatic Disease",
+      "official_title": "AN INTERVENTIONAL, OPEN-LABEL, RANDOMIZED, MULTICENTER PHASE 3 STUDY OF PF-07220060 PLUS LETROZOLE COMPARED TO CDK4/6 INHIBITOR PLUS LETROZOLE IN PARTICIPANTS OVER 18 YEARS OF AGE WITH HORMONE RECEPTOR (HR)-POSITIVE, HER2-NEGATIVE ADVANCED/METASTATIC BREAST CANCER WHO HAVE NOT RECEIVED ANY PRIOR SYSTEMIC ANTICANCER TREATMENT FOR ADVANCED/METASTATIC DISEASE (FOURLIGHT-3)",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2025-01-06",
@@ -1659,6 +1697,7 @@
     },
     "NCT06735742": {
       "brief_title": "A Study to Learn About the Safety of TALZENNA for the Treatment of Breast Cancer",
+      "official_title": "TALZENNA Capsules Special Investigation - Investigation on BRCA Mutation-Positive and HER2-Negative Unresectable or Recurrent Breast Cancer With a History of Cancer Chemotherapy -",
       "overall_status": "Active, not recruiting",
       "phase": "Not specified",
       "start_date": "2025-04-12",
@@ -1669,6 +1708,7 @@
     },
     "NCT06726148": {
       "brief_title": "Study of ECI830 Single Agent or in Combination in Patients With Advanced HR+/HER2- Breast Cancer and in Patients With Other Advanced Solid Tumors",
+      "official_title": "An Open-label, Multi-center, Phase I/II Study of ECI830 as a Single Agent and in Combination With Ribociclib and Endocrine Therapy in Patients With Advanced Hormone Receptor Positive, HER2-negative Breast Cancer and Advanced Solid Tumors",
       "overall_status": "Recruiting",
       "phase": "Phase 1/Phase 2",
       "start_date": "2025-04-03",
@@ -1681,6 +1721,7 @@
     },
     "NCT06686394": {
       "brief_title": "Study of Patritumab Deruxtecan With Other Anticancer Agents in Participants With HER2 Positive Breast Cancer That Has Spread and Cannot Be Surgically Removed (MK-1022-009)",
+      "official_title": "HERTHENA-Breast-01: A Phase 1b/2, Multicenter, Open-label, Dose-Finding Study to Evaluate the Safety and Antitumor Activity of Patritumab Deruxtecan in Participants With HER2 Positive Unresectable Locally Advanced Breast Cancer or Metastatic Breast Cancer",
       "overall_status": "Recruiting",
       "phase": "Phase 1/Phase 2",
       "start_date": "2025-02-26",
@@ -1692,6 +1733,7 @@
     },
     "NCT06663787": {
       "brief_title": "Personalized Detection of ctDNA for Patients With HER2-Positive Metastatic Breast Cancer Patients Who Achieved Durable Response to Anti-HER2 Treatment",
+      "official_title": "Personalized Detection of ctDNA for Patients With HER2-Positive Metastatic Breast Cancer Who Achieved Durable Response by Anti-HER2 Treatment",
       "overall_status": "Active, not recruiting",
       "phase": "Not specified",
       "start_date": "2024-04-01",
@@ -1702,7 +1744,8 @@
       ]
     },
     "NCT06603987": {
-      "brief_title": "Using CICS-1 and SPM-011 and \uff3b18F\uff3dFBPA Commissioned by CICS and Sumitomo Heavy Industries and STELLA PHARMA",
+      "brief_title": "Using CICS-1 and SPM-011 and ［18F］FBPA Commissioned by CICS and Sumitomo Heavy Industries and STELLA PHARMA",
+      "official_title": "Phase I/II Basket Trial: Boron Neutron Capture Therapy (BNCT) Using CICS-1 and SPM-011 for Patients With Recurrent Solid Malignant Thoracic Tumors That Are Unresectable and Perceived Challenging to Treat With Standard Treatment",
       "overall_status": "Enrolling by invitation",
       "phase": "Phase 1/Phase 2",
       "start_date": "2025-04-10",
@@ -1713,6 +1756,7 @@
     },
     "NCT06570031": {
       "brief_title": "ONO-4578-06:Phase I Study of ONO-4578 and Letrozole Plus CDK4 /6 Inhibitors in Breast Cancer",
+      "official_title": "ONO-4578-06: Phase I , Open-label, Non-blind, First-line Endocrine Therapy With ONO-4578 and Standard Treatment Letrozole and CDK4/6 Inhibitors (Palbociclib or Abemaciclib) in Patients With Metastatic or Recurrent Postmenopausal Hormone Receptor-positive HER2-negative Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2021-11-09",
@@ -1726,6 +1770,7 @@
     },
     "NCT06538272": {
       "brief_title": "Study to Investigate the Chemotherapy-Induced Peripheral Neuropathy (CIPN) Onset-Suppressing Effect and Safety of ONO-2910 in Patients With Breast Cancer Receiving Weekly Paclitaxel",
+      "official_title": "An Early Phase II, Multicenter, Placebo-Controlled, Randomized, Double-Blind, Parallel-Group, Comparison Study to Investigate the Chemotherapy-Induced Peripheral Neuropathy (CIPN) Onset-Suppressing Effect and Safety of ONO-2910 in Patients With Breast Cancer Receiving Weekly Paclitaxel",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2023-08-31",
@@ -1736,6 +1781,7 @@
     },
     "NCT06535893": {
       "brief_title": "Sustainable and Efficient Platform Trial of New Therapeutic Development for Early Breast Cancer",
+      "official_title": "Sustainable and Efficient Platform of New Therapeutic Development for Early Breast Cancer (S-FACT)",
       "overall_status": "Recruiting",
       "phase": "Phase 2",
       "start_date": "2024-07-30",
@@ -1746,6 +1792,7 @@
     },
     "NCT06533059": {
       "brief_title": "A Study to Learn About Study Medicine ALTA2618 in Adults With AKT1 E17K-Mutant Solid Tumors",
+      "official_title": "AKTive-001: A Phase 1/1b Multiple Cohort Trial of ALTA2618 in Patients With Advanced Solid Tumors With AKT1 E17K Mutation",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 1",
       "start_date": "2024-08-22",
@@ -1760,6 +1807,7 @@
     },
     "NCT06526819": {
       "brief_title": "SMP-3124LP in Adults With Advanced Solid Tumors",
+      "official_title": "An Open-label, Phase 1 Dose Escalation and Phase 2 Dose Expansion Study to Assess Safety, Tolerability, Pharmacokinetics, and Preliminary Antitumor Activity of SMP-3124LP in Adults With Advanced Solid Tumors",
       "overall_status": "Recruiting",
       "phase": "Phase 1/Phase 2",
       "start_date": "2024-08-14",
@@ -1770,6 +1818,7 @@
     },
     "NCT06465069": {
       "brief_title": "A Study of LY4052031 in Participants With Advanced or Metastatic Urothelial Cancer or Other Solid Tumors",
+      "official_title": "A Phase 1a/1b Study of LY4052031, an Antibody-Drug Conjugate Targeting Nectin-4, in Participants With Advanced or Metastatic Urothelial Carcinoma or Other Solid Tumors",
       "overall_status": "Recruiting",
       "phase": "Phase 1",
       "start_date": "2024-07-01",
@@ -1793,16 +1842,18 @@
     },
     "NCT06447532": {
       "brief_title": "Use of Machine Learning Techniques for Serial Assessment of Systemic Inflammatory Markers in Breast Cancer Patients",
+      "official_title": "Use of Machine Learning Techniques for Serial Assessment of Systemic Inflammatory Markers in Breast Cancer Patients",
       "overall_status": "Enrolling by invitation",
       "phase": "Not specified",
       "start_date": "2024-08-01",
-      "sponsor_name": "Federal University of S\u00e3o Paulo",
+      "sponsor_name": "Federal University of São Paulo",
       "conditions": [
         "Breast Cancer"
       ]
     },
     "NCT06435429": {
       "brief_title": "A Study Comparing the Efficacy and Safety of Zanidatamab to Trastuzumab, Each in Combination With Physician's Choice Chemotherapy, for the Treatment of Participants With Metastatic HER2-positive Breast Cancer",
+      "official_title": "A Phase 3, Randomized, Open-label, Multicenter, Controlled Study to Evaluate the Efficacy and Safety of Zanidatamab in Combination With Physician's Choice Chemotherapy Compared to Trastuzumab in Combination With Physician's Choice Chemotherapy for the Treatment of Participants With Metastatic HER2-positive Breast Cancer Who Have Progressed on, or Are Intolerant to, Previous Trastuzumab Deruxtecan Treatment",
       "overall_status": "Recruiting",
       "phase": "Phase 3",
       "start_date": "2024-08-13",
@@ -1813,6 +1864,7 @@
     },
     "NCT06400472": {
       "brief_title": "A Study of Sofe-M in Participants With Selected Advanced Solid Tumors",
+      "official_title": "A First-in-Human, Phase 1/2 Trial to Assess the Safety, Tolerability and Preliminary Efficacy of Sofetabart Mipitecan (LY4170156), an Antibody-Drug Conjugate Targeting Folate Receptor α-Expressing Tumor Cells, in Participants With Selected Advanced Solid Tumors",
       "overall_status": "Recruiting",
       "phase": "Phase 1",
       "start_date": "2024-05-20",
@@ -1829,6 +1881,7 @@
     },
     "NCT06393374": {
       "brief_title": "Sacituzumab Tirumotecan (MK-2870) Plus Pembrolizumab Versus TPC in TNBC Who Did Not Achieve pCR (MK-2870-012)",
+      "official_title": "A Phase 3, Randomized, Open-label, Study to Compare the Efficacy and Safety of Adjuvant MK-2870 in Combination With Pembrolizumab (MK-3475) Versus Treatment of Physician's Choice (TPC) in Participants With Triple-Negative Breast Cancer (TNBC) Who Received Neoadjuvant Therapy and Did Not Achieve a Pathological Complete Response (pCR) at Surgery",
       "overall_status": "Recruiting",
       "phase": "Phase 3",
       "start_date": "2024-06-24",
@@ -1839,6 +1892,7 @@
     },
     "NCT06380751": {
       "brief_title": "Saruparib (AZD5305) Plus Camizestrant or Plus Endocrine Therapy, Compared With CDK4/6 Inhibitor Plus Endocrine Therapy or Plus Camizestrant in HR-Positive, HER2-Negative (IHC 0, 1+, 2+/ ISH Non-amplified), BRCA1, BRCA2, or PALB2m Advanced Breast Cancer",
+      "official_title": "A Randomised, Open-Label, Phase III Study of Saruparib (AZD5305) Plus Camizestrant or Plus Endocrine Therapy, Compared With Physician's Choice CDK4/6 Inhibitor Plus Endocrine Therapy or Plus Camizestrant for the First-Line Treatment of Patients With BRCA1, BRCA2, or PALB2 Mutations and Hormone Receptor Positive, HER2-Negative (IHC 0, 1+, 2+/ ISH Non-amplified) Advanced Breast Cancer (EvoPAR-Breast01)",
       "overall_status": "Recruiting",
       "phase": "Phase 3",
       "start_date": "2024-08-01",
@@ -1849,6 +1903,7 @@
     },
     "NCT06330064": {
       "brief_title": "A Study to Evaluate the Efficacy and Safety of Ifinatamab Deruxtecan (I-DXd) in Subjects With Recurrent or Metastatic Solid Tumors (IDeate-PanTumor02)",
+      "official_title": "A Phase 1B/2 Pan-Tumor, Open-Label Study to Evaluate the Efficacy and Safety of Ifinatamab Deruxtecan (I-DXd) in Subjects With Recurrent or Metastatic Solid Tumors (IDeate-PanTumor02)",
       "overall_status": "Recruiting",
       "phase": "Phase 1/Phase 2",
       "start_date": "2024-04-10",
@@ -1859,6 +1914,7 @@
     },
     "NCT06324357": {
       "brief_title": "Beamion BCGC-1: A Study to Find a Suitable Dose of Zongertinib Used Alone and in Combination With Other Treatments to Test Whether it Helps People With Different Types of HER2+ Cancer That Has Spread",
+      "official_title": "Beamion BCGC-1: A Phase Ib Dose Escalation and Phase II Dose Optimization, Randomized, Open-label, Multicenter Trial of Oral Zongertinib (BI 1810631) Alone or in Combination With Other Agents for the Treatment of Patients With Advanced HER2+ Metastatic Breast Cancer (mBC), Metastatic Gastric, Gastroesophageal Junction, or Esophageal Adenocarcinoma (mGEAC), or Metastatic Colorectal Cancer (mCRC)",
       "overall_status": "Recruiting",
       "phase": "Phase 1/Phase 2",
       "start_date": "2024-06-28",
@@ -1873,6 +1929,7 @@
     },
     "NCT06312176": {
       "brief_title": "A Study of Sacituzumab Tirumotecan (MK-2870) as a Single Agent and in Combination With Pembrolizumab (MK-3475) Versus Treatment of Physician's Choice in Participants With HR+/HER2- Unresectable Locally Advanced or Metastatic Breast Cancer (MK-2870-010)",
+      "official_title": "An Open-label, Randomized Phase 3 Study of MK-2870 as a Single Agent and in Combination With Pembrolizumab Versus Treatment of Physician's Choice in Participants With HR+/HER2- Unresectable Locally Advanced or Metastatic Breast Cancer",
       "overall_status": "Recruiting",
       "phase": "Phase 3",
       "start_date": "2024-04-14",
@@ -1883,6 +1940,7 @@
     },
     "NCT06238479": {
       "brief_title": "A Study of LY4101174 in Participants With Recurrent, Advanced or Metastatic Solid Tumors",
+      "official_title": "A Phase 1 Trial Investigating LY4101174, an Antibody-Drug Conjugate Targeting Nectin-4, in Participants With Recurrent, Advanced or Metastatic Solid Tumors",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 1",
       "start_date": "2024-03-05",
@@ -1906,6 +1964,7 @@
     },
     "NCT06206837": {
       "brief_title": "A Study to Learn About Vepdegestrant When Given With PF-07220060 to People With Advanced or Metastatic Breast Cancer.",
+      "official_title": "AN INTERVENTIONAL SAFETY AND EFFICACY PHASE 1B/2, OPEN-LABEL STUDY TO INVESTIGATE TOLERABILITY, PK, AND ANTITUMOR ACTIVITY OF VEPDEGESTRANT (ARV-471/PF-07850327), AN ORAL PROTEOLYSIS TARGETING CHIMERA, IN COMBINATION WITH PF-07220060 IN PARTICIPANTS AGED 18 YEARS AND OLDER WITH ER+/HER2- ADVANCED OR METASTATIC BREAST CANCER",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 1/Phase 2",
       "start_date": "2024-02-19",
@@ -1916,6 +1975,7 @@
     },
     "NCT06188559": {
       "brief_title": "A Study of BB-1701 in Previously Treated Participants With Human Epidermal Growth Factor Receptor 2 (HER2)-Positive or HER2-low Unresectable or Metastatic Breast Cancer",
+      "official_title": "An Open-label, Multicenter, Phase 2 Dose Optimization and Expansion Study to Evaluate the Safety and Efficacy of BB-1701, an Anti-human Epidermal Growth Factor Receptor 2 (Anti-HER2) Antibody-drug Conjugate (ADC), in Previously Treated Subjects With HER2-positive or HER2-low Unresectable or Metastatic Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2024-04-10",
@@ -1926,6 +1986,7 @@
     },
     "NCT06172478": {
       "brief_title": "A Study of HER3-DXd in Subjects With Locally Advanced or Metastatic Solid Tumors",
+      "official_title": "HERTHENA-PanTumor01 (U31402-277): A Phase 2, Multicenter, Multicohort, Open-Label, Proof of Concept Study of Patritumab Deruxtecan (HER3-DXd; U3-1402) in Subjects With Locally Advanced or Metastatic Solid Tumors",
       "overall_status": "Recruiting",
       "phase": "Phase 2",
       "start_date": "2024-02-26",
@@ -1949,6 +2010,7 @@
     },
     "NCT06157892": {
       "brief_title": "A Study of Disitamab Vedotin With Other Anticancer Drugs in Solid Tumors",
+      "official_title": "A Phase 1b/2 Open-Label Study of Disitamab Vedotin in Combination With Other Anticancer Therapies in Solid Tumors",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 2",
       "start_date": "2024-05-20",
@@ -1968,6 +2030,7 @@
     },
     "NCT06135714": {
       "brief_title": "Metastasis-directed Therapy for Oligometastases of Breast Cancer",
+      "official_title": "a Randomized Trial for OLIGo Metastases Breast cAncer With or Without Metastasis-dIrected Therapy",
       "overall_status": "Recruiting",
       "phase": "Phase 3",
       "start_date": "2023-11-08",
@@ -1980,6 +2043,7 @@
     },
     "NCT06120283": {
       "brief_title": "BGB-43395 Alone or as Part of Combination Therapies in Participants With Breast Cancer and Other Advanced Solid Tumors",
+      "official_title": "A Phase 1a/1b Study Investigating the Safety, Tolerability, Pharmacokinetics, Pharmacodynamics, and Preliminary Antitumor Activity of the CDK4 Inhibitor BGB-43395, Alone or as Part of Combination Therapies in Patients With Metastatic HR+/HER2- Breast Cancer and Other Advanced Solid Tumors",
       "overall_status": "Recruiting",
       "phase": "Phase 1",
       "start_date": "2023-12-01",
@@ -1997,6 +2061,7 @@
     },
     "NCT06112379": {
       "brief_title": "A Phase III Randomised Study to Evaluate Dato-DXd and Durvalumab for Neoadjuvant/Adjuvant Treatment of Triple-Negative or Hormone Receptor-low/HER2-negative Breast Cancer",
+      "official_title": "A Phase III, Open-label, Randomised Study of Neoadjuvant Datopotamab Deruxtecan (Dato-DXd) Plus Durvalumab Followed by Adjuvant Durvalumab With or Without Chemotherapy Versus Neoadjuvant Pembrolizumab Plus Chemotherapy Followed by Adjuvant Pembrolizumab With or Without Chemotherapy for the Treatment of Adult Patients With Previously Untreated Triple-Negative or Hormone Receptor-low/HER2-negative Breast Cancer (D926QC00001; TROPION-Breast04)",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2023-11-14",
@@ -2007,6 +2072,7 @@
     },
     "NCT06105632": {
       "brief_title": "A Study to Learn About the Study Medicine Called PF-07220060 in Combination With Fulvestrant in People With HR-positive, HER2-negative Advanced or Metastatic Breast Cancer Who Progressed After a Prior Line of Treatment",
+      "official_title": "AN INTERVENTIONAL, OPEN-LABEL, RANDOMIZED, MULTICENTER PHASE 2 STUDY OF PF-07220060 PLUS FULVESTRANT COMPARED TO INVESTIGATOR'S CHOICE OF THERAPY IN PARTICIPANTS AT LEAST 18 YEARS OF AGE WITH HORMONE RECEPTOR-POSITIVE, HER2-NEGATIVE ADVANCED/METASTATIC BREAST CANCER WHOSE DISEASE PROGRESSED AFTER PRIOR CDK 4/6 INHIBITOR-BASED THERAPY (FOURLIGHT-1)",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 2",
       "start_date": "2024-01-09",
@@ -2017,6 +2083,7 @@
     },
     "NCT06103864": {
       "brief_title": "A Phase III Study of Dato-DXd With or Without Durvalumab Compared With Investigator's Choice of Chemotherapy in Combination With Pembrolizumab in Patients With PD-L1 Positive Locally Recurrent Inoperable or Metastatic Triple-negative Breast Cancer (TROPION-Breast05)",
+      "official_title": "A Phase III, Open-label, Randomised Study of Datopotamab Deruxtecan (Dato-DXd) With or Without Durvalumab Compared With Investigator's Choice of Chemotherapy (Paclitaxel, Nab-paclitaxel or Gemcitabine + Carboplatin) in Combination With Pembrolizumab in Patients With PD-L1 Positive Locally Recurrent Inoperable or Metastatic Triple-negative Breast Cancer (TROPION-Breast05)",
       "overall_status": "Recruiting",
       "phase": "Phase 3",
       "start_date": "2023-11-23",
@@ -2027,6 +2094,7 @@
     },
     "NCT06084481": {
       "brief_title": "Study to Assess Adverse Events and Change in Disease Activity in Adult Participants With Select Advanced Solid Tumor Indications Receiving Intravenous (IV) ABBV-400",
+      "official_title": "A Phase 1 Open-Label Study to Evaluate the Efficacy and Safety of ABBV-400 in Select Advanced Solid Tumor Indications",
       "overall_status": "Recruiting",
       "phase": "Phase 1",
       "start_date": "2023-11-09",
@@ -2044,6 +2112,7 @@
     },
     "NCT06035497": {
       "brief_title": "A Study to Assess the Safety, Tolerability, Efficacy, and Drug Levels of BMS-986369 (Golcadomide) in Participants With Relapsed or Refractory T-cell Lymphomas in Japan (GOLSEEK-3)",
+      "official_title": "A Phase 1/2 Study of the Safety, Tolerability, Pharmacokinetics, and Efficacy of BMS-986369 (Golcadomide) in Participants With Relapsed or Refractory T-cell Lymphomas in Japan (GOLSEEK-3)",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 1/Phase 2",
       "start_date": "2023-11-20",
@@ -2054,6 +2123,7 @@
     },
     "NCT05983432": {
       "brief_title": "Evaluate BL-B01D1 in Patients With Metastatic or Unresectable Non-Small Cell Lung Cancer (NSCLC) and Other Solid Tumors",
+      "official_title": "A Phase 1 Study Evaluating the Safety, Tolerability, and Efficacy of BL-B01D1 in Subjects With Metastatic or Unresectable Non-Small Cell Lung Cancer and Other Solid Tumors",
       "overall_status": "Recruiting",
       "phase": "Phase 1",
       "start_date": "2023-08-08",
@@ -2073,6 +2143,7 @@
     },
     "NCT05952557": {
       "brief_title": "An Adjuvant Endocrine-based Therapy Study of Camizestrant (AZD9833) in ER+/HER2- Early Breast Cancer (CAMBRIA-2)",
+      "official_title": "CAMBRIA-2: A Phase III, Open-Label, Randomised Study to Assess the Efficacy and Safety of Camizestrant (AZD9833, a Next Generation, Oral Selective Estrogen Receptor Degrader) vs Standard Endocrine Therapy (Aromatase Inhibitor or Tamoxifen) as Adjuvant Treatment for Patients With ER+/HER2- Early Breast Cancer and an Intermediate-High or High Risk of Recurrence Who Have Completed Definitive Locoregional Treatment and Have No Evidence of Disease",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2023-10-05",
@@ -2083,6 +2154,7 @@
     },
     "NCT05931445": {
       "brief_title": "Patient Reported Outcomes Study Using Electronic Monitoring System for Advanced or Metastatic Solid Cancer",
+      "official_title": "Multicenter, Open-label, Randomized, Controlled Study to Test the Utility of Electronic Patient-reported Outcome (ePRO) Monitoring in Patients With Unresectable Advanced Cancers or Metastatic/Recurrent Solid Tumors",
       "overall_status": "Active, not recruiting",
       "phase": "Not Applicable",
       "start_date": "2021-01-26",
@@ -2100,6 +2172,7 @@
     },
     "NCT05909397": {
       "brief_title": "Vepdegestrant (ARV-471/PF-07850327) + Palbociclib vs Letrozole + Palbociclib in ER(+)/HER2(-) Advanced Breast Cancer",
+      "official_title": "A PHASE 3, RANDOMIZED, OPEN-LABEL, MULTICENTER STUDY OF VEPDEGESTRANT (ARV-471/PF-07850327) PLUS PALBOCICLIB VERSUS LETROZOLE PLUS PALBOCICLIB FOR THE TREATMENT OF PARTICIPANTS WITH ESTROGEN RECEPTOR POSITIVE, HER2 NEGATIVE BREAST CANCER WHO HAVE NOT RECEIVED ANY PRIOR SYSTEMIC ANTI CANCER TREATMENT FOR ADVANCED DISEASE (VERITAC-3)",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2023-08-09",
@@ -2110,6 +2183,7 @@
     },
     "NCT05894239": {
       "brief_title": "A Study to Evaluate the Efficacy and Safety of Inavolisib in Combination With Phesgo Versus Placebo in Combination With Phesgo in Participants With PIK3CA-Mutated HER2-Positive Locally Advanced or Metastatic Breast Cancer",
+      "official_title": "A Phase III, Multicenter, Randomized, Double-Blind, Placebo-Controlled Study Evaluating the Efficacy and Safety of Inavolisib in Combination With Phesgo Versus Placebo in Combination With Phesgo As Maintenance Therapy After First Line Induction Therapy in Participants With PIK3CA-Mutated HER2-Positive Locally Advanced or Metastatic Breast Cancer",
       "overall_status": "Recruiting",
       "phase": "Phase 3",
       "start_date": "2023-09-08",
@@ -2120,6 +2194,7 @@
     },
     "NCT05879926": {
       "brief_title": "Evaluating the Addition of Adjuvant Chemotherapy to Ovarian Function Suppression Plus Endocrine Therapy in Premenopausal Patients With pN0-1, ER-Positive/HER2-Negative Breast Cancer and an Oncotype Recurrence Score Less Than or Equal to 25",
+      "official_title": "A Phase III Adjuvant Trial Evaluating the Addition of Adjuvant Chemotherapy to Ovarian Function Suppression Plus Endocrine Therapy in Premenopausal Patients With pN0-1, ER-Positive/HER2-Negative Breast Cancer and an Oncotype Recurrence Score Less Than or Equal to 25 (OFSET)",
       "overall_status": "Recruiting",
       "phase": "Phase 3",
       "start_date": "2023-10-18",
@@ -2130,6 +2205,7 @@
     },
     "NCT05840211": {
       "brief_title": "Study of Sacituzumab Govitecan Versus Treatment of Physician's Choice in Patients With Hormone Receptor-positive/Human Epidermal Growth Factor Receptor 2 Negative (HR+/HER2-) Metastatic Breast Cancer Who Have Received Endocrine Therapy",
+      "official_title": "A Randomized, Open-label, Phase 3 Study of Sacituzumab Govitecan Versus Treatment of Physician's Choice in Patients With Hormone Receptor-Positive (HR+)/Human Epidermal Growth Factor Receptor 2 Negative (HER2-) (HER2 IHC0 or HER2-low [IHC 1+, IHC 2+/ISH-]) Inoperable, Locally Advanced, or Metastatic Breast Cancer and Have Received Endocrine Therapy",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2023-05-08",
@@ -2141,6 +2217,7 @@
     },
     "NCT05774951": {
       "brief_title": "A Study of Camizestrant in ER+/HER2- Early Breast Cancer After at Least 2 Years of Standard Adjuvant Endocrine Therapy",
+      "official_title": "CAMBRIA-1: A Phase III, Open-Label, Randomised Study to Assess the Efficacy and Safety of Extended Therapy With Camizestrant (AZD9833, a Next Generation, Oral Selective Estrogen Receptor Degrader) Versus Standard Endocrine Therapy (Aromatase Inhibitor or Tamoxifen) in Patients With ER+/HER2- Early Breast Cancer and an Intermediate or High Risk of Recurrence Who Have Completed Definitive Locoregional Therapy and at Least 2 Years of Standard Adjuvant Endocrine-Based Therapy Without Disease Recurrence",
       "overall_status": "Recruiting",
       "phase": "Phase 3",
       "start_date": "2023-03-31",
@@ -2151,6 +2228,7 @@
     },
     "NCT05768139": {
       "brief_title": "First-in-Human Study of Tersolisib (STX-478) as Monotherapy and in Combination With Other Antineoplastic Agents in Participants With Advanced Solid Tumors",
+      "official_title": "First-in-Human Study of STX-478, a Mutant-Selective PI3Kα Inhibitor as Monotherapy and in Combination With Other Antineoplastic Agents in Participants With Advanced Solid Tumors",
       "overall_status": "Recruiting",
       "phase": "Phase 1/Phase 2",
       "start_date": "2023-04-17",
@@ -2162,6 +2240,7 @@
     },
     "NCT05677308": {
       "brief_title": "LYNPARZA Breast Cancer in the Adjuvant Setting Japan Post-Marketing Surveillance (PMS)",
+      "official_title": "LYNPARZA Tablets 100mg, 150mg General Drug Use-results Study in Patients With BRCA Mutated HER2 Negative High Recurrent Risk Breast Cancer in the Adjuvant Setting",
       "overall_status": "Completed",
       "phase": "Not specified",
       "start_date": "2023-03-07",
@@ -2172,6 +2251,7 @@
     },
     "NCT05654623": {
       "brief_title": "A Study to Learn About a New Medicine Called Vepdegestrant (ARV-471, PF-07850327) in People Who Have Advanced Metastatic Breast Cancer",
+      "official_title": "A PHASE 3, RANDOMIZED, OPEN-LABEL, MULTICENTER TRIAL OF ARV-471 (PF-07850327) VS FULVESTRANT IN PARTICIPANTS WITH ESTROGEN RECEPTOR-POSITIVE, HER2-NEGATIVE ADVANCED BREAST CANCER WHOSE DISEASE PROGRESSED AFTER PRIOR ENDOCRINE BASED TREATMENT FOR ADVANCED DISEASE (VERITAC-2)",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2023-03-03",
@@ -2182,6 +2262,7 @@
     },
     "NCT05629585": {
       "brief_title": "A Study of Dato-DXd With or Without Durvalumab Versus Investigator's Choice of Therapy in Patients With Stage I-III Triple-negative Breast Cancer Without Pathological Complete Response Following Neoadjuvant Therapy (TROPION-Breast03)",
+      "official_title": "A Phase 3 Open-label, Randomised Study of Datopotamab Deruxtecan (DatoDXd) With or Without Durvalumab Versus Investigator's Choice of Therapy in Patients With Stage I-III Triple-negative Breast Cancer Who Have Residual Invasive Disease in the Breast and/or Axillary Lymph Nodes at Surgical Resection Following Neoadjuvant Systemic Therapy (TROPION-Breast03)",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2022-11-28",
@@ -2192,6 +2273,7 @@
     },
     "NCT05579366": {
       "brief_title": "Rinatabart Sesutecan (Rina-S, PRO1184, GEN1184) for Advanced Solid Tumors (GCT1184-01/ PRO1184-001)",
+      "official_title": "Phase 1/2 Study of Rina-S in Patients With Locally Advanced and/or Metastatic Solid Tumors",
       "overall_status": "Recruiting",
       "phase": "Phase 1/Phase 2",
       "start_date": "2022-12-07",
@@ -2216,6 +2298,7 @@
     },
     "NCT05544929": {
       "brief_title": "A Study of Safety and Efficacy of KFA115 Alone and in Combo With Pembrolizumab in Patients With Select Advanced Cancers",
+      "official_title": "A Phase I, Open-label, Multi-center Study of KFA115 as a Single Agent and in Combination With Pembrolizumab in Patients With Select Advanced Cancers",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 1",
       "start_date": "2022-10-26",
@@ -2237,6 +2320,7 @@
     },
     "NCT05514054": {
       "brief_title": "A Study of Imlunestrant Versus Standard Endocrine Therapy in Participants With Early Breast Cancer",
+      "official_title": "EMBER-4: A Randomized, Open-Label, Phase 3 Study of Adjuvant Imlunestrant vs Standard Adjuvant Endocrine Therapy in Patients Who Have Previously Received 2 to 5 Years of Adjuvant Endocrine Therapy for ER+, HER2- Early Breast Cancer With an Increased Risk of Recurrence",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2022-10-04",
@@ -2247,6 +2331,7 @@
     },
     "NCT05485766": {
       "brief_title": "Novel Neoadjuvant and Adjuvant Strategy for Germline BRCA 1/2 Mutated Triple Negative Breast Cancer",
+      "official_title": "Neoadjuvant and Adjuvant Olaparib Plus Pembrolizumab Following Platinum Based Chemotherapy Plus Pembrolizumab for Germline BRCA Mutated Triple Negative Breast Cancer (WJOG14020B/OPERETTA)",
       "overall_status": "Recruiting",
       "phase": "Phase 2",
       "start_date": "2024-07-16",
@@ -2264,6 +2349,7 @@
     },
     "NCT05463952": {
       "brief_title": "A Study to Learn About the Vepdegestrant (ARV-471, PF-07850327) in People With ER+/HER2- Locally Advanced or Metastatic Breast Cancer (BC)",
+      "official_title": "A PHASE I, OPEN-LABEL STUDY TO EVALUATE THE SAFETY, TOLERABILITY AND PHARMACOKINETICS OF ARV-471 (PF-07850327), A SINGLE AGENT IN JAPANESE PARTICIPANTS WITH ER+/HER2-LOCALLY ADVANCED OR METASTATIC BREAST CANCER",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 1",
       "start_date": "2022-08-16",
@@ -2274,6 +2360,7 @@
     },
     "NCT05433753": {
       "brief_title": "Asian Multicenter Prospective Study in HER2 Positive Early Breast Cancer for Detecting MRD by ctDNA;HARMONY Study",
+      "official_title": "Asian Multicenter Prospective Study in HER2 Positive Early Breast Cancer for Detecting Minimal Residual Disease by Circulating Tumor DNA Analysis With Neoadjuvant Chemotherapy; HARMONY Study",
       "overall_status": "Recruiting",
       "phase": "Not specified",
       "start_date": "2022-05-24",
@@ -2284,6 +2371,7 @@
     },
     "NCT05399329": {
       "brief_title": "Study to Evaluate Real-world Effectiveness With Palbociclib Plus Endocrine Therapy as First-line/Second-line Treatment for HR+/HER2- Advanced Breast Cancer in Japan",
+      "official_title": "Retrospective, Multicenter, Observational Study to Evaluate Real-World Effectiveness of Palbociclib Plus Endocrine Therapy in Japanese Patients With HR+/HER2- Advanced Breast Cancer in First Line or Second Line Settings",
       "overall_status": "Completed",
       "phase": "Not specified",
       "start_date": "2022-04-20",
@@ -2294,6 +2382,7 @@
     },
     "NCT05382299": {
       "brief_title": "Study of Sacituzumab Govitecan-hziy Versus Treatment of Physician's Choice in Patients With Previously Untreated Locally Advanced Inoperable or Metastatic Triple-Negative Breast Cancer",
+      "official_title": "A Randomized, Open-label, Phase 3 Study of Sacituzumab Govitecan Versus Treatment of Physician's Choice in Patients With Previously Untreated, Locally Advanced, Inoperable or Metastatic Triple-Negative Breast Cancer Whose Tumors Do Not Express PD-L1 or in Patients Previously Treated With Anti-PD-(L)1 Agents in the Early Setting Whose Tumors Do Express PD-L1",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2022-07-20",
@@ -2305,6 +2394,7 @@
     },
     "NCT05382286": {
       "brief_title": "Study of Sacituzumab Govitecan-hziy and Pembrolizumab Versus Treatment of Physician's Choice and Pembrolizumab in Patients With Previously Untreated, Locally Advanced Inoperable or Metastatic Triple-Negative Breast Cancer",
+      "official_title": "A Randomized, Open-label, Phase 3 Study of Sacituzumab Govitecan and Pembrolizumab Versus Treatment of Physician's Choice and Pembrolizumab in Patients With Previously Untreated, Locally Advanced Inoperable or Metastatic Triple-Negative Breast Cancer, Whose Tumors Express PD-L1",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2022-07-25",
@@ -2316,6 +2406,7 @@
     },
     "NCT05374512": {
       "brief_title": "A Study of Dato-DXd Versus Investigator's Choice Chemotherapy in Patients With Locally Recurrent Inoperable or Metastatic Triple-negative Breast Cancer, Who Are Not Candidates for PD-1/PD-L1 Inhibitor Therapy (TROPION-Breast02)",
+      "official_title": "A Phase 3, Open-label, Randomised Study of Datopotamab Deruxtecan (Dato-DXd) Versus Investigator's Choice of Chemotherapy in Patients Who Are Not Candidates for PD-1/PD-L1 Inhibitor Therapy in First-line Locally Recurrent Inoperable or Metastatic Triple-negative Breast Cancer (TROPION Breast02)",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2022-05-16",
@@ -2326,6 +2417,7 @@
     },
     "NCT05325866": {
       "brief_title": "A Study Evaluating Bemarituzumab in Solid Tumors With Fibroblast Growth Factor Receptor 2b (FGFR2b) Overexpression",
+      "official_title": "A Phase 1b/2, Multicenter, Open-label Basket Study Evaluating the Safety and Efficacy of Bemarituzumab Monotherapy in Solid Tumors With FGFR2b Overexpression (FORTITUDE-301)",
       "overall_status": "Terminated",
       "phase": "Phase 1/Phase 2",
       "start_date": "2022-09-23",
@@ -2336,6 +2428,7 @@
     },
     "NCT05307705": {
       "brief_title": "A Study of LOXO-783 in Patients With Breast Cancer/Other Solid Tumors",
+      "official_title": "A Study of LOXO-783 Administered as Monotherapy and in Combination With Anticancer Therapies for Patients With Advanced Breast Cancer and Other Solid Tumors With a PIK3CA H1047R Mutation",
       "overall_status": "Recruiting",
       "phase": "Phase 1",
       "start_date": "2022-05-11",
@@ -2346,6 +2439,7 @@
     },
     "NCT05306340": {
       "brief_title": "A Study Evaluating the Efficacy and Safety of Giredestrant Plus Everolimus Compared With the Physician's Choice of Endocrine Therapy Plus Everolimus in Participants With Estrogen Receptor-Positive, HER2-Negative, Locally Advanced or Metastatic Breast Cancer (evERA Breast Cancer)",
+      "official_title": "A Phase III, Randomized, Open-Label, Multicenter Study Evaluating the Efficacy and Safety of Giredestrant Plus Everolimus Compared With the Physician's Choice of Endocrine Therapy Plus Everolimus in Patients With Estrogen Receptor-Positive, HER2-Negative, Locally Advanced or Metastatic Breast Cancer",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2022-08-03",
@@ -2356,6 +2450,7 @@
     },
     "NCT05277051": {
       "brief_title": "First-Time-in-Human Study of GSK4381562 in Participants With Advanced Solid Tumors",
+      "official_title": "A Phase 1 First-Time-in-Human, Open-Label Study of GSK4381562 Administered as Monotherapy and in Combination With Anticancer Agents in Participants With Selected Advanced Solid Tumors",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 1",
       "start_date": "2022-03-22",
@@ -2366,6 +2461,7 @@
     },
     "NCT05238922": {
       "brief_title": "Study of INCB123667 in Subjects With Advanced Solid Tumors",
+      "official_title": "A Phase 1, Open-Label, Multicenter Study of INCB123667 as Monotherapy and in Combination With Anticancer Therapies in Participants With Selected Advanced Solid Tumors",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 1",
       "start_date": "2022-07-05",
@@ -2376,6 +2472,7 @@
     },
     "NCT05208762": {
       "brief_title": "A Study of PF-08046054/SGN-PDL1V in Advanced Solid Tumors",
+      "official_title": "A Phase 1 Study of PF-08046054/SGN-PDL1V in Advanced Solid Tumors",
       "overall_status": "Recruiting",
       "phase": "Phase 1",
       "start_date": "2022-10-25",
@@ -2393,6 +2490,7 @@
     },
     "NCT05161195": {
       "brief_title": "Roll-over Study to Allow Continued Access to Ribociclib",
+      "official_title": "A Post-trial Access Roll-over Study to Allow Access to Ribociclib (LEE011) for Patients Who Are on Ribociclib Treatment in Novartis-sponsored Study",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 4",
       "start_date": "2022-07-07",
@@ -2403,6 +2501,7 @@
     },
     "NCT05153187": {
       "brief_title": "Real-world Treatment Patterns of Endocrine Based Therapy Among Patients With Hormone Receptor-positive/Human Epidermal Growth Factor Receptor-2-negative (HR+/HER2-) Advanced Breast Cancer: An Analysis of Administrative Claims Data in Japan",
+      "official_title": "Descriptive Analyses of Clinical Characteristics and Treatment Patterns of Breast Cancer Patients Initiating Palbociclib (Ibrance(Registered)) Treatment in Japan by Using MDV Database",
       "overall_status": "Completed",
       "phase": "Not specified",
       "start_date": "2019-08-31",
@@ -2413,6 +2512,7 @@
     },
     "NCT05132582": {
       "brief_title": "A Study of Tucatinib or Placebo With Trastuzumab and Pertuzumab for Metastatic HER2+ Breast Cancer",
+      "official_title": "A Randomized, Double-blind, Phase 3 Study of Tucatinib or Placebo in Combination With Trastuzumab and Pertuzumab as Maintenance Therapy for Metastatic HER2+ Breast Cancer (HER2CLIMB-05)",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2022-03-07",
@@ -2423,6 +2523,7 @@
     },
     "NCT05123482": {
       "brief_title": "A Phase I/IIa Study of AZD8205 Given Alone or Combined, in Participants With Advanced/Metastatic Solid Malignancies",
+      "official_title": "A Phase I/IIa Multi-center, Open-label Master Protocol Dose Escalation and Expansion Study of AZD8205 as Monotherapy and in Combination With Anticancer Agents in Participants With Advanced Solid Tumors (BLUESTAR)",
       "overall_status": "Recruiting",
       "phase": "Phase 1/Phase 2",
       "start_date": "2021-10-18",
@@ -2437,6 +2538,7 @@
     },
     "NCT05113251": {
       "brief_title": "Trastuzumab Deruxtecan (T-DXd) Alone or in Sequence With THP, Versus Standard Treatment (ddAC-THP), in HER2-positive Early Breast Cancer",
+      "official_title": "A Phase 3 Open-label Trial of Neoadjuvant Trastuzumab Deruxtecan (T-DXd) Monotherapy or T-DXd Followed by THP Compared to ddAC-THP in Participants With High-risk HER2-positive Early-stage Breast Cancer (DESTINY-Breast11)",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2021-10-25",
@@ -2449,6 +2551,7 @@
     },
     "NCT05104866": {
       "brief_title": "A Phase-3, Open-Label, Randomized Study of Dato-DXd Versus Investigator's Choice of Chemotherapy (ICC) in Participants With Inoperable or Metastatic HR-Positive, HER2-Negative Breast Cancer Who Have Been Treated With One or Two Prior Lines of Systemic Chemotherapy (TROPION-Breast01)",
+      "official_title": "A Phase-3, Open-Label, Randomized Study of Dato-DXd Versus Investigator's Choice of Chemotherapy (ICC) in Participants With Inoperable or Metastatic HR-Positive, HER2-Negative Breast Cancer Who Have Been Treated With One or Two Prior Lines of Systemic Chemotherapy (TROPION-Breast01)",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2021-10-18",
@@ -2459,6 +2562,7 @@
     },
     "NCT05101096": {
       "brief_title": "Study of Sacituzumab Govitecan (SG) in Japanese Participants With Advanced Solid Tumors",
+      "official_title": "A Phase 1/2 Open-Label Study of Sacituzumab Govitecan in Japanese Patients With Advanced Solid Tumors (ASCENT-J02)",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 1/Phase 2",
       "start_date": "2021-10-20",
@@ -2472,6 +2576,7 @@
     },
     "NCT05099978": {
       "brief_title": "Asian Multicenter Prospective Study of ctDNA Sequencing",
+      "official_title": "Asian Multicenter Prospective Study of Circulating Tumor DNA Sequencing: A-TRAIN",
       "overall_status": "Unknown status",
       "phase": "Not specified",
       "start_date": "2021-11-01",
@@ -2487,6 +2592,7 @@
     },
     "NCT05007106": {
       "brief_title": "MK-7684A With or Without Other Anticancer Therapies in Participants With Selected Solid Tumors (MK-7684A-005) (KEYVIBE-005)",
+      "official_title": "A Multicenter, Open-label, Phase 2 Basket Study of MK-7684A, a Co-formation of Vibostolimab (MK-7684) With Pembrolizumab (MK-3475), With or Without Other Anticancer Therapies in Participants With Selected Solid Tumors",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2021-09-16",
@@ -2507,6 +2613,7 @@
     },
     "NCT05005403": {
       "brief_title": "Study to Assess Adverse Events and Pharmacokinetics in Adult Participants With Non-Small Cell Lung Cancer, Head and Neck Squamous Cell Carcinoma and Other Solid Tumors, Receiving Intravenous Infusion of Azirkitug Alone or in Combination(s) With Budigalimab, Bevacizumab, or Telisotuzumab Adizutecan",
+      "official_title": "A Global First-in-Human Study in NSCLC, HNSCC, and Solid Tumors With Azirkitug as a Single Agent and in Combination(s) With Budigalimab, Bevacizumab, or Telisotuzumab Adizutecan",
       "overall_status": "Recruiting",
       "phase": "Phase 1",
       "start_date": "2021-11-01",
@@ -2523,6 +2630,7 @@
     },
     "NCT04975308": {
       "brief_title": "A Study of Imlunestrant, Investigator's Choice of Endocrine Therapy, and Imlunestrant Plus Abemaciclib in Participants With ER+, HER2- Advanced Breast Cancer",
+      "official_title": "EMBER-3: A Phase 3, Randomized, Open-Label Study of Imlunestrant, Investigator's Choice of Endocrine Therapy, and Imlunestrant Plus Abemaciclib in Patients With Estrogen Receptor Positive, HER2 Negative Locally Advanced or Metastatic Breast Cancer Previously Treated With Endocrine Therapy",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2021-10-04",
@@ -2534,6 +2642,7 @@
     },
     "NCT04964934": {
       "brief_title": "Phase III Study to Assess AZD9833+ CDK4/6 Inhibitor in HR+/HER2-MBC With Detectable ESR1m Before Progression (SERENA-6)",
+      "official_title": "A Phase III, Double-blind, Randomised Study to Assess Switching to AZD9833 (a Next Generation, Oral SERD) + CDK4/6 Inhibitor vs Continuing Aromatase Inhibitor (Letrozole or Anastrozole)+ CDK4/6 Inhibitor in HR+/HER2-MBC Patients With Detectable ESR1Mutation Without Disease Progression During 1L Treatment With Aromatase Inhibitor+ CDK4/6 Inhibitor- A ctDNA Guided Early Switch Study",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2021-06-30",
@@ -2544,6 +2653,7 @@
     },
     "NCT04961996": {
       "brief_title": "A Study Evaluating the Efficacy and Safety of Adjuvant Giredestrant Compared With Physician's Choice of Adjuvant Endocrine Monotherapy in Participants With Estrogen Receptor-Positive, HER2-Negative Early Breast Cancer (lidERA Breast Cancer)",
+      "official_title": "A Phase III, Randomized, Open-Label, Multicenter Study Evaluating the Efficacy and Safety of Adjuvant Giredestrant Compared With Physician's Choice of Adjuvant Endocrine Monotherapy in Patients With Estrogen Receptor-Positive, HER2-Negative Early Breast Cancer",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2021-08-27",
@@ -2554,6 +2664,7 @@
     },
     "NCT04915755": {
       "brief_title": "Efficacy and Safety Comparison of Niraparib to Placebo in Participants With Human Epidermal Growth Factor 2 Negative (HER2-) Breast Cancer Susceptibility Gene Mutation (BRCAmut) or Triple-Negative Breast Cancer (TNBC) With Molecular Disease",
+      "official_title": "A Randomized Phase 3 Double-Blinded Study Comparing the Efficacy and Safety of Niraparib to Placebo in Participants With Either HER2-Negative BRCA-Mutated or Triple-Negative Breast Cancer With Molecular Disease Based on Presence of Circulating Tumor DNA After Definitive Therapy (ZEST)",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2021-06-28",
@@ -2564,6 +2675,7 @@
     },
     "NCT04906070": {
       "brief_title": "Radiation Therapy (HB-001) by Alpha-particle Sources for Recurrent Malignant Solid Tumors in Japan",
+      "official_title": "Study of the Safety and Efficacy of Radiation Therapy (HB-001) by Alpha-particle Sources for Recurrent Malignant Solid Tumors in Japan",
       "overall_status": "Completed",
       "phase": "Not Applicable",
       "start_date": "2019-05-25",
@@ -2575,6 +2687,7 @@
     },
     "NCT04895709": {
       "brief_title": "A Study of BMS-986340 as Monotherapy and as Combination Therapy in Participants With Advanced Solid Tumors",
+      "official_title": "A Phase 1/2 Study of BMS-986340 as Monotherapy and as Combination Therapy in Participants With Advanced Solid Tumors",
       "overall_status": "Recruiting",
       "phase": "Phase 1/Phase 2",
       "start_date": "2021-05-27",
@@ -2595,6 +2708,7 @@
     },
     "NCT04895358": {
       "brief_title": "Study of Pembrolizumab (MK-3475) Plus Chemotherapy Versus Placebo Plus Chemotherapy for HR+/HER2- Locally Recurrent Inoperable or Metastatic Breast Cancer (MK-3475-B49/KEYNOTE-B49)",
+      "official_title": "A Randomized, Double-blind, Placebo-controlled, Phase 3 Study of Pembrolizumab Plus Chemotherapy Versus Placebo Plus Chemotherapy for the Treatment of Chemotherapy-Candidate Hormone Receptor-Positive, Human Epidermal Growth Factor Receptor 2-Negative (HR+/HER2-) Locally Recurrent Inoperable or Metastatic Breast Cancer (KEYNOTE-B49)",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2021-06-18",
@@ -2605,6 +2719,7 @@
     },
     "NCT04862663": {
       "brief_title": "Capivasertib + CDK4/6i + Fulvestrant for Advanced/Metastatic HR+/HER2- Breast Cancer (CAPItello-292)",
+      "official_title": "A Phase Ib/III, Open-label, Randomised Study of Capivasertib Plus CDK4/6 Inhibitors and Fulvestrant Versus CDK4/6 Inhibitors and Fulvestrant in Hormone Receptor-Positive and Human Epidermal Growth Factor Receptor 2-Negative Locally Advanced, Unresectable or Metastatic Breast Cancer (CAPItello-292)",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2021-05-10",
@@ -2615,6 +2730,7 @@
     },
     "NCT04852887": {
       "brief_title": "De-Escalation of Breast Radiation Trial for Hormone Sensitive, HER-2 Negative, Oncotype Recurrence Score Less Than or Equal to 18 Breast Cancer (DEBRA)",
+      "official_title": "A Phase III Clinical Trial Evaluating De-Escalation of Breast Radiation for Conservative Treatment of Stage I, Hormone Sensitive, HER-2 Negative, Oncotype Recurrence Score Less Than or Equal to 18 Breast Cancer",
       "overall_status": "Recruiting",
       "phase": "Phase 3",
       "start_date": "2021-06-23",
@@ -2625,6 +2741,7 @@
     },
     "NCT04807595": {
       "brief_title": "Estimation of the Prevalence of HER2 Low and Describe the SoC, Treatment Patterns, and Outcome in Real-world Practice Among Unresectable and/or Metastatic Breast Cancer Patients With HER2 Low Status",
+      "official_title": "A Multicenter Study to Estimate the Prevalence of HER2 Low and Describe the SoC, Treatment Patterns, and Outcome in Real-world Practice Among Unresectable and/or Metastatic Breast Cancer Patients With HER2-low Status - the RetroBC-HER2L Study",
       "overall_status": "Completed",
       "phase": "Not specified",
       "start_date": "2021-05-28",
@@ -2635,6 +2752,7 @@
     },
     "NCT04784715": {
       "brief_title": "Trastuzumab Deruxtecan (T-DXd) With or Without Pertuzumab Versus Taxane, Trastuzumab and Pertuzumab in HER2-positive Metastatic Breast Cancer (DESTINY-Breast09)",
+      "official_title": "Phase III Study of Trastuzumab Deruxtecan (T-DXd) With or Without Pertuzumab Versus Taxane, Trastuzumab and Pertuzumab in HER2-positive, First-line Metastatic Breast Cancer (DESTINY-Breast09)",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2021-04-26",
@@ -2645,6 +2763,7 @@
     },
     "NCT04752332": {
       "brief_title": "A Study of Abemaciclib (LY2835219) Plus Hormone Therapy in Participants With Early Breast Cancer",
+      "official_title": "eMonarcHER: A Randomized, Double Blind, Placebo-Controlled Phase 3 Study of Abemaciclib Plus Standard Adjuvant Endocrine Therapy in Participants With High-Risk, Node-Positive, HR+, HER2+ Early Breast Cancer Who Have Completed Adjuvant HER2-Targeted Therapy",
       "overall_status": "Terminated",
       "phase": "Phase 3",
       "start_date": "2021-05-10",
@@ -2655,6 +2774,7 @@
     },
     "NCT04739761": {
       "brief_title": "A Study of T-DXd in Participants With or Without Brain Metastasis Who Have Previously Treated Advanced or Metastatic HER2 Positive Breast Cancer",
+      "official_title": "An Open-Label, Multinational, Multicenter, Phase 3b/4 Study of Trastuzumab Deruxtecan in Patients With or Without Baseline Brain Metastasis With Previously Treated Advanced/Metastatic HER2-Positive Breast Cancer (DESTINY-Breast12)",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2021-06-22",
@@ -2665,6 +2785,7 @@
     },
     "NCT04736576": {
       "brief_title": "Study to Evaluate Patient Reported Outcome (PRO) and Physical Activity in Japanese Patients With HR+/HER2- Advanced Breast Cancer Treated With Palbociclib Plus Endocrine Therapy or Endocrine Monotherapy",
+      "official_title": "Prospective, Multicenter, Observational Study to Evaluate Patient-reported Outcome and Physical Activity Using Smartphone-based Application and Wearable Device in Japanese Patients With HR+/HER2- Advanced Breast Cancer Treated With Palbociclib Plus Endocrine Therapy or Endocrine Monotherapy",
       "overall_status": "Completed",
       "phase": "Not Applicable",
       "start_date": "2021-02-24",
@@ -2675,6 +2796,7 @@
     },
     "NCT04735367": {
       "brief_title": "Study to Evaluate Overall Survival in Japanese Patients With HR+/HER2- Advanced Breast Cancer Treated With Palbociclib Plus Letrozole",
+      "official_title": "Retrospective, Multicenter, Observational Study to Evaluate Overall Survival in Japanese Patients With HR+/HER2- Advanced Breast Cancer Treated With Palbociclib Plus Letrozole",
       "overall_status": "Completed",
       "phase": "Not specified",
       "start_date": "2021-02-03",
@@ -2685,6 +2807,7 @@
     },
     "NCT04732598": {
       "brief_title": "A Phase III Study of Bevacizumab and Paclitaxel in Combination With Atezolizumab as a Treatment for Locally Advanced Unresectable or Metastatic Hormone Receptor-positive HER2 Negative Breast Cancer",
+      "official_title": "A Phase III, Randomized Study of Bevacizumab and Paclitaxel in Combination With Atezolizumab as a Treatment for Patients With Locally Advanced Unresectable or Metastatic Hormone Receptor-positive HER2 Negative Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2021-01-21",
@@ -2695,6 +2818,7 @@
     },
     "NCT04721977": {
       "brief_title": "A Study of Tucatinib (MK-7119) in Combination With Trastuzumab and Capecitabine in Participants With Previously Treated Locally Advanced Unresectable or Metastatic Human Epidermal Growth Factor Receptor 2 Positive (HER2+) Breast Carcinoma (MK-7119-001)",
+      "official_title": "A Phase 2 Open-label, Single Arm Study of MK-7119 in Combination With Trastuzumab and Capecitabine in Participants With Previously Treated Locally Advanced Unresectable or Metastatic HER2+ Breast Carcinoma",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 2",
       "start_date": "2021-04-08",
@@ -2705,6 +2829,7 @@
     },
     "NCT04711252": {
       "brief_title": "A Comparative Study of AZD9833 Plus Palbociclib Versus Anastrozole Plus Palbociclib in Patients With ER-Positive HER2 Negative Breast Cancer Who Have Not Received Any Systemic Treatment for Advanced Disease",
+      "official_title": "SERENA-4: A Randomised, Multicentre, Double-Blind, Phase III Study of AZD9833 (an Oral SERD) Plus Palbociclib Versus Anastrozole Plus Palbociclib for the Treatment of Patients With Estrogen Receptor-Positive, HER2-Negative Advanced Breast Cancer Who Have Not Received Any Systemic Treatment for Advanced Disease",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2021-01-28",
@@ -2715,6 +2840,7 @@
     },
     "NCT04644068": {
       "brief_title": "Study of AZD5305 as Monotherapy and in Combination With Anti-cancer Agents in Patients With Advanced Solid Malignancies",
+      "official_title": "A Modular Phase I/IIa, Open-label, Multicentre Study to Assess the Safety, Tolerability, Pharmacokinetics, Pharmacodynamics and Preliminary Efficacy of Ascending Doses of AZD5305 as Monotherapy and in Combination With Anti-cancer Agents in Patients With Advanced Solid Malignancies",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 1/Phase 2",
       "start_date": "2020-11-12",
@@ -2737,6 +2863,7 @@
     },
     "NCT04639219": {
       "brief_title": "A Study of T-DXd for the Treatment of Solid Tumors Harboring HER2 Activating Mutations",
+      "official_title": "A Phase II, Multicenter, Open-label Study to Evaluate the Efficacy and Safety of Trastuzumab Deruxtecan (T-DXd) for the Treatment of Unresectable and/or Metastatic Solid Tumors Harboring HER2 Activating Mutations Regardless of Tumor Histology",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 2",
       "start_date": "2020-12-30",
@@ -2747,6 +2874,7 @@
     },
     "NCT04622319": {
       "brief_title": "A Study of Trastuzumab Deruxtecan (T-DXd) Versus Trastuzumab Emtansine (T-DM1) in High-risk HER2-positive Participants With Residual Invasive Breast Cancer Following Neoadjuvant Therapy (DESTINY-Breast05)",
+      "official_title": "A Phase 3, Multicenter, Randomized, Open-Label, Active-Controlled Study of Trastuzumab Deruxtecan (T-DXd) Versus Trastuzumab Emtansine (T-DM1) in Participants With High-Risk HER2-Positive Primary Breast Cancer Who Have Residual Invasive Disease in Breast or Axillary Lymph Nodes Following Neoadjuvant Therapy (DESTINY-Breast05)",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2020-12-04",
@@ -2758,6 +2886,7 @@
     },
     "NCT04606446": {
       "brief_title": "Study of PF-07248144 in Advanced or Metastatic Solid Tumors",
+      "official_title": "A PHASE 1/2A DOSE ESCALATION AND EXPANSION STUDY TO EVALUATE SAFETY, TOLERABILITY, PHARMACOKINETIC, PHARMACODYNAMIC, AND ANTI-TUMOR ACTIVITY OF PF-07248144 IN PARTICIPANTS WITH ADVANCED OR METASTATIC SOLID TUMORS",
       "overall_status": "Recruiting",
       "phase": "Phase 2",
       "start_date": "2020-11-16",
@@ -2770,6 +2899,7 @@
     },
     "NCT04579380": {
       "brief_title": "Basket Study of Tucatinib and Trastuzumab in Solid Tumors With HER2 Alterations",
+      "official_title": "A Phase 2 Basket Study of Tucatinib in Combination With Trastuzumab in Subjects With Previously Treated, Locally Advanced Unresectable or Metastatic Solid Tumors Driven by HER2 Alterations",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 2",
       "start_date": "2021-01-11",
@@ -2785,6 +2915,7 @@
     },
     "NCT04572295": {
       "brief_title": "A Study of E7090 as Monotherapy and in Combination With Other Anticancer Agents in Participants With Estrogen Receptor Positive (ER+) and Human Epidermal Growth Receptor 2 Negative (HER2-) Recurrent/Metastatic Breast Cancer",
+      "official_title": "An Open-label Phase 1b Study of E7090 Monotherapy and in Combination With Other Anticancer Agents in Subjects With ER+, HER2- Recurrent/Metastatic Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2020-10-09",
@@ -2795,6 +2926,7 @@
     },
     "NCT04568902": {
       "brief_title": "Study of H3B-6545 in Japanese Women With Estrogen Receptor (ER)-Positive, Human Epidermal Growth Factor Receptor 2 (HER2)-Negative Breast Cancer",
+      "official_title": "A Phase 1 Study of H3B-6545 in Japanese Women With Estrogen Receptor-positive, HER2 Negative Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2020-09-30",
@@ -2805,6 +2937,7 @@
     },
     "NCT04557449": {
       "brief_title": "Study to Test the Safety and Tolerability of PF-07220060 in Participants With Advance Solid Tumors",
+      "official_title": "A PHASE 1/2A STUDY EVALUATING THE SAFETY, TOLERABILITY, PHARMACOKINETICS, PHARMACODYNAMICS, AND ANTI-TUMOR ACTIVITY OF PF-07220060 AS A SINGLE AGENT AND AS PART OF COMBINATION THERAPY IN PARTICIPANTS WITH ADVANCED SOLID TUMORS",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 2",
       "start_date": "2020-09-23",
@@ -2818,6 +2951,7 @@
     },
     "NCT04546009": {
       "brief_title": "A Study Evaluating the Efficacy and Safety of Giredestrant Combined With Palbociclib Compared With Letrozole Combined With Palbociclib in Participants With Estrogen Receptor-Positive, HER2-Negative Locally Advanced or Metastatic Breast Cancer (persevERA Breast Cancer)",
+      "official_title": "A Phase III Randomized, Double-Blind, Placebo-Controlled, Multicenter Study Evaluating the Efficacy and Safety of GDC-9545 Combined With Palbociclib Compared With Letrozole Combined With Palbociclib in Patients With Estrogen Receptor-Positive, HER2-Negative Locally Advanced or Metastatic Breast Cancer",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2020-10-09",
@@ -2828,6 +2962,7 @@
     },
     "NCT04541433": {
       "brief_title": "A Phase 1 Study of AZD9833 in Japanese Women With ER Positive, HER2 Negative Advanced Breast Cancer",
+      "official_title": "A Phase 1, Open-label Study to Assess the Safety, Tolerability, Pharmacokinetics and Anti- Tumor Activity of AZD9833 in Japanese Women With ER Positive, HER2 Negative Advanced Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2020-09-29",
@@ -2838,6 +2973,7 @@
     },
     "NCT04524000": {
       "brief_title": "Study Assessing the Efficacy and Safety of Treatment With Alpelisib Plus Fulvestrant in Japanese Men and Postmenopausal Women With Advanced Breast Cancer",
+      "official_title": "A Phase II Open-label, 2-Part, Multi-center Study of BYL719 (Alpelisib) in Combination With Fulvestrant for Men and Postmenopausal Women With PIK3CA Mutation Hormone Receptor (HR) Positive, HER2-negative, Advanced Breast Cancer Which Progressed on or After Aromatase Inhibitor (AI) Treatment in Japan",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 2",
       "start_date": "2021-01-08",
@@ -2848,6 +2984,7 @@
     },
     "NCT04521686": {
       "brief_title": "Study of LY3410738 Administered to Patients With Advanced Solid Tumors With IDH1 or IDH2 Mutations",
+      "official_title": "A Phase 1 Study of LY3410738 Administered to Patients With Advanced Solid Tumors With IDH1 or IDH2 Mutations",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 1",
       "start_date": "2020-10-01",
@@ -2861,6 +2998,7 @@
     },
     "NCT04494425": {
       "brief_title": "Study of Trastuzumab Deruxtecan (T-DXd) vs Investigator's Choice Chemotherapy in HER2-low, Hormone Receptor Positive, Metastatic Breast Cancer",
+      "official_title": "A Phase 3, Randomized, Multi-center, Open-label Study of Trastuzumab Deruxtecan (T-DXd) Versus Investigator's Choice Chemotherapy in HER2-Low, Hormone Receptor Positive Breast Cancer Patients Whose Disease Has Progressed on Endocrine Therapy in the Metastatic Setting (DESTINY-Breast06)",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2020-07-24",
@@ -2871,6 +3009,7 @@
     },
     "NCT04482309": {
       "brief_title": "A Phase 2 Study of T-DXd in Patients With Selected HER2 Expressing Tumors",
+      "official_title": "A Phase 2, Multicenter, Open-label Study to Evaluate the Efficacy and Safety of Trastuzumab Deruxtecan (T-DXd, DS-8201a) for the Treatment of Selected HER2 Expressing Tumors (DESTINY-PanTumor02)",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 2",
       "start_date": "2020-08-18",
@@ -2882,6 +3021,7 @@
     },
     "NCT04478266": {
       "brief_title": "Amcenestrant (SAR439859) Plus Palbociclib as First Line Therapy for Patients With ER (+) HER2(-) Advanced Breast Cancer",
+      "official_title": "A Randomized, Multicenter, Double-blind Phase 3 Study of Amcenestrant (SAR439859) Plus Palbociclib Versus Letrozole Plus Palbociclib for the Treatment of Patients With ER (+), HER2 (-) Breast Cancer Who Have Not Received Prior Systemic Anti-cancer Treatment for Advanced Disease",
       "overall_status": "Terminated",
       "phase": "Phase 3",
       "start_date": "2020-10-14",
@@ -2892,6 +3032,7 @@
     },
     "NCT04305496": {
       "brief_title": "Capivasertib+Fulvestrant vs Placebo+Fulvestrant as Treatment for Locally Advanced (Inoperable) or Metastatic HR+/HER2- Breast Cancer",
+      "official_title": "A Phase III Double-blind Randomised Study Assessing the Efficacy and Safety of Capivasertib + Fulvestrant Versus Placebo + Fulvestrant as Treatment for Locally Advanced (Inoperable) or Metastatic Hormone Receptor Positive, Human Epidermal Growth Factor Receptor 2 Negative (HR+/HER2-) Breast Cancer Following Recurrence or Progression On or After Treatment With an Aromatase Inhibitor",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2020-04-16",
@@ -2901,7 +3042,8 @@
       ]
     },
     "NCT04300556": {
-      "brief_title": "A Study to Evaluate the Safety, Tolerability, and Efficacy of MORAb-202 (Herein Referred to as Farletuzumab Ecteribulin), a Folate Receptor Alpha (FR\u03b1)-Targeting Antibody-drug Conjugate (ADC) in Participants With Selected Tumor Types",
+      "brief_title": "A Study to Evaluate the Safety, Tolerability, and Efficacy of MORAb-202 (Herein Referred to as Farletuzumab Ecteribulin), a Folate Receptor Alpha (FRα)-Targeting Antibody-drug Conjugate (ADC) in Participants With Selected Tumor Types",
+      "official_title": "A Multicenter, Open-Label Phase 1/2 Trial Evaluating the Safety, Tolerability, and Efficacy of MORAb-202, a Folate Receptor Alpha (FRα)-Targeting Antibody-drug Conjugate (ADC) in Subjects With Selected Tumor Types",
       "overall_status": "Recruiting",
       "phase": "Phase 1/Phase 2",
       "start_date": "2020-08-06",
@@ -2912,6 +3054,7 @@
     },
     "NCT04293094": {
       "brief_title": "Study of AMG 650 in Adult Participants With Advanced Solid Tumors",
+      "official_title": "A Phase 1, Multicenter, Open-label, Dose-Exploration and Dose-Expansion Study Evaluating the Safety, Tolerability, Pharmacokinetics, and Efficacy of AMG 650 in Subjects With Advanced Solid Tumors",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2020-03-11",
@@ -2922,6 +3065,7 @@
     },
     "NCT04274933": {
       "brief_title": "A Study to Evaluate the Safety and Tolerability of Venetoclax Tablets in Combination With Capecitabine Tablets in Adult Participants With Hormone Receptor-Positive, HER2-Negative Locally Advanced or Metastatic Breast Cancer Who Had Disease Progression During or After CDK4/6 Inhibitor Therapy",
+      "official_title": "A Phase 1b Study of Venetoclax and Capecitabine In Subjects With Hormone Receptor-Positive, HER2-Negative Locally Advanced or Metastatic Breast Cancer Who Experienced Disease Progression During or After CDK4/6 Inhibitor Therapy",
       "overall_status": "Terminated",
       "phase": "Phase 1",
       "start_date": "2020-05-21",
@@ -2933,6 +3077,7 @@
     },
     "NCT04225117": {
       "brief_title": "A Study to Evaluate Enfortumab Vedotin in Subjects With Locally Advanced or Metastatic Malignant Solid Tumors (EV-202)",
+      "official_title": "An Open-label, Multicenter, Multicohort, Phase 2 Study to Evaluate Enfortumab Vedotin in Subjects With Locally Advanced or Metastatic Malignant Solid Tumors (EV-202)",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 2",
       "start_date": "2020-03-10",
@@ -2943,6 +3088,7 @@
     },
     "NCT04191382": {
       "brief_title": "Phase 2 Window Study of SAR439859 (Amcenestrant) Versus Letrozole in Post-menopausal Patients With ER+, HER2- Pre-operative Post-menopausal Primary Breast Cancer",
+      "official_title": "Phase 2 Window Study of Two Dose Levels of Amcenestrant [SAR439859] (SERD) Versus Letrozole in Newly Diagnosed Pre-operative Post-menopausal Patients With ER Positive, HER2 Negative Primary Breast Cancer",
       "overall_status": "Terminated",
       "phase": "Phase 2",
       "start_date": "2020-02-04",
@@ -2953,6 +3099,7 @@
     },
     "NCT04191135": {
       "brief_title": "Study of Olaparib Plus Pembrolizumab Versus Chemotherapy Plus Pembrolizumab After Induction With First-Line Chemotherapy Plus Pembrolizumab in Triple Negative Breast Cancer (TNBC) (MK-7339-009/KEYLYNK-009)",
+      "official_title": "An Open-label, Randomized, Phase 2/3 Study of Olaparib Plus Pembrolizumab Versus Chemotherapy Plus Pembrolizumab After Induction of Clinical Benefit With First-line Chemotherapy Plus Pembrolizumab in Participants With Locally Recurrent Inoperable or Metastatic Triple Negative Breast Cancer (TNBC) (KEYLYNK-009)",
       "overall_status": "Terminated",
       "phase": "Phase 2",
       "start_date": "2019-12-19",
@@ -2963,6 +3110,7 @@
     },
     "NCT04188548": {
       "brief_title": "A Study of LY3484356 in Participants With Advanced or Metastatic Breast Cancer or Endometrial Cancer",
+      "official_title": "EMBER: A Phase 1a/1b Study of LY3484356 Administered as Monotherapy and in Combination With Anticancer Therapies for Patients With ER+ Locally Advanced or Metastatic Breast Cancer and Other Select Non-Breast Cancers",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 1",
       "start_date": "2019-12-10",
@@ -2976,6 +3124,7 @@
     },
     "NCT04177108": {
       "brief_title": "A Study of Ipatasertib in Combination With Atezolizumab and Paclitaxel as a Treatment for Participants With Locally Advanced or Metastatic Triple-Negative Breast Cancer",
+      "official_title": "A Phase III, Double-blind, Placebo-controlled, Randomized Study of Ipatasertib in Combination With Atezolizumab and Paclitaxel as a Treatment for Patients With Locally Advanced Unresectable or Metastatic Triple-Negative Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2019-11-25",
@@ -2986,6 +3135,7 @@
     },
     "NCT04099277": {
       "brief_title": "A Study of LY3435151 in Participants With Solid Tumors",
+      "official_title": "A Phase 1a/1b Study of LY3435151 Administered to Patients With Advanced Solid Tumors",
       "overall_status": "Terminated",
       "phase": "Phase 1",
       "start_date": "2019-10-28",
@@ -3004,6 +3154,7 @@
     },
     "NCT04060862": {
       "brief_title": "A Study of Ipatasertib Plus Palbociclib and Fulvestrant Versus Placebo Plus Palbociclib and Fulvestrant in Hormone Receptor Positive and HER2 Negative Locally Advanced Unresectable or Metastatic Breast Cancer",
+      "official_title": "A Phase Ib/III Study of Ipatasertib Plus Palbociclib and Fulvestrant Versus Placebo Plus Palbociclib and Fulvestrant in Hormone Receptor Positive and HER2 Negative Locally Advanced Unresectable or Metastatic Breast Cancer",
       "overall_status": "Terminated",
       "phase": "Phase 1",
       "start_date": "2019-11-21",
@@ -3014,6 +3165,7 @@
     },
     "NCT04059484": {
       "brief_title": "Phase 2 Study of Amcenestrant (SAR439859) Versus Physician's Choice in Locally Advanced or Metastatic ER-positive Breast Cancer",
+      "official_title": "An Open Label Randomized Phase 2 Trial of Amcenestrant (SAR439859), Versus Endocrine Monotherapy as Per Physician's Choice in Patients With Estrogen Receptor-positive, HER2-Negative Locally Advanced or Metastatic Breast Cancer With Prior Exposure to Hormonal Therapies",
       "overall_status": "Terminated",
       "phase": "Phase 2",
       "start_date": "2019-10-22",
@@ -3024,6 +3176,7 @@
     },
     "NCT03997123": {
       "brief_title": "Capivasertib+Paclitaxel as First Line Treatment for Patients With Locally Advanced or Metastatic TNBC",
+      "official_title": "A Phase III Double-blind Randomised Study Assessing the Efficacy and Safety of Capivasertib/+Paclitaxel vs Placebo+Paclitaxel as First-line Treatment for Patients With Locally Advanced (Inoperable) or Metastatic TNBC.",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2019-06-25",
@@ -3034,6 +3187,7 @@
     },
     "NCT03975647": {
       "brief_title": "A Study of Tucatinib vs. Placebo in Combination With Ado-trastuzumab Emtansine (T-DM1) for Patients With Advanced or Metastatic HER2+ Breast Cancer",
+      "official_title": "Randomized, Double-blind, Phase 3 Study of Tucatinib or Placebo in Combination With Ado-trastuzumab Emtansine (T-DM1) for Subjects With Unresectable Locally-advanced or Metastatic HER2+ Breast Cancer (HER2CLIMB-02)",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2019-10-02",
@@ -3044,6 +3198,7 @@
     },
     "NCT03969121": {
       "brief_title": "Neoadjuvant Hormonal Therapy Plus Palbociclib in Operable, Hormone Sensitive and HER2-Negative Primary Breast Cancer",
+      "official_title": "A Phase III Randomized, Double-Blind, Neoadjuvant Study of Hormonal Therapy Plus Palbociclib Versus Hormonal Therapy Plus Placebo in Women With Operable, Hormone Sensitive and HER2-Negative Primary Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2019-07-16",
@@ -3055,6 +3210,7 @@
     },
     "NCT03906331": {
       "brief_title": "Expanded Access for the Treatment of Cancers With Rearranged During Transfection (RET) Activation",
+      "official_title": "Expanded Access for the Treatment of Cancers With Rearranged During Transfection (RET) Activation",
       "overall_status": "Approved for marketing",
       "phase": "Not specified",
       "start_date": null,
@@ -3071,6 +3227,7 @@
     },
     "NCT03899792": {
       "brief_title": "A Study of Oral LOXO-292 (Selpercatinib) in Pediatric Participants With Advanced Solid or Primary Central Nervous System (CNS) Tumors",
+      "official_title": "A Phase 1/2 Study of the Oral RET Inhibitor LOXO 292 in Pediatric Patients With Advanced RET-Altered Solid or Primary Central Nervous System Tumors",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 1/Phase 2",
       "start_date": "2019-06-13",
@@ -3085,6 +3242,7 @@
     },
     "NCT03891953": {
       "brief_title": "Study of Safety and Efficacy of DKY709 Alone or in Combination With PDR001 in Patients With Advanced Solid Tumors.",
+      "official_title": "A Phase I/Ib, Open-label, Multi-center, Study of DKY709 as a Single Agent and in Combination With PDR001 in Patients With Advanced Solid Tumors",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 1",
       "start_date": "2019-05-07",
@@ -3099,6 +3257,7 @@
     },
     "NCT03821935": {
       "brief_title": "Study to Determine the Safety, Tolerability, Pharmacokinetics and Recommended Phase 2 Dose (RP2D) of Livmoniplimab (ABBV-151) as a Single Agent and in Combination With Budigalimab (ABBV-181) in Participants With Locally Advanced or Metastatic Solid Tumors",
+      "official_title": "A Phase 1 First-in Human, Multi-Center, Open Label Dose-Escalation Study to Determine the Safety, Tolerability, Pharmacokinetics and RP2D of Livmoniplimab (ABBV-151) as a Single Agent and in Combination With Budigalimab (ABBV-181) in Subjects With Locally Advanced or Metastatic Solid Tumors",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 1",
       "start_date": "2019-02-21",
@@ -3109,6 +3268,7 @@
     },
     "NCT03816839": {
       "brief_title": "Evaluation of Orally Administered Amcenestrant (SAR439859) in Japanese Postmenopausal Patients With Advanced Breast Cancer (AMEERA-2)",
+      "official_title": "A Phase 1 Study for the Safety, Efficacy, Pharmacokinetics and Pharmacodynamics Evaluation of SAR439859, Administered Orally as Monotherapy in Japanese Postmenopausal Women With Estrogen Receptor-Positive And Human Epidermal Growth Factor Receptor 2-Negative Advanced Breast Cancer (AMEERA-2)",
       "overall_status": "Terminated",
       "phase": "Phase 1",
       "start_date": "2019-03-25",
@@ -3119,6 +3279,7 @@
     },
     "NCT03742349": {
       "brief_title": "Study of Safety and Efficacy of Novel Immunotherapy Combinations in Patients With Triple Negative Breast Cancer (TNBC).",
+      "official_title": "A Phase Ib, Multicenter, Open-label Dose Escalation and Expansion Platform Study of Select Immunotherapy Combinations in Adult Patients With Triple-negative Breast Cancer",
       "overall_status": "Terminated",
       "phase": "Phase 1",
       "start_date": "2019-01-31",
@@ -3129,6 +3290,7 @@
     },
     "NCT03734029": {
       "brief_title": "Trastuzumab Deruxtecan (DS-8201a) Versus Investigator's Choice for HER2-low Breast Cancer That Has Spread or Cannot be Surgically Removed [DESTINY-Breast04]",
+      "official_title": "A Phase 3, Multicenter, Randomized, Open-label, Active Controlled Trial of DS-8201a, an Anti-HER2-antibody Drug Conjugate (ADC), Versus Treatment of Physician's Choice for HER2-low, Unresectable and/or Metastatic Breast Cancer Subjects",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2018-12-27",
@@ -3139,6 +3301,7 @@
     },
     "NCT03726879": {
       "brief_title": "A Study To Evaluate the Efficacy and Safety Of Atezolizumab or Placebo in Combination With Neoadjuvant Doxorubicin + Cyclophosphamide Followed By Paclitaxel + Trastuzumab + Pertuzumab In Early Her2-Positive Breast Cancer",
+      "official_title": "A Phase III, Randomized, Double-Blind, Placebo-Controlled Clinical Trial To Evaluate the Efficacy and Safety Of Atezolizumab or Placebo in Combination With Neoadjuvant Doxorubicin + Cyclophosphamide Followed By Paclitaxel + Trastuzumab + Pertuzumab In Early Her2-Positive Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2019-01-11",
@@ -3149,6 +3312,7 @@
     },
     "NCT03725059": {
       "brief_title": "Study of Pembrolizumab (MK-3475) Versus Placebo in Combination With Neoadjuvant Chemotherapy & Adjuvant Endocrine Therapy in the Treatment of Early-Stage Estrogen Receptor-Positive, Human Epidermal Growth Factor Receptor 2-Negative (ER+/HER2-) Breast Cancer (MK-3475-756/KEYNOTE-756)",
+      "official_title": "A Randomized, Double-Blind, Phase III Study of Pembrolizumab Versus Placebo in Combination With Neoadjuvant Chemotherapy and Adjuvant Endocrine Therapy for the Treatment of High-Risk Early-Stage Estrogen Receptor-Positive, Human Epidermal Growth Factor Receptor 2-Negative (ER+/HER2-) Breast Cancer (KEYNOTE-756)",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2018-12-27",
@@ -3159,6 +3323,7 @@
     },
     "NCT03696771": {
       "brief_title": "Study to Determine Safety and Dose of NJH395 in Non-breast HER2+ Advanced Cancer",
+      "official_title": "A Phase I, Multicenter, Open-label Dose Finding Study of NJH395, Administered Intravenously in Patients With Non-breast HER2+ Advanced Malignancies",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2018-12-27",
@@ -3169,6 +3334,7 @@
     },
     "NCT03595059": {
       "brief_title": "A Study With ABBV-155 Alone and in Combination With Taxane Therapy in Adults With Relapsed and/or Refractory Solid Tumors",
+      "official_title": "A Phase 1 First-in-Human Study With ABBV-155 Alone and in Combination With Taxane Therapy in Adults With Relapsed and/or Refractory Solid Tumors",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2018-07-13",
@@ -3179,6 +3345,7 @@
     },
     "NCT03590938": {
       "brief_title": "Lynparza Breast Cancer Clinical Experience Investigation",
+      "official_title": "Lynparza Tablets 100mg, 150mg CEI, Investigation on Development of Bone Marrow Depression in Patients With Unresectable or Recurrent BRCA Mutated HER2 Negative Breast Cancer Who Have Previously Received Anticancer Chemotherapy",
       "overall_status": "Completed",
       "phase": "Not specified",
       "start_date": "2018-08-14",
@@ -3189,6 +3356,7 @@
     },
     "NCT03565445": {
       "brief_title": "A Study of ASP1948, Targeting an Immune Modulatory Receptor as a Single Agent and in Combination With a PD-l Inhibitor (Nivolumab or Pembrolizumab) in Subjects With Advanced Solid Tumors",
+      "official_title": "A Phase 1b Study of ASP1948, Targeting an Immune Modulatory Receptor as a Single Agent and in Combination With a PD-l Inhibitor (Nivolumab or Pembrolizumab) in Subjects With Advanced Solid Tumors",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2018-07-02",
@@ -3199,6 +3367,7 @@
     },
     "NCT03549000": {
       "brief_title": "A Phase I/Ib Study of NZV930 Alone and in Combination With PDR001 and /or NIR178 in Patients With Advanced Malignancies.",
+      "official_title": "A Phase I/Ib, Open-label, Multi-center, Study of NZV930 as a Single Agent and in Combination With PDR001 and/or NIR178 in Patients With Advanced Malignancies.",
       "overall_status": "Terminated",
       "phase": "Phase 1",
       "start_date": "2018-07-18",
@@ -3215,6 +3384,7 @@
     },
     "NCT03529110": {
       "brief_title": "DS-8201a Versus T-DM1 for Human Epidermal Growth Factor Receptor 2 (HER2)-Positive, Unresectable and/or Metastatic Breast Cancer Previously Treated With Trastuzumab and Taxane [DESTINY-Breast03]",
+      "official_title": "A Phase 3, Multicenter, Randomized, Open-Label, Active-Controlled Study of DS-8201a (Trastuzumab Deruxtecan), an Anti-HER2 Antibody Drug Conjugate (ADC), Versus Ado Trastuzumab Emtansine (T-DM1) for HER2-Positive, Unresectable and/or Metastatic Breast Cancer Subjects Previously Treated With Trastuzumab and Taxane",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2018-08-09",
@@ -3225,6 +3395,7 @@
     },
     "NCT03523585": {
       "brief_title": "DS-8201a in Pre-treated HER2 Breast Cancer That Cannot be Surgically Removed or Has Spread [DESTINY-Breast02]",
+      "official_title": "A Phase 3, Multicenter, Randomized, Open-label, Active-controlled Study of Trastuzumab Deruxtecan (DS-8201a), an Anti-HER2-antibody Drug Conjugate, Versus Treatment of Investigator's Choice for HER2-positive, Unresectable and/or Metastatic Breast Cancer Subjects Previously Treated With T-DM1",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2018-08-01",
@@ -3235,6 +3406,7 @@
     },
     "NCT03519178": {
       "brief_title": "A Study of PF-06873600 in People With Cancer",
+      "official_title": "PHASE 1/2A DOSE ESCALATION AND EXPANSION STUDY EVALUATING SAFETY, TOLERABILITY, PHARMACOKINETIC, PHARMACODYNAMICS AND ANTI-TUMOR ACTIVITY OF PF-06873600 AS A SINGLE AGENT AND IN COMBINATION WITH ENDOCRINE THERAPY",
       "overall_status": "Terminated",
       "phase": "Phase 1/Phase 2",
       "start_date": "2018-03-07",
@@ -3245,6 +3417,7 @@
     },
     "NCT03499899": {
       "brief_title": "A Study of Efficacy and Safety of LAG525 in Combination With Spartalizumab, or With Spartalizumab and Carboplatin, or With Carboplatin, in Patients With Advanced Triple-negative Breast Cancer",
+      "official_title": "A Phase II Open-label, Randomized, Three-arm, Multicenter Study of LAG525 Given in Combination With Spartalizumab (PDR001), or With Spartalizumab and Carboplatin, or With Carboplatin, as First or Second Line Therapy in Patients With Advanced Triple-negative Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2018-07-02",
@@ -3255,6 +3428,7 @@
     },
     "NCT03498716": {
       "brief_title": "A Study Comparing Atezolizumab (Anti PD-L1 Antibody) In Combination With Adjuvant Anthracycline/Taxane-Based Chemotherapy Versus Chemotherapy Alone In Patients With Operable Triple-Negative Breast Cancer",
+      "official_title": "A Phase III, Multicenter, Randomized, Open-Label Study Comparing Atezolizumab (Anti PD-L1 Antibody) in Combination With Adjuvant Anthracycline/Taxane-Based Chemotherapy Versus Chemotherapy Alone in Patients With Operable Triple Negative Breast Cancer",
       "overall_status": "Terminated",
       "phase": "Phase 3",
       "start_date": "2018-08-02",
@@ -3265,6 +3439,7 @@
     },
     "NCT03493854": {
       "brief_title": "A Study to Evaluate the Pharmacokinetics, Efficacy, and Safety of Subcutaneous Administration of the Fixed-Dose Combination of Pertuzumab and Trastuzumab in Combination With Chemotherapy in Participants With HER2-Positive Early Breast Cancer",
+      "official_title": "A Phase III, Randomized, Multicenter, Open-Label, Two-Arm Study to Evaluate the Pharmacokinetics, Efficacy, and Safety of Subcutaneous Administration of the Fixed-Dose Combination of Pertuzumab and Trastuzumab in Combination With Chemotherapy in Patients With HER2-Positive Early Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2018-06-14",
@@ -3275,6 +3450,7 @@
     },
     "NCT03430479": {
       "brief_title": "Anti PD-1 Antibody With Radiation Therapy in Patients With HER2-negative Metastatic Breast Cancer",
+      "official_title": "Phase Ib/II Study to Assess Efficacy, Safety & Immunological Biomarker of Anti PD-1 Antibody With Radiation Therapy in Patients With HER2-negative Metastatic Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 1/Phase 2",
       "start_date": "2017-06-22",
@@ -3285,6 +3461,7 @@
     },
     "NCT03430466": {
       "brief_title": "Anti PD-L1 Antibody + Anti CTLA-4 Antibody in Combination With Hormone Therapy in Patients With Hormone Receptor Positive HER2-negative Recurrent or Metastatic Breast Cancer",
+      "official_title": "Phase II Study to Assess Efficacy, Safety & Immunological Biomarker of Anti PD-L1 Antibody + Anti CTLA-4 Antibody in Combination With Hormone Therapy in Patients With Hormone Receptor Positive HER2-negative Recurrent or Metastatic Breast Cancer",
       "overall_status": "Terminated",
       "phase": "Phase 2",
       "start_date": "2017-06-22",
@@ -3295,6 +3472,7 @@
     },
     "NCT03423199": {
       "brief_title": "PAlbociclib Plus Tamoxifen for the Treatment of Hormone Receptor-positive, HER2-negative Advanced Breast Cancer Women - Asian studY",
+      "official_title": "Asian, International, Multicenter, Randomized, Double-Blind, Placebo-Controlled, Phase 3 Trial of Tamoxifen With or Without Palbociclib ± Goserelin in Women With Hormone Receptor-Positive, HER2-Negative Advanced or Metastatic Breast Cancer",
       "overall_status": "Unknown status",
       "phase": "Phase 3",
       "start_date": "2018-02-09",
@@ -3305,6 +3483,7 @@
     },
     "NCT03411161": {
       "brief_title": "S 81694 Plus Paclitaxel in Metastatic Breast Cancer",
+      "official_title": "Phase I/II Trial of S 81694 Administered Intravenously in Combination With Paclitaxel to Evaluate the Safety, Pharmacokinetic and Efficacy in Metastatic Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 1/Phase 2",
       "start_date": "2018-01-04",
@@ -3316,6 +3495,7 @@
     },
     "NCT03401385": {
       "brief_title": "First-in-human Study of DS-1062a for Advanced Solid Tumors (TROPION-PanTumor01)",
+      "official_title": "Phase 1, Two-part, Multicenter, Open-label, Multiple Dose, First-in-human Study of DS-1062a in Subjects With Advanced Solid Tumors (TROPION-PanTumor01)",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 1",
       "start_date": "2018-01-31",
@@ -3328,6 +3508,7 @@
     },
     "NCT03366428": {
       "brief_title": "Phase 1 Study to Evaluate the Effect of DS-8201a on the QT/QTc Interval and Pharmacokinetics in HER2-Expressing Breast Cancer",
+      "official_title": "Phase 1, Multicenter, Open-label, Multiple-dose Study of DS-8201a to Assess the Effect on the QT Interval and Pharmacokinetics in Subjects With HER2-expressing Metastatic and/or Unresectable Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2017-12-26",
@@ -3338,6 +3519,7 @@
     },
     "NCT03343054": {
       "brief_title": "A Phase 1 Study Of Talazoparib, PARP Inhibitor, In Japanese Patients With Advanced Solid Tumors",
+      "official_title": "A PHASE 1 STUDY OF THE SAFETY, PHARMACOKINETICS AND ANTI-TUMOR ACTIVITY OF TALAZOPARIB, POLY (ADP-RIBOSE) POLYMERASE (PARP) INHIBITOR, IN JAPANESE PATIENTS WITH ADVANCED SOLID TUMORS",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2017-11-30",
@@ -3349,6 +3531,7 @@
     },
     "NCT03337724": {
       "brief_title": "A Study of Ipatasertib in Combination With Paclitaxel as a Treatment for Participants With PIK3CA/AKT1/PTEN-Altered, Locally Advanced or Metastatic, Triple-Negative Breast Cancer or Hormone Receptor-Positive, HER2-Negative Breast Cancer",
+      "official_title": "A Double-Blind, Placebo-Controlled, Randomized Phase III Study of Ipatasertib in Combination With Paclitaxel as a Treatment for Patients With PIK3CA/AKT1/PTEN-Altered, Locally Advanced or Metastatic, Triple-Negative Breast Cancer or Hormone Receptor-Positive, HER2-Negative Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2018-01-06",
@@ -3359,6 +3542,7 @@
     },
     "NCT03324932": {
       "brief_title": "Efficacy of Denosumab on Normal BMD in Women Receiving Adjuvant Aromatase Inhibitors for Early Breast Cancer",
+      "official_title": "A Multicenter, Randomized, Comparative Study Regarding the Efficacy of Denosumab on Normal Bone Mineral Density in Women Receiving Adjuvant Aromatase Inhibitors for Early Breast Cancer (ENDEAVOR Trial)",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2017-09-25",
@@ -3369,6 +3553,7 @@
     },
     "NCT03291886": {
       "brief_title": "Phase 2 Study of KHK2375 in Subjects With Advanced or Recurrent Breast Cancer",
+      "official_title": "Study of KHK2375 in Subjects With Advanced or Recurrent Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2017-09-22",
@@ -3379,6 +3564,7 @@
     },
     "NCT03286842": {
       "brief_title": "To Study Clinical Effectiveness and Safety of Olaparib Monotherapy in Metastatic Breast Cancer Patients.",
+      "official_title": "A Phase IIIb, Single-arm, Open-label Multicentre Study of Olaparib Monotherapy in the Treatment of HER2-ve Metastatic Breast Cancer Patients With Germline or Somatic BRCA1/2 Mutations.",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2018-01-17",
@@ -3391,6 +3577,7 @@
     },
     "NCT03264547": {
       "brief_title": "A Study to Compare Eribulin Mesylate + Pertuzumab + Trastuzumab With Paclitaxel or Docetaxel + Pertuzumab + Trastuzumab",
+      "official_title": "A Phase III Clinical Study to Compare the Combination Therapy of Eribulin Mesylate + Pertuzumab + Trastuzumab With Paclitaxel or Docetaxel + Pertuzumab + Trastuzumab (EMERALD)",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2017-08-28",
@@ -3401,6 +3588,7 @@
     },
     "NCT03248492": {
       "brief_title": "A Study of DS-8201a in Metastatic Breast Cancer Previously Treated With Trastuzumab Emtansine (T-DM1)",
+      "official_title": "A Phase 2, Multicenter, Open-Label Study of DS-8201a, an Anti-HER2-Antibody Drug Conjugate (ADC) for HER2-Positive, Unresectable and/or Metastatic Breast Cancer Subjects Previously Treated With T-DM1 (DESTINY-Breast01)",
       "overall_status": "Terminated",
       "phase": "Phase 2",
       "start_date": "2017-08-25",
@@ -3411,6 +3599,7 @@
     },
     "NCT03209518": {
       "brief_title": "Special Drug Use Surveillance of Leuprorelin for Injection Kit 22.5 mg in \"Premenopausal Breast Cancer\"",
+      "official_title": "Special Drug Use Surveillance of Leuplin PRO for Injection Kit 22.5 mg in \"Premenopausal Breast Cancer\"",
       "overall_status": "Completed",
       "phase": "Not specified",
       "start_date": "2016-03-18",
@@ -3421,6 +3610,7 @@
     },
     "NCT03207867": {
       "brief_title": "A Phase 2 Study of NIR178 in Combination With PDR001 in Patients With Solid Tumors and Non-Hodgkin Lymphoma",
+      "official_title": "A Phase 2, Multi-center, Open Label Study of NIR178 in Combination With PDR001 in Patients With Selected Advanced Solid Tumors and Non-Hodgkin Lymphoma",
       "overall_status": "Terminated",
       "phase": "Phase 2",
       "start_date": "2017-08-28",
@@ -3440,6 +3630,7 @@
     },
     "NCT03197935": {
       "brief_title": "A Study to Investigate Atezolizumab and Chemotherapy Compared With Placebo and Chemotherapy in the Neoadjuvant Setting in Participants With Early Stage Triple Negative Breast Cancer",
+      "official_title": "A Phase III Randomized Study to Investigate the Efficacy and Safety of Atezolizumab (Anti-PD-L1 Antibody) in Combination With Neoadjuvant Anthracycline/Nab-Paclitaxel-Based Chemotherapy Compared With Placebo and Chemotherapy in Patients With Primary Invasive Triple-Negative Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2017-07-24",
@@ -3450,6 +3641,7 @@
     },
     "NCT03159572": {
       "brief_title": "Homologous Recombination Inquiry Through Ovarian Malignancy Investigations",
+      "official_title": "Homologous Recombination Inquiry Through Ovarian Malignancy Investigations",
       "overall_status": "Completed",
       "phase": "Not specified",
       "start_date": "2017-03-28",
@@ -3462,6 +3654,7 @@
     },
     "NCT03157128": {
       "brief_title": "A Study of Selpercatinib (LOXO-292) in Participants With Advanced Solid Tumors, RET Fusion-Positive Solid Tumors, and Medullary Thyroid Cancer (LIBRETTO-001)",
+      "official_title": "A Phase 1/2 Study of Oral Selpercatinib (LOXO-292) in Patients With Advanced Solid Tumors, Including RET Fusion-Positive Solid Tumors, Medullary Thyroid Cancer, and Other Tumors With RET Activation (LIBRETTO-001)",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 1/Phase 2",
       "start_date": "2017-05-02",
@@ -3475,6 +3668,7 @@
     },
     "NCT03155997": {
       "brief_title": "Endocrine Therapy With or Without Abemaciclib (LY2835219) Following Surgery in Participants With Breast Cancer",
+      "official_title": "A Randomized, Open-Label, Phase 3 Study of Abemaciclib Combined With Standard Adjuvant Endocrine Therapy Versus Standard Adjuvant Endocrine Therapy Alone in Patients With High Risk, Node Positive, Early Stage, Hormone Receptor Positive, Human Epidermal Receptor 2 Negative, Breast Cancer",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2017-07-12",
@@ -3485,6 +3679,7 @@
     },
     "NCT03125902": {
       "brief_title": "A Study of Atezolizumab and Paclitaxel Versus Placebo and Paclitaxel in Participants With Previously Untreated Locally Advanced or Metastatic Triple Negative Breast Cancer (TNBC)",
+      "official_title": "A Phase III, Multicenter, Randomised, Double-Blind, Placebo-Controlled Study of Atezolizumab (Anti-Pd-L1 Antibody) in Combination With Paclitaxel Compared With Placebo With Paclitaxel for Patients With Previously Untreated Inoperable Locally Advanced or Metastatic Triple Negative Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2017-08-25",
@@ -3495,6 +3690,7 @@
     },
     "NCT03099174": {
       "brief_title": "This Study in Patients With Different Types of Cancer (Solid Tumours) Aims to Find a Safe Dose of Xentuzumab in Combination With Abemaciclib With or Without Hormonal Therapies. The Study Also Tests How Effective These Medicines Are in Patients With Lung and Breast Cancer",
+      "official_title": "An Open Label, Phase Ib, Dose-escalation Study Evaluating the Safety and Tolerability of Xentuzumab and Abemaciclib in Patients With Locally Advanced or Metastatic Solid Tumours and in Combination With Endocrine Therapy in Patients With Locally Advanced or Metastatic Hormone Receptor-positive, HER2-, Breast Cancer, Followed by Expansion Cohorts.",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2017-05-04",
@@ -3506,6 +3702,7 @@
     },
     "NCT03078036": {
       "brief_title": "International Breast Cancer Biomarker,Standard of Care and Real World Outcomes Study",
+      "official_title": "BREAKOUT -International Breast Cancer Biomarker, Standard of Care and Real World Outcomes Study",
       "overall_status": "Completed",
       "phase": "Not specified",
       "start_date": "2017-03-13",
@@ -3516,6 +3713,7 @@
     },
     "NCT03071757": {
       "brief_title": "A Study of the Safety, Tolerability and Pharmacokinetics of ABBV-368 as a Single Agent and Combination in Subjects With Locally Advanced or Metastatic Solid Tumors",
+      "official_title": "A Multicenter, Phase 1, Open-Label, Dose-Escalation Study of the Safety, Tolerability and Pharmacokinetics of ABBV-368 as a Single Agent and Combination in Subjects With Locally Advanced or Metastatic Solid Tumors",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2017-03-21",
@@ -3526,6 +3724,7 @@
     },
     "NCT03056755": {
       "brief_title": "Study Assessing the Efficacy and Safety of Alpelisib Plus Fulvestrant or Letrozole, Based on Prior Endocrine Therapy, in Patients With PIK3CA Mutant, HR+, HER2- Advanced Breast Cancer Who Have Progressed on or After Prior Treatments",
+      "official_title": "BYLieve: A Phase II, Multicenter, Open-label, Three-cohort, Non- Comparative Study to Assess the Efficacy and Safety of Alpelisib Plus Fulvestrant or Letrozole in Patients With PIK3CA Mutant, Hormone Receptor (HR) Positive, HER2-negative Advanced Breast Cancer (aBC), Who Have Progressed on or After Prior Treatments",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2017-08-29",
@@ -3536,6 +3735,7 @@
     },
     "NCT03036488": {
       "brief_title": "Study of Pembrolizumab (MK-3475) Plus Chemotherapy vs Placebo Plus Chemotherapy as Neoadjuvant Therapy and Pembrolizumab vs Placebo as Adjuvant Therapy in Participants With Triple Negative Breast Cancer (TNBC) (MK-3475-522/KEYNOTE-522)",
+      "official_title": "A Phase III, Randomized, Double-blind Study to Evaluate Pembrolizumab Plus Chemotherapy vs Placebo Plus Chemotherapy as Neoadjuvant Therapy and Pembrolizumab vs Placebo as Adjuvant Therapy for Triple Negative Breast Cancer (TNBC)",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2017-03-07",
@@ -3546,6 +3746,7 @@
     },
     "NCT03000257": {
       "brief_title": "A Study of Budigalimab (ABBV-181) in Participants With Advanced Solid Tumors",
+      "official_title": "A Multicenter, Phase 1, Open-Label, Dose-Escalation Study of ABBV-181 as Monotherapy and in Combination With Another Anti-Cancer Therapy in Subjects With Advanced Solid Tumors",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2016-12-14",
@@ -3556,6 +3757,7 @@
     },
     "NCT02980341": {
       "brief_title": "Phase I/II Study of U3-1402 in Subjects With Human Epidermal Growth Factor Receptor 3 (HER3) Positive Metastatic Breast Cancer",
+      "official_title": "Phase 1/2, Multicenter, Open-label, Multiple-Dose First-in-human Study of U3-1402, in Subjects With HER3 Positive Metastatic Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 1/Phase 2",
       "start_date": "2016-11-28",
@@ -3566,6 +3768,7 @@
     },
     "NCT02947165": {
       "brief_title": "Phase I/Ib Study of NIS793 in Combination With PDR001 in Patients With Advanced Malignancies.",
+      "official_title": "A Phase I/Ib, Open-label, Multi-center Dose Escalation Study of NIS793 in Combination With PDR001 in Adult Patients With Advanced Malignancies",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2017-04-25",
@@ -3581,6 +3784,7 @@
     },
     "NCT02936102": {
       "brief_title": "A Study of FAZ053 Single Agent and in Combination With PDR001 in Patients With Advanced Malignancies.",
+      "official_title": "A Phase I, Open-label, Multi-center Dose Escalation Study of FAZ053 as Single Agent and in Combination With PDR001 in Adult Patients With Advanced Malignancies",
       "overall_status": "Terminated",
       "phase": "Phase 1",
       "start_date": "2016-10-20",
@@ -3593,6 +3797,7 @@
     },
     "NCT02807844": {
       "brief_title": "Phase Ib/II Study of MCS110 in Combination With PDR001 in Patients With Advanced Malignancies",
+      "official_title": "A Phase Ib/II, Open Label, Multicenter Study of MCS110 in Combination With PDR001 in Patients With Advanced Malignancies",
       "overall_status": "Completed",
       "phase": "Phase 1/Phase 2",
       "start_date": "2016-06-29",
@@ -3606,6 +3811,7 @@
     },
     "NCT02794558": {
       "brief_title": "Safety and Effectiveness of MR Guided Focused Ultrasound Surgery in the Treatment of Early Breast Carcinomas",
+      "official_title": "A Clinical Study To Evaluate the Safety and Effectiveness of MR Guided Focused Ultrasound Surgery in the Treatment of Early Breast Carcinomas",
       "overall_status": "Completed",
       "phase": "Not Applicable",
       "start_date": "2005-05-24",
@@ -3616,6 +3822,7 @@
     },
     "NCT02734615": {
       "brief_title": "Phase I/Ib Trial of LSZ102 Single Agent or LSZ102 + LEE011 or LSZ102 + BYL719 in ER+ Breast Cancers",
+      "official_title": "A Phase I/Ib, Open Label Study of LSZ102 Single Agent and LSZ102 in Combination With Either LEE011 (LSZ102 + LEE011) or BYL719 (LSZ102 + BYL719) in Patients With Advanced or Metastatic ER+ Breast Cancer Who Have Progressed After Endocrine Therapy",
       "overall_status": "Terminated",
       "phase": "Phase 1",
       "start_date": "2016-06-14",
@@ -3626,6 +3833,7 @@
     },
     "NCT02658214": {
       "brief_title": "Durvalumab and Tremelimumab in Combination With First-Line Chemotherapy in Advanced Solid Tumors",
+      "official_title": "A Phase Ib Study to Evaluate the Safety and Tolerability of Durvalumab and Tremelimumab in Combination With First-Line Chemotherapy in Patients With Advanced Solid Tumors.",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2016-04-28",
@@ -3644,7 +3852,8 @@
       ]
     },
     "NCT02638935": {
-      "brief_title": "Evaluation of Virtual Touch Tissue Imaging Quantification (VTIQ - 2D-SWE) in the Assessment of BI-RADS\u00ae 3 and 4 Lesions",
+      "brief_title": "Evaluation of Virtual Touch Tissue Imaging Quantification (VTIQ - 2D-SWE) in the Assessment of BI-RADS® 3 and 4 Lesions",
+      "official_title": "Evaluation of Virtual Touch Tissue Imaging Quantification (VTIQ - 2D-SWE) in the Assessment of BI-RADS® 3 and 4 Lesions: Can Patient Selection for Biopsy be Improved? - A Confirmatory Multi-Center-Study",
       "overall_status": "Completed",
       "phase": "Not Applicable",
       "start_date": "2016-02",
@@ -3655,6 +3864,7 @@
     },
     "NCT02623751": {
       "brief_title": "Study of KHK2375 in Subjects With Advanced or Recurrent Breast Cancer",
+      "official_title": "Phase 1 Study of KHK2375 in Subjects With Advanced or Recurrent Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2015-11",
@@ -3665,6 +3875,7 @@
     },
     "NCT02598310": {
       "brief_title": "Neoadjuvant Nab-PTX and Trastuzumab for ER Negative and HER2 Positive Breast Cancer",
+      "official_title": "Phase II Study of Neoadjuvant Nab-paclitaxel (PTX) and Trastuzumab for ER Negative and HER2 Positive Breast Cancer",
       "overall_status": "Terminated",
       "phase": "Phase 2",
       "start_date": "2015-11",
@@ -3677,6 +3888,7 @@
     },
     "NCT02576431": {
       "brief_title": "A Study to Test the Effect of the Drug Larotrectinib in Adults and Children With NTRK-fusion Positive Solid Tumors",
+      "official_title": "A Study to Learn How Well the Drug Larotrectinib Works in Adults With Different Solid Cancers With a Change in the Genes Called NTRK Fusion",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2015-09-30",
@@ -3687,6 +3899,7 @@
     },
     "NCT02568267": {
       "brief_title": "Basket Study of Entrectinib (RXDX-101) for the Treatment of Patients With Solid Tumors Harboring NTRK 1/2/3 (Trk A/B/C), ROS1, or ALK Gene Rearrangements (Fusions)",
+      "official_title": "An Open-Label, Multicenter, Global Phase 2 Basket Study of Entrectinib for the Treatment of Patients With Locally Advanced or Metastatic Solid Tumors That Harbor NTRK1/2/3, ROS1, or ALK Gene Rearrangements",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 2",
       "start_date": "2015-11-19",
@@ -3712,6 +3925,7 @@
     },
     "NCT02554812": {
       "brief_title": "A Study Of Avelumab In Combination With Other Cancer Immunotherapies In Advanced Malignancies (JAVELIN Medley)",
+      "official_title": "A PHASE 1B/2 OPEN-LABEL STUDY TO EVALUATE SAFETY, CLINICAL ACTIVITY, PHARMACOKINETICS AND PHARMACODYNAMICS OF AVELUMAB (MSB0010718C) IN COMBINATION WITH OTHER CANCER IMMUNOTHERAPIES IN PATIENTS WITH ADVANCED MALIGNANCIES",
       "overall_status": "Terminated",
       "phase": "Phase 1/Phase 2",
       "start_date": "2015-11-09",
@@ -3722,6 +3936,7 @@
     },
     "NCT02551263": {
       "brief_title": "Eribulin Treatment as 1st-line or 2nd-line Chemotherapy for HER2-negative Hormone-resistant Inoperable or Recurrent Metastatic Breast Cancer",
+      "official_title": "Prospective Observational Study to Explore the Efficacy of Eribulin as 1st-line or 2nd-line Chemotherapy in Patients With HER2-negative Hormone-resistant Inoperable or Recurrent Metastatic Breast Cancer",
       "overall_status": "Completed",
       "phase": "Not specified",
       "start_date": "2015-07-22",
@@ -3732,6 +3947,7 @@
     },
     "NCT02514681": {
       "brief_title": "A Phase III Trial of Pertuzumab Retreatment in Previously Pertuzumab Treated Her2-Positive Advanced Breast Cancer",
+      "official_title": "A Randomized, Open-label Phase III Trial to Evaluate the Efficacy and Safety of Pertuzumab Retreatment in Previously Pertuzumab, Trastuzuamb and Chemotherapy Treated Her2-Positive Metastatic Advanced Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2015-08-01",
@@ -3742,6 +3958,7 @@
     },
     "NCT02513394": {
       "brief_title": "PALbociclib CoLlaborative Adjuvant Study",
+      "official_title": "PALbociclib CoLlaborative Adjuvant Study: A Randomized Phase III Trial of Palbociclib With Standard Adjuvant Endocrine Therapy Versus Standard Adjuvant Endocrine Therapy Alone for Hormone Receptor Positive (HR+) / Human Epidermal Growth Factor Receptor 2 (HER2)-Negative Early Breast Cancer",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2015-08",
@@ -3752,6 +3969,7 @@
     },
     "NCT02485119": {
       "brief_title": "Phase I Dose Escalation Study of BAY94-9343 Given by Intravenous Infusion Every 3 Weeks in Japanese Subjects With Advanced Malignancies",
+      "official_title": "An Open Label, Phase I Study to Evaluate the Safety, Tolerability and Pharmacokinetics of BAY94-9343 Given by Intravenous Infusion Every 3 Weeks (Q3W) in Japanese Subjects With Advanced Malignancies",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2015-08-14",
@@ -3762,6 +3980,7 @@
     },
     "NCT02460224": {
       "brief_title": "Safety and Efficacy of LAG525 Single Agent and in Combination With PDR001 in Patients With Advanced Malignancies.",
+      "official_title": "A Phase I/II, Open Label, Multicenter Study of the Safety and Efficacy of LAG525 Single Agent and in Combination With PDR001 Administered to Patients With Advanced Malignancies",
       "overall_status": "Completed",
       "phase": "Phase 1/Phase 2",
       "start_date": "2015-06-17",
@@ -3772,6 +3991,7 @@
     },
     "NCT02437318": {
       "brief_title": "Study Assessing the Efficacy and Safety of Alpelisib Plus Fulvestrant in Men and Postmenopausal Women With Advanced Breast Cancer Which Progressed on or After Aromatase Inhibitor Treatment.",
+      "official_title": "A Phase III Randomized Double-blind, Placebo Controlled Study of Alpelisib in Combination With Fulvestrant for Men and Postmenopausal Women With Hormone Receptor Positive, HER2-negative Advanced Breast Cancer Which Progressed on or After Aromatase Inhibitor Treatment",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2015-07-23",
@@ -3782,6 +4002,7 @@
     },
     "NCT02425891": {
       "brief_title": "A Study of Atezolizumab in Combination With Nab-Paclitaxel Compared With Placebo With Nab-Paclitaxel for Participants With Previously Untreated Metastatic Triple-Negative Breast Cancer (IMpassion130)",
+      "official_title": "A Phase III, Multicenter, Randomized, Placebo-Controlled Study of Atezolizumab (Anti-PD-L1 Antibody) in Combination With Nab-Paclitaxel Compared With Placebo With Nab-Paclitaxel for Patients With Previously Untreated Metastatic Triple-Negative Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2015-06-23",
@@ -3792,6 +4013,7 @@
     },
     "NCT02376985": {
       "brief_title": "Evaluation of Oral Care to Prevent Oral Mucositis in ER Positive MBC Patients Treated With Everolimus: Phase 3 RCT",
+      "official_title": "Evaluation of Oral Care to Prevent Oral Mucositis in Estrogen Receptor Positive Metastatic Breast Cancer Patients Treated With Everolimus: Phase III Randomized Control Trial",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2015-03-26",
@@ -3802,6 +4024,7 @@
     },
     "NCT02375958": {
       "brief_title": "PCA062 in pCAD-positive Tumors.",
+      "official_title": "A Phase 1 Multi-center, Open-label Dose Escalation and Expansion Study of PCA062 Administered Intravenously in Adult Patients With p-CAD Positive Tumors",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2015-04-15",
@@ -3814,6 +4037,7 @@
     },
     "NCT02371174": {
       "brief_title": "Post-Marketing Surveillance Study of Eribulin on the Status and Factors for the Development of Peripheral Neuropathy in Japan.",
+      "official_title": "An Observational Post-Marketing Surveillance Study on the Status and Factors for the Development of Peripheral Neuropathy in Patients With HER2-Negative Inoperable or Recurrent Breast Cancer in Japan.",
       "overall_status": "Completed",
       "phase": "Not specified",
       "start_date": "2014-09-03",
@@ -3825,6 +4049,7 @@
     },
     "NCT02333370": {
       "brief_title": "A Phase Ib Dose Escalation Study of the Combination of LEE011 With Letrozole and Dose Expansion of LEE011 With Hormonal Therapy for the Treatment of Pre-(With Goserelin) and Postmenopausal Women With Hormone Receptor Positive, HER2-negative, Advanced Breast Cancer",
+      "official_title": "A Phase Ib Dose Escalation Study of the Combination of LEE011 With Letrozole and Dose Expansion of LEE011 With Hormonal Therapy for the Treatment of Pre-(With Goserelin) and Postmenopausal Women With Hormone Receptor Positive, HER2-negative, Advanced Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2015-02-04",
@@ -3835,6 +4060,7 @@
     },
     "NCT02308085": {
       "brief_title": "Pregnancy Outcome and Safety of Interrupting Therapy for Women With Endocrine Responsive Breast Cancer",
+      "official_title": "A Study Evaluating the Pregnancy Outcomes and Safety of Interrupting Endocrine Therapy for Young Women With Endocrine Responsive Breast Cancer Who Desire Pregnancy",
       "overall_status": "Active, not recruiting",
       "phase": "Not Applicable",
       "start_date": "2014-12-04",
@@ -3845,6 +4071,7 @@
     },
     "NCT02258451": {
       "brief_title": "Study of Radium-223 Dichloride in Combination With Exemestane and Everolimus Versus Placebo in Combination With Exemestane and Everolimus in Subjects With Bone Predominant HER2 Negative Hormone Receptor Positive Metastatic Breast Cancer",
+      "official_title": "A Phase II Randomized, Double-blind, Placebo-controlled Trial of Radium-223 Dichloride in Combination With Exemestane and Everolimus Versus Placebo in Combination With Exemestane and Everolimus When Administered to Metastatic HER2 Negative Hormone Receptor Positive Breast Cancer Subjects With Bone Metastases",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2015-06-04",
@@ -3855,6 +4082,7 @@
     },
     "NCT02246621": {
       "brief_title": "A Study of Nonsteroidal Aromatase Inhibitors Plus Abemaciclib (LY2835219) in Postmenopausal Women With Breast Cancer",
+      "official_title": "A Randomized, Double-Blind, Placebo-Controlled, Phase 3 Study of Nonsteroidal Aromatase Inhibitors (Anastrozole or Letrozole) Plus LY2835219, a CDK4/6 Inhibitor, or Placebo in Postmenopausal Women With Hormone Receptor-Positive, HER2-Negative Locoregionally Recurrent or Metastatic Breast Cancer With No Prior Systemic Therapy in This Disease Setting",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2014-11-06",
@@ -3865,6 +4093,7 @@
     },
     "NCT02210663": {
       "brief_title": "A Phase 1 Study of Single Agent Veliparib in Japanese Subjects With Advanced Solid Tumors",
+      "official_title": "A Phase 1 Study of Single Agent Veliparib in Japanese Subjects With Advanced Solid Tumors",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2014-07",
@@ -3875,6 +4104,7 @@
     },
     "NCT02189174": {
       "brief_title": "Study of CLR457 Administered Orally in Adult Patients With Advanced Solid Malignancies",
+      "official_title": "A Phase I/II Multicenter, Open-label Study of CLR457, Administered Orally in Adult Patients With Advanced Solid Malignancies",
       "overall_status": "Terminated",
       "phase": "Phase 1",
       "start_date": "2014-08-07",
@@ -3885,6 +4115,7 @@
     },
     "NCT02162667": {
       "brief_title": "Efficacy and Safety Evaluating Study of CT-P6 in Her2 Positive Early Breast Cancer",
+      "official_title": "Phase 3 Efficacy and Safety Study of CT-P6 and Herceptin as Neoadjuvant and Adjuvant Treatment in Patients With Her2-positive Early Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2014-06",
@@ -3895,6 +4126,7 @@
     },
     "NCT02107703": {
       "brief_title": "A Study of Abemaciclib (LY2835219) Combined With Fulvestrant in Women With Hormone Receptor Positive HER2 Negative Breast Cancer",
+      "official_title": "MONARCH 2: A Randomized, Double-Blind, Placebo-Controlled, Phase 3 Study of Fulvestrant With or Without Abemaciclib, a CDK4/6 Inhibitor, for Women With Hormone Receptor Positive, HER2 Negative Locally Advanced or Metastatic Breast Cancer",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2014-07-22",
@@ -3905,6 +4137,7 @@
     },
     "NCT02052778": {
       "brief_title": "A Study of TAS-120 in Patients With Advanced Solid Tumors",
+      "official_title": "Phase 1/2 Study of TAS-120 in Patients With Advanced Solid Tumors Harboring FGF/FGFR Aberrations",
       "overall_status": "Completed",
       "phase": "Phase 1/Phase 2",
       "start_date": "2014-07-21",
@@ -3920,6 +4153,7 @@
     },
     "NCT02032823": {
       "brief_title": "Olaparib as Adjuvant Treatment in Patients With Germline BRCA Mutated High Risk HER2 Negative Primary Breast Cancer",
+      "official_title": "A Randomised, Double-blind, Parallel Group, Placebo-controlled Multi-centre Phase III Study to Assess the Efficacy and Safety of Olaparib Versus Placebo as Adjuvant Treatment in Patients With gBRCA1/2 Mutations and High Risk HER2 Negative Primary Breast Cancer Who Have Completed Definitive Local Treatment and Neoadjuvant or Adjuvant Chemotherapy",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2014-04-22",
@@ -3930,6 +4164,7 @@
     },
     "NCT02000622": {
       "brief_title": "Assessment of the Efficacy and Safety of Olaparib Monotherapy Versus Physicians Choice Chemotherapy in the Treatment of Metastatic Breast Cancer Patients With Germline BRCA1/2 Mutations.",
+      "official_title": "A Phase III, Open Label, Randomised, Controlled, Multi-centre Study to Assess the Efficacy and Safety of Olaparib Monotherapy Versus Physicians Choice Chemotherapy in the Treatment of Metastatic Breast Cancer Patients With Germline BRCA1/2 Mutations.",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2014-03-27",
@@ -3942,6 +4177,7 @@
     },
     "NCT01989780": {
       "brief_title": "Bevacizumab Plus Paclitaxel Optimization Study With Interventional Aintenance Endocrine Therapy in Breast Cancer",
+      "official_title": "Bevacizumab Plus Paclitaxel Optimization Study With Interventional Maintenance Endocrine Therapy in Advanced or Metastatic ER-positive HER2-negative Breast Cancer -BOOSTER Trial, a Multicenter Randomized Phase II Study-",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2014-01",
@@ -3951,7 +4187,8 @@
       ]
     },
     "NCT01989676": {
-      "brief_title": "A Study Of PF-05280014 [Trastuzumab-Pfizer] Or Herceptin\u00ae [Trastuzumab-EU] Plus Paclitaxel In HER2 Positive First Line Metastatic Breast Cancer Treatment (REFLECTIONS B327-02)",
+      "brief_title": "A Study Of PF-05280014 [Trastuzumab-Pfizer] Or Herceptin® [Trastuzumab-EU] Plus Paclitaxel In HER2 Positive First Line Metastatic Breast Cancer Treatment (REFLECTIONS B327-02)",
+      "official_title": "A PHASE 3 RANDOMIZED, DOUBLE-BLIND STUDY OF PF-05280014 PLUS PACLITAXEL VERSUS TRASTUZUMAB PLUS PACLITAXEL FOR THE FIRST-LINE TREATMENT OF PATIENTS WITH HER2-POSITIVE METASTATIC BREAST CANCER",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2014-02-24",
@@ -3962,6 +4199,7 @@
     },
     "NCT01966471": {
       "brief_title": "A Study of Trastuzumab Emtansine (Kadcyla) Plus Pertuzumab (Perjeta) Following Anthracyclines in Comparison With Trastuzumab (Herceptin) Plus Pertuzumab and a Taxane Following Anthracyclines as Adjuvant Therapy in Participants With Operable HER2-Positive Primary Breast Cancer",
+      "official_title": "A Randomized, Multicenter, Open-Label, Phase III Trial Comparing Trastuzumab Plus Pertuzumab Plus a Taxane Following Anthracyclines Versus Trastuzumab Emtansine Plus Pertuzumab Following Anthracyclines as Adjuvant Therapy in Patients With Operable HER2-Positive Primary Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2014-01-31",
@@ -3972,6 +4210,7 @@
     },
     "NCT01942135": {
       "brief_title": "Palbociclib (PD-0332991) Combined With Fulvestrant In Hormone Receptor+ HER2-Negative Metastatic Breast Cancer After Endocrine Failure (PALOMA-3)",
+      "official_title": "MULTICENTER, RANDOMIZED, DOUBLE-BLIND, PLACEBO-CONTROLLED, PHASE 3 TRIAL OF FULVESTRANT (FASLODEX (REGISTERED)). WITH OR WITHOUT PD-0332991 (PALBOCICLIB) +/- GOSERELIN IN WOMEN WITH HORMONE RECEPTOR-POSITIVE, HER2-NEGATIVE METASTATIC BREAST CANCER WHOSE DISEASE PROGRESSED AFTER PRIOR ENDOCRINE THERAPY",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2013-09-26",
@@ -3982,6 +4221,7 @@
     },
     "NCT01923168": {
       "brief_title": "Study of Letrozole With or Without BYL719 or Buparlisib, for the Neoadjuvant Treatment of Postmenopausal Women",
+      "official_title": "A Phase II Randomized, Double-blind Placebo Controlled, Study of Letrozole With or Without BYL719 or Buparlisib, for the Neoadjuvant Treatment of Postmenopausal Women With Hormone Receptor-positive HER2-negative Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2014-03-11",
@@ -3992,6 +4232,7 @@
     },
     "NCT01872975": {
       "brief_title": "Standard or Comprehensive Radiation Therapy in Treating Patients With Early-Stage Breast Cancer Previously Treated With Chemotherapy and Surgery",
+      "official_title": "A Randomized Phase III Clinical Trial Evaluating Post-Mastectomy Chestwall and Regional Nodal XRT and Post-Lumpectomy Regional Nodal XRT in Patients With Positive Axillary Nodes Before Neoadjuvant Chemotherapy Who Convert to Pathologically Negative Axillary Nodes After Neoadjuvant Chemotherapy",
       "overall_status": "Active, not recruiting",
       "phase": "Not Applicable",
       "start_date": "2013-08",
@@ -4003,6 +4244,7 @@
     },
     "NCT01864746": {
       "brief_title": "A Study of Palbociclib in Addition to Standard Endocrine Treatment in Hormone Receptor Positive Her2 Normal Patients With Residual Disease After Neoadjuvant Chemotherapy and Surgery",
+      "official_title": "Phase III Study Evaluating Palbociclib (PD-0332991), a Cyclin-Dependent Kinase (CDK) 4/6 Inhibitor in Patients With Hormone-receptor-positive, HER2-normal Primary Breast Cancer With High Relapse Risk After Neoadjuvant Chemotherapy \"PENELOPEB\"",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2013-10-30",
@@ -4017,6 +4259,7 @@
     },
     "NCT01808573": {
       "brief_title": "A Study of Neratinib Plus Capecitabine Versus Lapatinib Plus Capecitabine in Patients With HER2+ Metastatic Breast Cancer Who Have Received Two or More Prior HER2 Directed Regimens in the Metastatic Setting",
+      "official_title": "A STUDY OF NERATINIB PLUS CAPECITABINE VERSUS LAPATINIB PLUS CAPECITABINE IN PATIENTS WITH HER2+ METASTATIC BREAST CANCER WHO HAVE RECEIVED TWO OR MORE PRIOR HER2-DIRECTED REGIMENS IN THE METASTATIC SETTING (NALA)",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2013-03-29",
@@ -4027,6 +4270,7 @@
     },
     "NCT01740427": {
       "brief_title": "A Study of Palbociclib (PD-0332991) + Letrozole vs. Letrozole For 1st Line Treatment Of Postmenopausal Women With ER+/HER2- Advanced Breast Cancer (PALOMA-2)",
+      "official_title": "A RANDOMIZED, MULTICENTER, DOUBLE-BLIND PHASE 3 STUDY OF PD-0332991 (ORAL CDK 4/6 INHIBITOR) PLUS LETROZOLE VERSUS PLACEBO PLUS LETROZOLE FOR THE TREATMENT OF POSTMENOPAUSAL WOMEN WITH ER (+), HER2 (-) BREAST CANCER WHO HAVE NOT RECEIVED ANY PRIOR SYSTEMIC ANTI CANCER TREATMENT FOR ADVANCED DISEASE",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2013-02-22",
@@ -4037,6 +4281,7 @@
     },
     "NCT01698918": {
       "brief_title": "Open-label, Phase II, Study of Everolimus Plus Letrozole in Postmenopausal Women With ER+, HER2- Metastatic or Locally Advanced Breast Cancer",
+      "official_title": "An Open-label, Phase II, Single-arm Study of Everolimus in Combination With Letrozole in the Treatment of Postmenopausal Women With Estrogen Receptor Positive HER2 Negative Metastatic or Locally Advanced Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2013-03-07",
@@ -4047,6 +4292,7 @@
     },
     "NCT01688609": {
       "brief_title": "Lapatinib Ditosylate, Trastuzumab, Paclitaxel, and Surgery in Treating Patients With Breast Cancer",
+      "official_title": "Phase II Study of Lapatinib and Trastuzumab Followed by Concurrent Lapatinib, Trastuzumab, and Paclitaxel Followed by Surgery for Primary HER2-positive (HER2+) Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2012-07",
@@ -4059,6 +4305,7 @@
     },
     "NCT01684215": {
       "brief_title": "A Study Of Oral Palbociclib (PD-0332991), A CDK4/6 Inhibitor, As Single Agent In Japanese Patients With Advanced Solid Tumors Or In Combination With Letrozole For The First-Line Treatment Of Postmenopausal Japanese Patients With ER (+) HER2 (-) Advanced Breast Cancer",
+      "official_title": "A PHASE 1/2 STUDY OF THE EFFICACY, SAFETY, AND PHARMACOKINETICS OF ORAL PD-0332991, A CYCLIN-DEPENDENT KINASE 4 AND 6 (CDK4/6) INHIBITOR, AS SINGLE AGENT IN JAPANESE PATIENTS WITH ADVANCED SOLID TUMORS OR IN COMBINATION WITH LETROZOLE FOR THE FIRST-LINE TREATMENT OF POSTMENOPAUSAL JAPANESE PATIENTS WITH ER (+) HER2 (-) ADVANCED BREAST CANCER",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2012-10-19",
@@ -4070,6 +4317,7 @@
     },
     "NCT01663727": {
       "brief_title": "Study To Evaluate the Efficacy and Safety Of Bevacizumab, and Associated Biomarkers, In Combination With Paclitaxel Compared With Paclitaxel Plus Placebo as First-line Treatment Of Patients With Her2-Negative Metastatic Breast Cancer",
+      "official_title": "A Phase III, Randomized, Double-Blind, Placebo-Controlled, Multicenter Study To Evaluate the Efficacy and Safety Of Bevacizumab, and Associated Biomarkers, In Combination With Paclitaxel Compared With Paclitaxel Plus Placebo as First-line Treatment Of Patients With Her2-Negative Metastatic Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2012-08-27",
@@ -4080,6 +4328,7 @@
     },
     "NCT01644890": {
       "brief_title": "A Phase III Study of NK105 in Patients With Breast Cancer",
+      "official_title": "A Multi-national Phase III Clinical Study Comparing NK105 Versus Paclitaxel in Patients With Metastatic or Recurrent Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2012-07",
@@ -4090,6 +4339,7 @@
     },
     "NCT01625286": {
       "brief_title": "Investigating Safety, Tolerability and Efficacy of AZD5363 When Combined With Paclitaxel in Breast Cancer Patients",
+      "official_title": "A Phase I/II Study of AZD5363 Combined With Paclitaxel in Patients With Advanced or Metastatic Breast Cancer. Comprising a Safety Run-In and a Placebo-controlled Randomised Expansion in ER+ve Patients Stratified by PIK3CA Mutation Status",
       "overall_status": "Completed",
       "phase": "Phase 1/Phase 2",
       "start_date": "2012-10-03",
@@ -4101,6 +4351,7 @@
     },
     "NCT01610284": {
       "brief_title": "Phase III Study of BKM120/Placebo With Fulvestrant in Postmenopausal Patients With Hormone Receptor Positive HER2-negative Locally Advanced or Metastatic Breast Cancer Refractory to Aromatase Inhibitor",
+      "official_title": "A Phase III Randomized, Double Blind Placebo Controlled Study of BKM120 With Fulvestrant, in Postmenopausal Women With Hormone Receptor-positive HER2-negative Locally Advanced or Metastatic Breast Cancer Which Progressed on or After Aromatase Inhibitor Treatment",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2012-08-07",
@@ -4111,6 +4362,7 @@
     },
     "NCT01610050": {
       "brief_title": "A Phase I Study of LFA102 in Japanese Patients",
+      "official_title": "A Phase I, Multicenter, Open-label Study of LFA102 Administered Intravenously in Japanese Patients With Castration-resistant Prostate Cancer or Advanced Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2012-06",
@@ -4121,6 +4373,7 @@
     },
     "NCT01602380": {
       "brief_title": "A Global Study to Compare the Effects of Fulvestrant and Arimidex in a Subset of Patients With Breast Cancer.",
+      "official_title": "A Randomised, Double-blind, Parallel-group, Multicentre, Phase III Study to Compare the Efficacy and Tolerability of Fulvestrant (FASLODEX) 500 mg With Anastrozole (ARIMIDEX) 1 mg as Hormonal Treatment for Postmenopausal Women With Hormone Receptor-Positive Locally Advanced or Metastatic Breast Cancer Who Have Not Previously Been Treated With Any Hormonal Therapy.",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2012-10-17",
@@ -4131,6 +4384,7 @@
     },
     "NCT01572727": {
       "brief_title": "A Study of the Experimental Drug BKM120 With Paclitaxel in Patients With HER2 Negative, Locally Advanced or Metastatic Breast Cancer, With or Without PI3K Activation",
+      "official_title": "A Randomized, Double-blind, Placebo Controlled, Phase II/III Study of BKM120 Plus Paclitaxel in Patients With HER2 Negative Inoperable Locally Advanced or Metastatic Breast Cancer, With or Without PI3K Pathway Activation.",
       "overall_status": "Completed",
       "phase": "Phase 2/Phase 3",
       "start_date": "2012-08",
@@ -4140,7 +4394,8 @@
       ]
     },
     "NCT01546649": {
-      "brief_title": "A Phase 3 Comparative Study of TAP-144-SR(6M) in Postoperative and Hormone Therapy-na\u00efve Patients With Premenopausal Breast Cancer",
+      "brief_title": "A Phase 3 Comparative Study of TAP-144-SR(6M) in Postoperative and Hormone Therapy-naïve Patients With Premenopausal Breast Cancer",
+      "official_title": null,
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2012-04",
@@ -4151,6 +4406,7 @@
     },
     "NCT01501266": {
       "brief_title": "Faslodex Specific Clinical Experience Investigation",
+      "official_title": "Faslodex Specific Clinical Experience Investigation for Long-term Use",
       "overall_status": "Completed",
       "phase": "Not specified",
       "start_date": "2012-02",
@@ -4161,6 +4417,7 @@
     },
     "NCT01463891": {
       "brief_title": "Post-marketing Surveillance for the Clinical Safety and Effectiveness of Eribulin Mesylate in Patients With Inoperable or Recurrent Breast Cancer (Study HAL01S)",
+      "official_title": "Post-marketing Surveillance for the Clinical Safety and Effectiveness of Eribulin Mesylate in Patients With Inoperable or Recurrent Breast Cancer",
       "overall_status": "Completed",
       "phase": "Not specified",
       "start_date": "2011-07-19",
@@ -4171,6 +4428,7 @@
     },
     "NCT01432886": {
       "brief_title": "A Study of Eribulin Mesylate With Trastuzumab for Advanced or Recurrent Human Epidermal Growth Factor Receptor 2-Positive (HER2+) Breast Cancer",
+      "official_title": "A Phase 1 Study of Eribulin Mesylate With Trastuzumab for Advanced or Recurrent Human Epidermal Growth Factor Receptor 2-Positive (HER2+) Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2011-10",
@@ -4181,6 +4439,7 @@
     },
     "NCT01432223": {
       "brief_title": "Primary Chemotherapy With Anthracycline Followed by Nab-paclitaxel and Trastuzumab",
+      "official_title": "Phase II Study of Primary Chemotherapy With Anthracycline-based Regimen Followed by Nab-paclitaxel and Trastuzumab in Patients With HER2 Positive Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2011-09",
@@ -4193,6 +4452,7 @@
     },
     "NCT01419717": {
       "brief_title": "Open-Label Access Protocol of Denosumab for Subjects With Advanced Cancer",
+      "official_title": "Open-Label Access Protocol of Denosumab for Subjects With Advanced Cancer",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2011-11-22",
@@ -4204,6 +4464,7 @@
     },
     "NCT01358877": {
       "brief_title": "A Study of Pertuzumab in Addition to Chemotherapy and Trastuzumab as Adjuvant Therapy in Participants With Human Epidermal Growth Receptor 2 (HER2)-Positive Primary Breast Cancer",
+      "official_title": "A Randomized Multicenter, Double-Blind, Placebo-Controlled Comparison of Chemotherapy Plus Trastuzumab Plus Placebo Versus Chemotherapy Plus Trastuzumab Plus Pertuzumab as Adjuvant Therapy in Patients With Operable HER2-Positive Primary Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2011-11-08",
@@ -4214,6 +4475,7 @@
     },
     "NCT01349322": {
       "brief_title": "Higher Per Daily Treatment-Dose Radiation Therapy or Standard Per Daily Treatment Radiation Therapy in Treating Patients With Early-Stage Breast Cancer That Was Removed by Surgery",
+      "official_title": "A Phase III Trial of Accelerated Whole Breast Irradiation With Hypofractionation Plus Concurrent Boost Versus Standard Whole Breast Irradiation Plus Sequential Boost for Early-Stage Breast Cancer",
       "overall_status": "Active, not recruiting",
       "phase": "Phase 3",
       "start_date": "2011-05-24",
@@ -4224,6 +4486,7 @@
     },
     "NCT01262274": {
       "brief_title": "Randomized Phase II Trial of Anastrozole Plus Metronomic Tegafur-uracil as Neo-adjuvant Therapy in Postmenopausal Breast Cancer",
+      "official_title": "Randomized Phase II Trial of Anastrozole in Combination With/Without Metronomic Tegafur-uracil as Neo-adjuvant Therapy in Postmenopausal Primary Breast Cancer",
       "overall_status": "Terminated",
       "phase": "Phase 2",
       "start_date": "2010-12",
@@ -4234,6 +4497,7 @@
     },
     "NCT01259505": {
       "brief_title": "Safety Study of Multiple-Vaccine to Treat Metastatic Breast Cancer",
+      "official_title": "Phase I Study of Multiple-Vaccine Therapy Using Epitope Peptides Restricted to HLA-A*2402 in Treating Patients With Refractory Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2009-12",
@@ -4244,6 +4508,7 @@
     },
     "NCT01256567": {
       "brief_title": "A Study of Ramucirumab (IMC-1121B) in Participants With Breast Cancer",
+      "official_title": "A Phase 1b Study of Docetaxel in Combination With Ramucirumab (IMC-1121B) Drug Product in Patients With Locally Advanced or Metastatic Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2010-12",
@@ -4255,6 +4520,7 @@
     },
     "NCT01234337": {
       "brief_title": "Phase III Trial Comparing Capecitabine in Combination With Sorafenib or Placebo in the Treatment of Locally Advanced or Metastatic HER2-Negative Breast Cancer",
+      "official_title": "A Phase III Randomized, Double Blind, Placebo-controlled Trial Comparing Capecitabine Plus Sorafenib Versus Capecitabine Plus Placebo in the Treatment of Locally Advanced or Metastatic HER2-Negative Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2011-02-21",
@@ -4265,6 +4531,7 @@
     },
     "NCT01226316": {
       "brief_title": "Safety, Tolerability & Potential Anti-cancer Activity of Increasing Doses of AZD5363 in Different Treatment Schedules",
+      "official_title": "A Phase I, Open-Label, Multicentre Study to Assess the Safety, Tolerability, Pharmacokinetics and Preliminary Anti-tumour Activity of Ascending Doses of AZD5363 Under Adaptable Dosing Schedules in Patients With Advanced Solid Malignancies",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2010-12-01",
@@ -4288,6 +4555,7 @@
     },
     "NCT01160211": {
       "brief_title": "A Study to Compare the Safety and Efficacy of an Aromatase Inhibitor in Combination With Lapatinib, Trastuzumab or Both for the Treatment of Hormone Receptor Positive, HER2+ Metastatic Breast Cancer",
+      "official_title": "A Phase III Trial to Compare the Safety and Efficacy of Lapatinib Plus Trastuzumab Plus an Aromatase Inhibitor (AI) vs. Trastuzumab Plus an AI vs. Lapatinib Plus an AI as 1st- or 2nd- Line Therapy in Postmenopausal Subjects With Hormone Receptor+, HER2-positive Metastatic Breast Cancer (MBC) Who Received Prior Trastuzumab and Endocrine Therapies",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2011-05-05",
@@ -4298,6 +4566,7 @@
     },
     "NCT01151215": {
       "brief_title": "Study of Anastrozole +/- AZD8931 in Postmenopausal Women With Endocrine Therapy Naive Breast Cancer",
+      "official_title": "A Phase II, Randomised, Double-blind, Placebo-controlled, Multi-centre Study to Assess the Efficacy and Safety of AZD8931 In Combination With Anastrozole, Compared to Anastrozole Alone, in Post Menopausal Women With Hormone Receptor Positive, Endocrine Therapy Naive, Locally Advanced or Metastatic Breast Cancer (MINT).",
       "overall_status": "Terminated",
       "phase": "Phase 2",
       "start_date": "2010-06",
@@ -4310,6 +4579,7 @@
     },
     "NCT01138046": {
       "brief_title": "Phase I/II Study of Lapatinib in Combination With Paclitaxel as 1L Chemotherapy for ErbB2-positive MBC",
+      "official_title": "An Open-label, Single-arm, Phase I/II Study of Lapatinib in Combination With Weekly Paclitaxel as First-line Chemotherapy for ErbB2-overexpressing Metastatic Breast Cancer Patients",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2010-04",
@@ -4320,6 +4590,7 @@
     },
     "NCT01125566": {
       "brief_title": "LUX-Breast 1: BIBW 2992 (Afatinib) in HER2-positive Metastatic Breast Cancer Patients After One Prior Herceptin Treatment",
+      "official_title": "LUX-Breast 1; An Open Label, Randomised Phase III Trial of BIBW 2992 and Vinorelbine Versus Trastuzumab and Vinorelbine in Patients With Metastatic HER2-overexpressing Breast Cancer Failing One Prior Trastuzumab Treatment",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2010-06-22",
@@ -4330,6 +4601,7 @@
     },
     "NCT01120184": {
       "brief_title": "A Study of Trastuzumab Emtansine (T-DM1) Plus Pertuzumab/Pertuzumab Placebo Versus Trastuzumab [Herceptin] Plus a Taxane in Participants With Metastatic Breast Cancer (MARIANNE)",
+      "official_title": "A Randomized, 3 Arm, Multicenter, Phase III Study to Evaluate the Efficacy and the Safety of T-DM1 Combined With Pertuzumab or T-DM1 Combined With Pertuzumab-Placebo (Blinded for Pertuzumab), Versus the Combination of Trastuzumab Plus Taxane, as First Line Treatment in HER2 Positive Progressive or Recurrent Locally Advanced or Metastatic Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2010-07-31",
@@ -4340,6 +4612,7 @@
     },
     "NCT01104935": {
       "brief_title": "National Surgical Adjuvant Study of Breast Cancer(N-SAS BC) 07 [RESPECT]",
+      "official_title": "Evaluation of Trastuzumab Without Chemotherapy as a Postoperative Adjuvant Therapy in HER2 Positive Elderly Breast Cancer Patients: Randomized Controlled Trial",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2009-10-28",
@@ -4350,6 +4623,7 @@
     },
     "NCT01077154": {
       "brief_title": "Study of Denosumab as Adjuvant Treatment for Women With High Risk Early Breast Cancer Receiving Neoadjuvant or Adjuvant Therapy (D-CARE)",
+      "official_title": "A Randomized, Double-Blind, Placebo-Controlled, Multi-Center Phase 3 Study of Denosumab as Adjuvant Treatment for Women With Early-Stage Breast Cancer at High Risk of Recurrence (D-CARE)",
       "overall_status": "Terminated",
       "phase": "Phase 3",
       "start_date": "2010-06-02",
@@ -4359,7 +4633,8 @@
       ]
     },
     "NCT01073865": {
-      "brief_title": "Study to Compare Zoladex\u2122 10.8 mg With Zoladex 3.6 mg in Pre-menopausal Women With Breast Cancer",
+      "brief_title": "Study to Compare Zoladex™ 10.8 mg With Zoladex 3.6 mg in Pre-menopausal Women With Breast Cancer",
+      "official_title": "An Open Label, Randomised, Parallel Group, Multicentre Study to Compare ZOLADEX™ 10.8 mg Given Every 12 Weeks With ZOLADEX 3.6 mg Given Every 4 Weeks in Pre-menopausal Women With Oestrogen Receptor Positive Advanced Breast Cancer.",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2010-02-26",
@@ -4370,6 +4645,7 @@
     },
     "NCT01050829": {
       "brief_title": "Gadobutrol Magnevist-controlled Body Study",
+      "official_title": "A Multi-center/Multi-national, Randomized, Controlled, Single-blind, Group Comparison Phase 3 Study to Determine the Efficacy and Safety of Gadobutrol 1.0 Molar in Comparison to Magnevist Following Single Injection in Patients Referred for Contrast-enhanced MRI of the Body/Extremities Regions (Breast, Heart, Abdomen, Kidney, Pelvis, or Extremities)",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2010-01",
@@ -4380,6 +4656,7 @@
     },
     "NCT01027208": {
       "brief_title": "A Rollover Study of Ixabepilone (BMS-247550) In Patients With Metastatic Breast Cancer Previously Treated With An Anthracycline",
+      "official_title": "A Rollover Study of Ixabepilone (BMS-247550) In Patients With Metastatic Breast Cancer Previously Treated With An Anthracycline And Who Are Taxane Resistant Who Have Completed Study CA163107 And Who Are Benefiting From Continuation On Therapy With Ixabepilone",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2006-12",
@@ -4390,6 +4667,7 @@
     },
     "NCT01007942": {
       "brief_title": "Daily Everolimus in Combination With Trastuzumab and Vinorelbine in HER2/Neu Positive Women With Locally Advanced or Metastatic Breast Cancer",
+      "official_title": "A Randomized Phase III, Double-blind, Placebo-controlled Multicenter Trial of Daily Everolimus in Combination With Trastuzumab and Vinorelbine, in Pretreated Women With HER2/Neu Over-expressing Locally Advanced or Metastatic Breast Cancer.",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2009-10",
@@ -4401,6 +4679,7 @@
     },
     "NCT01003158": {
       "brief_title": "Study Assessing Safety and Tolerability of AZD8931 Alone or in Combination With Paclitaxel in Japanese Patients.",
+      "official_title": "A Phase I, Open-label, Multiple-dose, Dose-escalation Study To Assess the Safety and Tolerability of AZD8931 Monotherapy in Japanese Patients With Advanced Solid Malignancies and in Combination With Paclitaxel in Japanese Female Patients With Advanced Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2009-10",
@@ -4413,6 +4692,7 @@
     },
     "NCT00971945": {
       "brief_title": "Rollover Study of Weekly Paclitaxel (BMS-181339) in Patients With Advanced Breast Cancer",
+      "official_title": "Rollover Study of Weekly Paclitaxel (BMS-181339) in Patients With Advanced Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2005-06-30",
@@ -4423,6 +4703,7 @@
     },
     "NCT00965523": {
       "brief_title": "Study of E7389 for Advanced or Metastatic Breast Cancer",
+      "official_title": "Phase II Extension Study of E7389 for Locally Advanced or Metastatic Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2008-01",
@@ -4433,6 +4714,7 @@
     },
     "NCT00915018": {
       "brief_title": "Study Evaluating Neratinib Plus Paclitaxel VS Trastuzumab Plus Paclitaxel In ErbB-2 Positive Advanced Breast Cancer",
+      "official_title": "A Randomized, Open-Label, Two-Arm Study Of Neratinib Plus Paclitaxel Versus Trastuzumab Plus Paclitaxel As First-Line Treatment For ErbB-2-Positive Locally Recurrent Or Metastatic Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2009-08-21",
@@ -4443,6 +4725,7 @@
     },
     "NCT00904566": {
       "brief_title": "Validation of 70-gene MammaPrint Profile in Japanese Population",
+      "official_title": "Validation 70-gene MammaPrint Profile in Japanese Population",
       "overall_status": "Completed",
       "phase": "Not specified",
       "start_date": "2008-04",
@@ -4453,6 +4736,7 @@
     },
     "NCT00878709": {
       "brief_title": "Study Evaluating The Effects Of Neratinib After Adjuvant Trastuzumab In Women With Early Stage Breast Cancer",
+      "official_title": "A Randomized, Double-Blind, Placebo-Controlled Trial Of Neratinib (HKI-272) After Trastuzumab In Women With Early-Stage HER-2/Neu Overexpressed/Amplified Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2009-07-09",
@@ -4463,6 +4747,7 @@
     },
     "NCT00876395": {
       "brief_title": "Everolimus in Combination With Trastuzumab and Paclitaxel in the Treatment of HER2 Positive Locally Advanced or Metastatic Breast Cancer",
+      "official_title": "A Randomized Phase III, Double-Blind, Placebo-Controlled Multicenter Trial of Everolimus in Combination With Trastuzumab and Paclitaxel, as First Line Therapy in Women With HER2 Positive Locally Advanced or Metastatic Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2009-09-10",
@@ -4473,6 +4758,7 @@
     },
     "NCT00863655": {
       "brief_title": "Everolimus in Combination With Exemestane in the Treatment of Postmenopausal Women With Estrogen Receptor Positive Locally Advanced or Metastatic Breast Cancer Who Are Refractory to Letrozole or Anastrozole",
+      "official_title": "A Randomized Double-Blind, Placebo-Controlled Study of Everolimus in Combination With Exemestane in the Treatment of Postmenopausal Women With Estrogen Receptor Positive Locally Advanced or Metastatic Breast Cancer Who Are Refractory to Letrozole or Anastrozole",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2009-06-03",
@@ -4483,6 +4769,7 @@
     },
     "NCT00777101": {
       "brief_title": "Study Evaluating Neratinib Versus Lapatinib Plus Capecitabine For ErbB2 Positive Advanced Breast Cancer",
+      "official_title": "A Phase 2 Randomized Open-Label Study of Neratinib Versus Lapatinib Plus Capecitabine For The Treatment Of ErbB-2 Positive Locally Advanced Or Metastatic Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2009-02-04",
@@ -4494,6 +4781,7 @@
     },
     "NCT00678509": {
       "brief_title": "Histocompatibility Leukocyte Antigen (HLA)-A*2402 Restricted Peptide Vaccine Therapy in Patients With Breast Cancer",
+      "official_title": "Phase I/II Study of Multiple-Vaccine Therapy Using Epitope Peptide Restricted to HLA-A*2402 in Treating Patients With Refractory Breast Cancer",
       "overall_status": "Terminated",
       "phase": "Phase 1/Phase 2",
       "start_date": "2008-05",
@@ -4504,6 +4792,7 @@
     },
     "NCT00677326": {
       "brief_title": "Histocompatibility Leukocyte Antigen (HLA)-A*0201 Restricted Peptide Vaccine Therapy in Patients With Breast Cancer",
+      "official_title": "Phase I/II Study of Multiple-Vaccine Therapy Using Epitope Peptide Restricted to HLA-A*0201 in Treating Patients With Refractory Breast Cancer",
       "overall_status": "Terminated",
       "phase": "Phase 1/Phase 2",
       "start_date": "2008-05",
@@ -4514,6 +4803,7 @@
     },
     "NCT00667251": {
       "brief_title": "Chemotherapy and Lapatinib or Trastuzumab in Treating Women With HER2/Neu-Positive Metastatic Breast Cancer",
+      "official_title": "A Randomized, Open-Label, Phase III Study of Taxane Based Chemotherapy With Lapatinib or Trastuzumab as First-Line Therapy for Women With HER2/Neu Positive Metastatic Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2008-10-07",
@@ -4524,6 +4814,7 @@
     },
     "NCT00662025": {
       "brief_title": "Study Of Sunitinib With Capecitabine In Breast Cancer",
+      "official_title": "A Phase II Study Of Sunitinib Malate In Combination With Capecitabine In Patients With Advanced Or Metastatic Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2008-04",
@@ -4534,6 +4825,7 @@
     },
     "NCT00605267": {
       "brief_title": "Arimidex/Tamoxifen Neo Adjuvant Study in Premenopausal Patients With Breast Cancer Under Anti Hormonal Treatment",
+      "official_title": "Multi-centre, Randomised, Double-blind, Parallel-group Study to Compare Efficacy and Safety Between Anastrozole (ZD1033) and Tamoxifen in Pre- and Post-operative Administration Under Goserelin Acetate Treatment for Premenopausal Breast Cancer Patients",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2007-10",
@@ -4544,6 +4836,7 @@
     },
     "NCT00568022": {
       "brief_title": "A Phase I Study of Ixabepilone in Combination With Capecitabine in Japanese Patients With Metastatic Breast Cancer",
+      "official_title": "A Phase I Study of Ixabepilone in Combination With Capecitabine in Japanese Patients With Metastatic Breast Cancer Previously Treated With an Anthracycline and a Taxane",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2008-02",
@@ -4554,6 +4847,7 @@
     },
     "NCT00567190": {
       "brief_title": "A Study to Evaluate Pertuzumab + Trastuzumab + Docetaxel vs. Placebo + Trastuzumab + Docetaxel in Previously Untreated HER2-Positive Metastatic Breast Cancer",
+      "official_title": "A Phase III, Randomized, Double-Blind, Placebo-Controlled Clinical Trial to Evaluate the Efficacy and Safety of Pertuzumab + Trastuzumab + Docetaxel vs. Placebo + Trastuzumab + Docetaxel in Previously Untreated HER2-Positive Metastatic Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2008-02-12",
@@ -4564,6 +4858,7 @@
     },
     "NCT00553410": {
       "brief_title": "Letrozole in Preventing Cancer in Postmenopausal Women Who Have Received 4-6 Years of Hormone Therapy for Hormone Receptor-Positive, Lymph Node-Positive, Early-Stage Breast Cancer",
+      "official_title": "SOLE, Study of Letrozole Extension, A Phase III Trial Evaluating the Role of Continuous Letrozole Versus Intermittent Letrozole Following 4 to 6 Years of Prior Adjuvant Endocrine Therapy for Postmenopausal Women With Hormone-Receptor Positive, Node Positive Early Stage Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2007-08",
@@ -4574,6 +4869,7 @@
     },
     "NCT00528567": {
       "brief_title": "BEATRICE Study: A Study of Bevacizumab (Avastin) Adjuvant Therapy in Triple Negative Breast Cancer",
+      "official_title": "An International Multi-centre Open-label 2-arm Phase III Trial of Adjuvant Bevacizumab in \"Triple Negative\" Breast Cancer.",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2007-12",
@@ -4584,6 +4880,7 @@
     },
     "NCT00490139": {
       "brief_title": "ALTTO (Adjuvant Lapatinib And/Or Trastuzumab Treatment Optimisation) Study; BIG 2-06/N063D",
+      "official_title": "A Randomised, Multi-centre, Open-label, Phase III Study of Adjuvant Lapatinib, Trastuzumab, Their Sequence and Their Combination in Patients With HER2/ErbB2 Positive Primary Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2007-05-16",
@@ -4594,6 +4891,7 @@
     },
     "NCT00477464": {
       "brief_title": "Lapatinib in Combination With Capecitabine in Japanese Patients With Metastatic Breast Cancer",
+      "official_title": "Clinical Evaluation of Lapatinib Administered With Capecitabine in Japanese Patients With ErbB2 Overexpressing Advanced or Metastatic Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2007-06",
@@ -4604,7 +4902,8 @@
       ]
     },
     "NCT00467012": {
-      "brief_title": "Phase \u2161 Clinical Study of R435 (Bevacizumab) in Combination With Paclitaxel in Patients With Inoperable Metastatic Breast Cancer",
+      "brief_title": "Phase Ⅱ Clinical Study of R435 (Bevacizumab) in Combination With Paclitaxel in Patients With Inoperable Metastatic Breast Cancer",
+      "official_title": "Phase Ⅱ Clinical Study of R435 (Bevacizumab) in Combination With Paclitaxel in Patients With Inoperable Metastatic Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2007-04",
@@ -4615,6 +4914,7 @@
     },
     "NCT00462956": {
       "brief_title": "GW572016 In Patients With Advanced Or Metastatic Breast Cancer",
+      "official_title": "Phase II Clinical Study of GW572016 in Patients With Advanced or Metastatic Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2004-06-30",
@@ -4625,6 +4925,7 @@
     },
     "NCT00438100": {
       "brief_title": "Capecitabine vs. S-1 in Unresectable or Recurrent Breast Cancer",
+      "official_title": "Randomized Control Study of Capecitabine vs. S-1 in Unresectable or Recurrent Breast Cancer Patients",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2008-04",
@@ -4635,6 +4936,7 @@
     },
     "NCT00437359": {
       "brief_title": "Antiestrogen vs Aromatase Inhibitor After Adjuvant Chemotherapy for Breast Cancer",
+      "official_title": "Antiestrogen vs Aromatase Inhibitor After Chemotherapy for Adjuvant Setting: Efficacy of Endocrine Therapy After Chemotherapy in Postoperative Adjuvant Therapy for Breast Cancer",
       "overall_status": "Terminated",
       "phase": "Phase 2",
       "start_date": "2007-05",
@@ -4645,6 +4947,7 @@
     },
     "NCT00429403": {
       "brief_title": "Goserelin Acetate Study for Ovarian Function in Patients With Primary Breast Cancer",
+      "official_title": "Phase III Randomized Study of a Goserelin Acetate for Preservation of Ovarian Function in Patients With Primary Breast Cancer (PBC)",
       "overall_status": "Terminated",
       "phase": "Phase 3",
       "start_date": "2006-08",
@@ -4655,6 +4958,7 @@
     },
     "NCT00379015": {
       "brief_title": "Epirubicin and Cyclophosphamide Followed By Docetaxel and Trastuzumab in Treating Women With HER2-Positive Stage III or Stage IV Breast Cancer",
+      "official_title": "Neoadjuvant Epirubicin/Cyclophosphamide Followed by Docetaxel Combined With Trastuzumab for the Patients With HER-Positive Advanced Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2006-01",
@@ -4665,6 +4969,7 @@
     },
     "NCT00373113": {
       "brief_title": "A Clinical Trial Comparing Efficacy And Safety Of Sunitinib And Capecitabine",
+      "official_title": "Phase III Randomized, Multi Center Study Of Sunitinib Malate (SU 011248) Or Capecitabine In Subjects With Advanced Breast Cancer Who Failed Both A Taxane And An Anthracycline Chemotherapy Regimen Or Failed With A Taxane And For Whom Further Anthracycline Therapy Is Not Indicated",
       "overall_status": "Terminated",
       "phase": "Phase 3",
       "start_date": "2006-11",
@@ -4675,6 +4980,7 @@
     },
     "NCT00371488": {
       "brief_title": "GW572016 Combined With Trastuzumab For The Treatment Of Previously Trastuzumab-Treated Breast Cancer",
+      "official_title": "Phase I Study of Lapatinib in Combination With Trastuzumab",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2006-04-06",
@@ -4685,6 +4991,7 @@
     },
     "NCT00334802": {
       "brief_title": "Combination Chemotherapy of Gemcitabine and Paclitaxel for Metastatic Breast Cancer",
+      "official_title": "Combination Study of LY188011 and Paclitaxel in Patients With Metastatic/Recurrent Breast Cancer After Neo-adjuvant/Adjuvant Chemotherapy With Anthracycline",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2006-06",
@@ -4695,6 +5002,7 @@
     },
     "NCT00328120": {
       "brief_title": "Faslodex 500mg Multiple Dose Tolerability Study in BC Patients",
+      "official_title": "An Open, Multicentre Phase I Clinical Study to Assess the Tolerability of Fulvestrant 500 mg in Postmenopausal Women With Hormone Receptor Positive Advanced or Recurrent Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2004-04",
@@ -4705,6 +5013,7 @@
     },
     "NCT00320411": {
       "brief_title": "GW572016 In Patients With ErbB2 Over - Expressing Advanced Or Metastatic Breast Cancer",
+      "official_title": "Phase II Clinical Study of Lapatinib (GW572016) in Patients With ErbB2 Over - Expressing Advanced or Metastatic Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2005-11-28",
@@ -4715,6 +5024,7 @@
     },
     "NCT00305448": {
       "brief_title": "A Clinical Trial to Compare Efficacy and Tolerability of Fulvestrant 250mg, 250mg (Plus 250mg Loading Regimen) and 500mg",
+      "official_title": "Phase II Study to Evaluate the Efficacy and Tolerability of Fulvestrant 250mg, 250mg (Plus 250mg Loading Regimen) and 500mg in Postmenopausal Women With ER +ve Advanced Breast Cancer Progressing or Relapsing After Previous Endocrine Therapy",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2006-03",
@@ -4726,6 +5036,7 @@
     },
     "NCT00303524": {
       "brief_title": "Comparative Study of Oestradiol Suppression: Zoladex 10.8mg/3 Month vs. 3.6mg/Month in ER +ve EBC Pre-menopausal Patients",
+      "official_title": "An Open-label, Randomized, Parallel Group, Multicentre Study to Compare Oestradiol Suppression Between ZOLADEX 10.8 mg Depot Given 3 Monthly and ZOLADEX 3.6 mg Depot Given Monthly in Pre-menopausal Patients With ER Positive Early Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2006-02",
@@ -4736,6 +5047,7 @@
     },
     "NCT00291473": {
       "brief_title": "Safety and Immunogenicity of CHP-HER2 and CHP-NY-ESO-1 Protein With OK-432 in Antigen-Expressing Cancers",
+      "official_title": "Safety and Immunogenicity of Cholesterol-Bearing Hydrophobized Pullulan HER2 Protein 146 (CHP-HER2) and NY-ESO-1 Protein (CHP-NY-ESO-1) in Combination With OK-432 in HER2- and/or NY-ESO-1-Expressing Cancers",
       "overall_status": "Completed",
       "phase": "Phase 1",
       "start_date": "2005-07",
@@ -4750,6 +5062,7 @@
     },
     "NCT00263588": {
       "brief_title": "Lapatinib for Brain Metastases In ErbB2-Positive Breast Cancer",
+      "official_title": "A Phase II Study of Lapatinib for Brain Metastases in Subjects With ErbB2-Positive Breast Cancer Following Trastuzumab-based Systemic Therapy and Cranial Radiotherapy",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2005-12-02",
@@ -4760,6 +5073,7 @@
     },
     "NCT00248170": {
       "brief_title": "Comparison Trial of Letrozole to Anastrozole in the Adjuvant Treatment of Postmenopausal Women With Hormone Receptor and Node Positive Breast Cancer",
+      "official_title": "Comparison Trial of Letrozole to Anastrozole in the Adjuvant Treatment of Postmenopausal Women With Hormone Receptor and Node Positive Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2005-12",
@@ -4770,6 +5084,7 @@
     },
     "NCT00247663": {
       "brief_title": "Extension Study of 1.0mg Dose Letrozole Therapy in Postmenopausal Patients With Breast Cancer",
+      "official_title": "Extension Study of 1.0mg Dose Letrozole Therapy in Postmenopausal Patients With Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "1999-12",
@@ -4780,6 +5095,7 @@
     },
     "NCT00241449": {
       "brief_title": "A Trial Comparing the Efficacy and Tolerability of Faslodex With Nolvadex in Postmenopausal Women With Advanced Breast Cancer",
+      "official_title": "A Double-blind, Randomized, Multicentre Trial Comparing the Efficacy and Tolerability of 250mg of Faslodex (Long Acting ICI 182,780) With 20mg of Nolvadex (Tamoxifen) in Postmenopausal Women With Advanced Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "1998-11",
@@ -4791,6 +5107,7 @@
     },
     "NCT00237211": {
       "brief_title": "Study of High-dose Letrozole Therapy in Postmenopausal Patients With Breast Cancer",
+      "official_title": "Study of High-dose Letrozole Therapy in Postmenopausal Patients With Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2001-06",
@@ -4801,6 +5118,7 @@
     },
     "NCT00237198": {
       "brief_title": "Study of Safety and Efficacy of Letrozole Monotherapy as Second-line Endocrine Therapy in Postmenopausal Patients With Advanced Breast Cancer Who Received Previous Anti-estrogen Treatment",
+      "official_title": "Study of Safety and Efficacy of Letrozole Monotherapy as Second-line Endocrine Therapy in Postmenopausal Patients With Advanced Breast Cancer Who Received Previous Anti-estrogen Treatment",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2004-03",
@@ -4811,6 +5129,7 @@
     },
     "NCT00232661": {
       "brief_title": "PROACT - Pre-Operative Arimidex Compared To Tamoxifen",
+      "official_title": "A Randomised, Double-blind, Study Comparing ARIMIDEX™ With NOLVADEX™ as Neo-adjuvant and Adjuvant Treatment in Post-menopausal Women With Large Operable (T2 (≥3cm), T3, N0-2, M0) or Potentially-operable, Locally Advanced (T4b, N0-2, M0), ER+ and/or PR+ Breast Cancer.",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2000-08",
@@ -4821,6 +5140,7 @@
     },
     "NCT00191269": {
       "brief_title": "Gemcitabine Monotherapy for Metastatic Breast Cancer After Anthracycline and Taxane Regimen",
+      "official_title": "A Multicenter Study of LY188011 in Anthracyclines and Taxanes Pre-treated Metastatic/Recurrent Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2005-06",
@@ -4831,6 +5151,7 @@
     },
     "NCT00190489": {
       "brief_title": "A Trial of Doxorubicin/Cyclophosphamide (AC), Docetaxel (D), and Alternating AC and D for Metastatic Breast Cancer",
+      "official_title": "Phase III Trial of Doxorubicin /Cyclophosphamide (AC), Docetaxel (D), and Alternating AC and D (AC-D) as Front-line Chemotherapy for Metastatic Breast Cancer: Japan Clinical Oncology Group Trial (JCOG9802)",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "1999-01",
@@ -4842,6 +5163,7 @@
     },
     "NCT00152191": {
       "brief_title": "A Randomized Controlled Study of Postoperative Adjuvant Therapy of Uracil-tegafur (UFT) Compared With Cyclophosphamide/Methotrexate/5-fluorouracil (CMF) in Breast Cancer (NSAS-BC)",
+      "official_title": "A Randomized Controlled Study of Postoperative Adjuvant Therapy of UFT Compared With CMF in High-risk Women With Axillary Node-negative Breast Cancer (NSAS-BC)",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "1996-10",
@@ -4852,6 +5174,7 @@
     },
     "NCT00152178": {
       "brief_title": "The Comparative Trial of UFT + TAM With CMF + TAM in Adjuvant Therapy for Breast Cancer (CUBC)",
+      "official_title": "The Comparative Trial of UFT + TAM With CMF + TAM in Adjuvant Therapy for Breast Cancer (CUBC)",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "1996-07",
@@ -4862,6 +5185,7 @@
     },
     "NCT00147108": {
       "brief_title": "MR Guided Focused Ultrasound Surgery in the Treatment of Breast Fibroadenomas",
+      "official_title": "Phase 3 Study of MR Guided Focused Ultrasound Surgery in the Treatment of Breast Fibroadenomas",
       "overall_status": "Terminated",
       "phase": "Phase 3",
       "start_date": "2003-01",
@@ -4872,6 +5196,7 @@
     },
     "NCT00143390": {
       "brief_title": "Aromasin Vs Arimidex Study As Initial Hormonal Therapy In Postmenopausal Women With Advanced/Recurrent Breast Cancer",
+      "official_title": "A Randomized, Double-Blind, Controlled Study Of Exemestane (Aromasin) Vs Anastrozole (Arimidex) As Initial Hormonal Therapy In Postmenopausal Women With Advanced/Recurrent Breast Cancer",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2005-04",
@@ -4882,6 +5207,7 @@
     },
     "NCT00107393": {
       "brief_title": "Trastuzumab and Capecitabine in Treating Women With Metastatic Breast Cancer",
+      "official_title": "Phase II Study of Trastuzumab (Herceptin) and Capecitabine (Xeloda) in Women With Taxanes and Anthracyclines Refractory Metastatic Breast Cancer and HER2 Over-Expression",
       "overall_status": "Completed",
       "phase": "Phase 2",
       "start_date": "2003-06",
@@ -4892,6 +5218,7 @@
     },
     "NCT00045032": {
       "brief_title": "Herceptin (Trastuzumab) in Treating Women With Human Epidermal Growth Factor Receptor (HER) 2-Positive Primary Breast Cancer",
+      "official_title": "A Randomized Three-Arm, Multicenter Comparison of 1 Year and 2 Years of Herceptin Versus No Herceptin in Women With HER2-Positive Primary Breast Cancer Who Have Completed Adjuvant Chemotherapy",
       "overall_status": "Completed",
       "phase": "Phase 3",
       "start_date": "2001-11",
@@ -4915,8 +5242,105 @@
       "\"Not specified\" means the record lists no phase; these are mostly observational studies."
     ],
     "notes": [
-      "Counts clinical trials for breast cancer that include Japan.",
-      "Each trial is grouped by its phase; trials with multiple phases are counted in the phase shown for the chart."
+      "Counts clinical trials for breast cancer with a study site or listing in Japan.",
+      "Each trial is grouped by its reported phase."
+    ],
+    "verification": [
+      {
+        "step": "request",
+        "status": "passed",
+        "checks": [
+          "request schema",
+          "year range"
+        ],
+        "verified": 1,
+        "total": 1,
+        "result": "The request fields are valid."
+      },
+      {
+        "step": "plan",
+        "status": "passed",
+        "checks": [
+          "plan schema",
+          "registered analysis",
+          "constraint quotes",
+          "name coverage",
+          "anchor"
+        ],
+        "verified": 2,
+        "total": 2,
+        "result": "Read as distribution.phase; 2 filters or cohorts applied."
+      },
+      {
+        "step": "retrieval",
+        "status": "passed",
+        "checks": [
+          "conformance"
+        ],
+        "verified": 327,
+        "total": 327,
+        "result": "Fetched 327 of 327 matching trials."
+      },
+      {
+        "step": "records",
+        "status": "passed",
+        "checks": [
+          "normalize"
+        ],
+        "verified": 327,
+        "total": 327,
+        "result": "327 of 327 records readable."
+      },
+      {
+        "step": "aggregation",
+        "status": "passed",
+        "checks": [
+          "membership",
+          "recount",
+          "reconciliation",
+          "accounting"
+        ],
+        "verified": 327,
+        "total": 327,
+        "result": "All 327 trials accounted for: 327 charted in 8 data; each datum recounted from its records."
+      },
+      {
+        "step": "citations",
+        "status": "passed",
+        "checks": [
+          "citation ids",
+          "excerpts",
+          "coverage",
+          "summaries"
+        ],
+        "verified": 160,
+        "total": 160,
+        "result": "160 citations verified: each excerpt is its record's value at its field."
+      },
+      {
+        "step": "prose",
+        "status": "passed",
+        "checks": [
+          "title"
+        ],
+        "verified": 1,
+        "total": 1,
+        "result": "Title written by the LLM; it holds no number outside the filters."
+      },
+      {
+        "step": "response",
+        "status": "passed",
+        "checks": [
+          "schema",
+          "encoding",
+          "shape",
+          "assumptions",
+          "disclosures"
+        ],
+        "verified": 5,
+        "total": 5,
+        "result": "The response matches the documented schema and its disclosures."
+      }
     ],
     "interpretation": {
       "intent": "distribution",
