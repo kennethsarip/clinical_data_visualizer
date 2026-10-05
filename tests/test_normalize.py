@@ -16,7 +16,7 @@ from app.normalize import (
     normalize_record,
     normalize_records,
 )
-from app.vocab import AgencyClass, InterventionType, Phase, Status, StudyType
+from app.vocab import AgencyClass, EnrollmentType, InterventionType, Phase, Status, StudyType
 
 
 def _record(**overrides: Any) -> dict[str, Any]:
@@ -28,7 +28,7 @@ def _record(**overrides: Any) -> dict[str, Any]:
         "designModule": {
             "studyType": "INTERVENTIONAL",
             "phases": ["PHASE3"],
-            "enrollmentInfo": {"count": 120},
+            "enrollmentInfo": {"count": 120, "type": "ACTUAL"},
         },
         "armsInterventionsModule": {"interventions": [{"type": "DRUG", "name": "Pembrolizumab"}]},
         "conditionsModule": {"conditions": ["Melanoma"]},
@@ -65,7 +65,7 @@ def test_complete_record_maps_every_field() -> None:
     assert trial.interventions == (Intervention(type=InterventionType.DRUG, name="Pembrolizumab"),)
     assert trial.conditions == ("Melanoma",)
     assert trial.countries == ("United States",)
-    assert trial.enrollment == 120
+    assert (trial.enrollment, trial.enrollment_type) == (120, EnrollmentType.ACTUAL)
     assert trial.study_type is StudyType.INTERVENTIONAL
     assert trial.gaps == frozenset()
 
@@ -127,6 +127,24 @@ def test_zero_enrollment_is_data_not_a_gap() -> None:
     trial = normalize_record(_record(designModule=_design(enrollmentInfo={"count": 0})))
     assert trial.enrollment == 0
     assert Gap.MISSING_ENROLLMENT not in trial.gaps
+
+
+@pytest.mark.parametrize(
+    ("info", "expected"),
+    [
+        ({"count": 300, "type": "ESTIMATED"}, (300, EnrollmentType.ESTIMATED)),
+        ({"count": 300}, (300, None)),  # live records sometimes omit the type
+    ],
+)
+def test_enrollment_type(info: dict[str, Any], expected: tuple[int, EnrollmentType | None]) -> None:
+    trial = normalize_record(_record(designModule=_design(enrollmentInfo=info)))
+    assert (trial.enrollment, trial.enrollment_type) == expected
+
+
+def test_unknown_enrollment_type_is_unreadable() -> None:
+    info = {"count": 300, "type": "ANTICIPATED"}
+    with pytest.raises(RecordShapeError):
+        normalize_record(_record(designModule=_design(enrollmentInfo=info)))
 
 
 # --- countries: deduped per trial ---

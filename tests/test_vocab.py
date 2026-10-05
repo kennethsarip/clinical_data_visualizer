@@ -7,6 +7,7 @@ import pytest
 from app.vocab import (
     PHASE_NOT_SPECIFIED,
     AgencyClass,
+    EnrollmentType,
     InterventionType,
     Phase,
     Status,
@@ -57,6 +58,7 @@ SPEC_VALUES: dict[type[StrEnum], list[str]] = {
         "OTHER",
         "UNKNOWN",
     ],
+    EnrollmentType: ["ACTUAL", "ESTIMATED"],
     StudyType: ["EXPANDED_ACCESS", "INTERVENTIONAL", "OBSERVATIONAL"],
 }
 

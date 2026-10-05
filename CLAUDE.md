@@ -224,7 +224,8 @@ API probe: `curl -s 'https://clinicaltrials.gov/api/v2/studies?query.intr=pembro
 | interventions | list[{type, name}] | - | armsInterventionsModule.interventions | `name` is free text as registered |
 | conditions | list[str] | - | conditionsModule.conditions | Free text |
 | countries | set[str] | - | contactsLocationsModule.locations[].country | One entry per site; dedupe per trial |
-| enrollment | int or None | participants | designModule.enrollmentInfo.count | May be absent |
+| enrollment | int or None | participants | designModule.enrollmentInfo.count | May be absent; 0 is data (e.g. withdrawn) |
+| enrollment_type | EnrollmentType or None | - | designModule.enrollmentInfo.type | ACTUAL or ESTIMATED; ~1.5% of live records omit it |
 | study_type | StudyType | - | designModule.studyType | |
 
 **Messy-value evidence.** These counts come from 1,000 records for `query.intr=pembrolizumab` (2,968 total), fetched 2026-10-04:
@@ -239,6 +240,9 @@ API probe: `curl -s 'https://clinicaltrials.gov/api/v2/studies?query.intr=pembro
 - No phase -> "Not specified"; `NA` -> "Not Applicable" (the API label).
 - Missing start date -> excluded from time series and counted. Missing enrollment -> excluded from numeric charts and counted.
 - Countries are deduped per trial (multi-valued, §8.5).
+- No locations -> excluded from geographic charts and counted. No interventions, or an unnamed intervention -> excluded from intervention-type and drug charts and networks, and counted (user approval, 2026-10-04).
+- "Not specified" phase is mostly observational studies; `assumptions` says so wherever it appears.
+- An unreadable record (a missing always-present field, a value outside `vocab.py`, an unexpected date format) is set aside and counted as "unreadable record". Over 5% of a batch -> the batch fails, because the API format has probably changed.
 
 **Timestamps:** OPEN. **Numeric precision:** every value is an integer count or integer enrollment, so floats never appear. Specify rounding in §8.5 before adding any ratio. **JSON shapes:** §8.3.
 
@@ -434,7 +438,7 @@ Items marked **ask first** are hard to reverse; ask the user before choosing the
 | Hosting (**ask first**) | Whether to host at all (§13.4) |
 | LLM model (**ask first**) | The provider is OpenAI (§3); the model name goes in `OPENAI_MODEL` |
 | Response contract | Endpoint path, HTTP code per `status`, `visualization` when `status != ok`, `meta` keys, viz type strings, network node/edge shape (§8.3) |
-| Request fields | Final set and max lengths (§8.3) |
+| Request fields | Final set; `query` max length (filter text fields are capped at 200, §8.3) |
 | Source documents | Save the assignment prompt and project brief in the repo; they are the source of truth for tests and README claims |
 | Plan schema | Intent and dimension enums; how a comparison (A vs B) encodes multiple cohorts, e.g. one API query per cohort |
 | LLM calls | One call or two (plan; viz + prose); policy when planner output fails validation |
@@ -464,6 +468,8 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 ### 13.4 Deferred
 - Synonym resolution of inputs. Trigger: an eval run logs a zero-result query that a synonym would have fixed. The API already expands drug synonyms (§7.3).
+- Upstream hardening: honoring `Retry-After` on 429 and retrying timeouts. Trigger: a logged 429 or timeout in an eval or example run (rate limits are unverified, §8.4).
+- Multi-value phase and status filters (e.g. "Phase 2 or 3"). Trigger: an eval question that needs one; the API syntax is unverified.
 - Deployed endpoint or demo video (optional bonus). Monitoring, backups and a runbook wait until a deploy exists; the secret rules in §11 apply now.
 
 ### 13.5 Decided by assumption
@@ -489,8 +495,7 @@ The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) m
 Goal: verified rows and complete specs for every question class and every viz type, with no LLM involved.
 
 Decide first:
-- Counting rules for the gaps `normalize.py` counts (PROPOSED): no locations -> excluded from geographic charts and counted; no interventions or an unnamed intervention -> excluded from intervention-type and drug charts and networks, and counted; state in `assumptions` that "Not specified" phase is mostly observational studies.
-- Enrollment basis for scatter and histogram: estimated vs actual (`designModule.enrollmentInfo.type`, not fetched yet); mixing them misleads.
+- Enrollment basis for scatter and histogram: `enrollment_type` is now normalized (§6). Proposal: plot both, split by type as a series, and disclose the split, rather than silently mixing them.
 - The `drug` definition (types DRUG + BIOLOGICAL; drop placebo and non-drug items by a listed rule; disclose the count) and network node normalization (case-fold, strip dosage/salt suffixes; synonym merging stays deferred, §13.4).
 - Network pruning defaults: minimum edge weight 2, top 50 nodes by degree, disclosed in `meta.pruning`.
 - Scatter and histogram fields (proposal: enrollment vs start year; enrollment histogram with fixed bin edges).

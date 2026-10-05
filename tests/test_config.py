@@ -63,7 +63,7 @@ def test_load_settings_reads_each_var() -> None:
 def test_optional_vars_fall_back_to_defaults_when_blank() -> None:
     blank = {"CTGOV_BASE_URL": "", "FETCH_CAP": "", "CACHE_TTL_HOURS": ""}
     settings = load_settings({**FULL_ENV, **blank})
-    # Defaults come from CLAUDE.md §14 Phase 1 and §8.4.
+    # Defaults come from CLAUDE.md §6, §7.3 and §8.4.
     assert settings.ctgov_base_url == "https://clinicaltrials.gov/api/v2"
     assert settings.fetch_cap == 2000
     assert settings.cache_ttl_hours == 168

@@ -7,7 +7,12 @@ from pydantic import BaseModel, ConfigDict, StringConstraints, model_validator
 from app.vocab import Phase, Status
 
 # Blank strings are rejected rather than read as "no filter": a client omits a field it doesn't use.
-FilterText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+# The cap keeps an arbitrary string out of the API URL; real drug, condition, sponsor and country
+# names are far shorter.
+FILTER_TEXT_MAX_LENGTH = 200
+FilterText = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=FILTER_TEXT_MAX_LENGTH)
+]
 
 
 class RetrievalFilters(BaseModel):

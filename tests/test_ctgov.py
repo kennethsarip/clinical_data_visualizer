@@ -128,7 +128,7 @@ def test_result_carries_the_params_key_and_verbatim_pages() -> None:
     assert result.pages[0].body == body
 
 
-# --- retries and upstream errors (CLAUDE.md §14 Phase 1 decision) ---
+# --- retries and upstream errors (CLAUDE.md §7.3) ---
 
 
 def test_retries_5xx_and_429_with_backoff_then_succeeds() -> None:

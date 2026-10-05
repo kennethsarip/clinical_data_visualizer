@@ -61,6 +61,11 @@ class AgencyClass(StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
+class EnrollmentType(StrEnum):
+    ACTUAL = "ACTUAL"
+    ESTIMATED = "ESTIMATED"
+
+
 class StudyType(StrEnum):
     EXPANDED_ACCESS = "EXPANDED_ACCESS"
     INTERVENTIONAL = "INTERVENTIONAL"
@@ -119,6 +124,11 @@ AGENCY_CLASS_LABELS: Mapping[StrEnum, str] = {
     AgencyClass.UNKNOWN: "Unknown",
 }
 
+ENROLLMENT_TYPE_LABELS: Mapping[StrEnum, str] = {
+    EnrollmentType.ACTUAL: "Actual",
+    EnrollmentType.ESTIMATED: "Estimated",
+}
+
 STUDY_TYPE_LABELS: Mapping[StrEnum, str] = {
     StudyType.EXPANDED_ACCESS: "Expanded Access",
     StudyType.INTERVENTIONAL: "Interventional",
@@ -132,10 +142,11 @@ _LABELS_BY_ENUM: Mapping[type[StrEnum], Mapping[StrEnum, str]] = {
     Status: STATUS_LABELS,
     InterventionType: INTERVENTION_TYPE_LABELS,
     AgencyClass: AGENCY_CLASS_LABELS,
+    EnrollmentType: ENROLLMENT_TYPE_LABELS,
     StudyType: STUDY_TYPE_LABELS,
 }
 
-# Counting-rule label for a record with no phase (CLAUDE.md §14 Phase 1).
+# Counting-rule label for a record with no phase (CLAUDE.md §6).
 PHASE_NOT_SPECIFIED = "Not specified"
 
 

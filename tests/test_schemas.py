@@ -3,7 +3,7 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from app.schemas import RetrievalFilters
+from app.schemas import FILTER_TEXT_MAX_LENGTH, RetrievalFilters
 from app.vocab import Phase, Status
 
 # --- year range (CLAUDE.md §7.6: contradictory inputs are rejected) ---
@@ -60,6 +60,14 @@ def test_text_filters_are_stripped() -> None:
 def test_blank_text_filters_are_rejected(field: str, value: str) -> None:
     with pytest.raises(ValidationError):
         RetrievalFilters.model_validate({field: value})
+
+
+@pytest.mark.parametrize("field", ["drug_name", "condition", "sponsor", "country"])
+def test_text_filters_are_capped_at_200_characters(field: str) -> None:
+    assert FILTER_TEXT_MAX_LENGTH == 200
+    RetrievalFilters.model_validate({field: "x" * 200})
+    with pytest.raises(ValidationError):
+        RetrievalFilters.model_validate({field: "x" * 201})
 
 
 # --- shape ---

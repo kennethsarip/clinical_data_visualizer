@@ -11,11 +11,11 @@ The renderer contract: a frontend engineer should be able to implement a rendere
 | Field | Type | Required | Validation | Maps to API param |
 |---|---|---|---|---|
 | query | string | yes | Non-empty; max length OPEN | - (the planner reads it) |
-| drug_name | string | no | | `query.intr` |
-| condition | string | no | | `query.cond` |
+| drug_name | string | no | 1-200 chars after trimming whitespace | `query.intr` |
+| condition | string | no | 1-200 chars after trimming whitespace | `query.cond` |
 | trial_phase | Phase enum | no | One of NA, EARLY_PHASE1, PHASE1, PHASE2, PHASE3, PHASE4 | `filter.advanced=AREA[Phase]...` |
-| sponsor | string | no | | `query.spons` |
-| country | string | no | | `query.locn` |
+| sponsor | string | no | 1-200 chars after trimming whitespace | `query.spons` |
+| country | string | no | 1-200 chars after trimming whitespace | `query.locn` |
 | start_year | int | no | `start_year <= end_year` | `filter.advanced=AREA[StartDate]RANGE[...]` |
 | end_year | int | no | `start_year <= end_year` | same |
 

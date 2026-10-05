@@ -20,7 +20,15 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from app.vocab import AgencyClass, InterventionType, Phase, Status, StudyType, phase_label
+from app.vocab import (
+    AgencyClass,
+    EnrollmentType,
+    InterventionType,
+    Phase,
+    Status,
+    StudyType,
+    phase_label,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +78,8 @@ class NormalizedTrial(BaseModel):
     conditions: tuple[str, ...]
     countries: tuple[str, ...]  # deduped per trial and sorted, so output is deterministic
     enrollment: Annotated[int, Field(ge=0)] | None  # 0 is data (e.g. withdrawn), not missing
+    # Mixing estimated and actual counts in one chart misleads; ~1.5% of live records omit it.
+    enrollment_type: EnrollmentType | None
     study_type: StudyType
 
     @property
@@ -146,6 +156,7 @@ def normalize_record(record: dict[str, Any]) -> NormalizedTrial:
         "conditions": _get(section, "conditionsModule", "conditions") or (),
         "countries": _countries(_get(section, "contactsLocationsModule", "locations") or ()),
         "enrollment": _get(section, "designModule", "enrollmentInfo", "count"),
+        "enrollment_type": _get(section, "designModule", "enrollmentInfo", "type"),
         "study_type": _get(section, "designModule", "studyType"),
     }
     try:

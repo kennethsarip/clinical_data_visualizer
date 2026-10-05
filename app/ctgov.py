@@ -33,6 +33,7 @@ RECORD_FIELDS = (
     "protocolSection.designModule.phases",
     "protocolSection.designModule.studyType",
     "protocolSection.designModule.enrollmentInfo.count",
+    "protocolSection.designModule.enrollmentInfo.type",
     "protocolSection.statusModule.overallStatus",
     "protocolSection.statusModule.startDateStruct.date",
     "protocolSection.sponsorCollaboratorsModule.leadSponsor.name",
