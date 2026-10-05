@@ -172,7 +172,7 @@ app/
   ctgov.py           # API client: params from plan, pagination, cap
   cache.py           # Postgres read/write of API responses
   normalize.py       # record -> normalized fields; applies counting rules (§6)
-  aggregators/       # one module per aggregator; registry.py = SINGLE SOURCE of dispatch
+  aggregators/       # registry.py = SINGLE SOURCE of dispatch; common.py = categorizers + the one count_by; one module per family
   citations.py       # {nct_id, excerpt} per row, from cached records only
   checks.py          # every §7.6 check
   pipeline.py        # §1 steps, repair-once, status selection, error -> status mapping
@@ -488,7 +488,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) makes results visible for the demo.
 
-**Next move:** Phase 2 step 4 (aggregators) on `phase-2-core`. Steps 1-3 shipped (see `BUILD_HISTORY.md`).
+**Next move:** Phase 2 step 5 (citations) on `phase-2-core`. Steps 1-4 shipped (see `BUILD_HISTORY.md`).
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
@@ -500,13 +500,6 @@ The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) m
 Goal: verified rows and complete specs for every question class and every viz type, with no LLM involved. All decisions are made (§6, §7.4, §7.5, SCHEMAS.md).
 
 Steps, in order (each red first, §9):
-4. **Aggregators**, one module each, built on one shared count-by-key helper, registered into `REGISTRY`; each emits `AggRow`s with `nct_ids` and per-trial evidence (the record value that placed the trial in the row); expected rows computed by hand:
-   - time trend by start year (zero-filled);
-   - distribution by phase, status, intervention type and sponsor class; top-N drugs, sponsors and conditions;
-   - geographic by country;
-   - comparison: any categorical dimension across 2+ cohorts;
-   - numeric: enrollment scatter (start date vs log enrollment) and histogram (fixed bins), both split by `enrollment_type`;
-   - networks: one co-occurrence aggregator registered for sponsor-drug, drug-drug and condition-drug, with §7.4 pruning, fallback and `is_anchor`.
 5. **Citations.** `citations.py`: each row's evidence -> `{nct_id, excerpt, field}` per row, node and edge, ordered and capped (§7.5); null excerpts for absent fields; the `trials` lookup. Evidence comes from normalized cached records, and the excerpt check verifies it against the raw record.
 6. **Checks.** `checks.py`: every §7.6 BLOCK check plus the WARN disclosures.
 7. **Spec assembly.** `viz.py` (deterministic part): the §7.4 shape -> type table, encoding with channel types, and spec plus `meta` assembly.

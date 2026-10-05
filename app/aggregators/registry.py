@@ -1,8 +1,8 @@
 """Single source of (intent, dimension) -> aggregator dispatch (CLAUDE.md §7.4).
 
 A new question class is a new registered aggregator, never a new code path: the pipeline looks up
-the plan's (intent, dimension) here, and the planner's choices are generated from `keys()`, so it
-can only pick what exists. Each aggregator declares its row shape, which fixes the viz type
+the plan's (intent, dimension) here, and the planner's choices are generated from `registered()`,
+so it can only pick what exists. Each aggregator declares its row shape, which fixes the viz type
 (`viz.py`), and the record fields its excerpts quote, which the checks read.
 """
 
@@ -12,7 +12,7 @@ from enum import StrEnum
 from typing import Protocol
 
 from app.normalize import NormalizedBatch
-from app.schemas import Provenance, Pruning, TopN
+from app.schemas import Provenance, Pruning, RetrievalFilters, TopN
 
 
 class Intent(StrEnum):
@@ -71,10 +71,15 @@ PROVENANCE_FIELDS = frozenset(Provenance.model_fields)
 
 @dataclass(frozen=True)
 class CohortTrials:
-    """One cohort's trials. `label` is None unless the request compares cohorts."""
+    """One cohort's trials and the filters that fetched them.
+
+    `label` is None unless the request compares cohorts. Aggregators read `filters` only for
+    stated bounds and anchors (the zero-fill year range, the network's anchor node).
+    """
 
     label: str | None
     batch: NormalizedBatch
+    filters: RetrievalFilters
 
 
 @dataclass(frozen=True)
@@ -136,6 +141,10 @@ class AggregatorDeclarationError(ValueError):
     """An aggregator's declaration contradicts the coverage matrix or the row contract."""
 
 
+class AggregationInputError(ValueError):
+    """An aggregator got cohorts it cannot use (e.g. two cohorts for a single-cohort chart)."""
+
+
 class Registry:
     def __init__(self) -> None:
         self._by_key: dict[tuple[Intent, Dimension], Aggregator] = {}
@@ -155,7 +164,7 @@ class Registry:
                 f"no aggregator registered for {_name((intent, dimension))}"
             ) from None
 
-    def keys(self) -> list[tuple[Intent, Dimension]]:
+    def registered(self) -> list[tuple[Intent, Dimension]]:
         """Every registered pair, sorted, so the planner's generated schema is stable."""
         return sorted(self._by_key)
 

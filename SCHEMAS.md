@@ -100,7 +100,7 @@ Python picks the type from the aggregator's row shape (CLAUDE.md §7.4). Units a
 
 ### 3.1 `bar_chart` (distribution, geographic, top-N)
 
-One row per category. Sort: count descending, ties alphabetical; phase and other enum dimensions use their canonical order instead (`meta.sort.order` = `canonical`). Top-N charts (drug, sponsor, condition) keep the 20 largest categories and disclose it in `meta.top_n`.
+One row per category. Sort: count descending, ties alphabetical; phase uses its canonical order instead (Early Phase 1 ... Phase 4, Not Applicable, Not specified; `meta.sort.order` = `canonical`). Top-N charts (drug, sponsor, condition, country) keep the 20 largest categories and disclose it in `meta.top_n`.
 
 ```json
 {"status": "ok",

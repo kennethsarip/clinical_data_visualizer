@@ -52,7 +52,7 @@ def test_registering_the_same_pair_twice_is_rejected() -> None:
         registry.register(FakeAggregator(columns=("phase", "other")))
 
 
-def test_keys_list_every_registered_pair_in_a_stable_order() -> None:
+def test_registered_lists_every_registered_pair_in_a_stable_order() -> None:
     registry = Registry()
     registry.register(FakeAggregator(dimension=Dimension.PHASE))
     registry.register(
@@ -64,7 +64,7 @@ def test_keys_list_every_registered_pair_in_a_stable_order() -> None:
         )
     )
     registry.register(FakeAggregator(dimension=Dimension.COUNTRY, columns=("country",)))
-    assert registry.keys() == [
+    assert registry.registered() == [
         (Intent.DISTRIBUTION, Dimension.COUNTRY),
         (Intent.DISTRIBUTION, Dimension.PHASE),
         (Intent.TIME_TREND, Dimension.START_YEAR),

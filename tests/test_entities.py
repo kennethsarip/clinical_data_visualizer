@@ -23,28 +23,11 @@ from app.entities import (
     sponsor_mention,
 )
 from app.normalize import NormalizedTrial
+from tests.factories import Interventions, make_trial
 
 
-def _trial(
-    nct_id: str, interventions: list[tuple[str, str | None]], **extra: Any
-) -> NormalizedTrial:
-    fields: dict[str, Any] = {
-        "nct_id": nct_id,
-        "brief_title": "t",
-        "phases": [],
-        "overall_status": "COMPLETED",
-        "start_date": None,
-        "start_year": None,
-        "sponsor_name": "Merck Sharp & Dohme LLC",
-        "sponsor_class": "INDUSTRY",
-        "interventions": [{"type": t, "name": n} for t, n in interventions],
-        "conditions": [],
-        "countries": [],
-        "enrollment": None,
-        "enrollment_type": None,
-        "study_type": "INTERVENTIONAL",
-    }
-    return NormalizedTrial.model_validate(fields | extra)
+def _trial(nct_id: str, interventions: Interventions, **extra: Any) -> NormalizedTrial:
+    return make_trial(nct_id, interventions, **extra)
 
 
 # --- name normalization ---

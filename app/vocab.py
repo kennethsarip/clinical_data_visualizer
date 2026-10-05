@@ -149,6 +149,9 @@ _LABELS_BY_ENUM: Mapping[type[StrEnum], Mapping[StrEnum, str]] = {
 # Counting-rule label for a record with no phase (CLAUDE.md §6).
 PHASE_NOT_SPECIFIED = "Not specified"
 
+# Series label for a record whose enrollment count has no ACTUAL/ESTIMATED type (CLAUDE.md §6).
+ENROLLMENT_TYPE_NOT_REPORTED = "Type not reported"
+
 
 def label(value: StrEnum) -> str:
     """Display label for any vocab enum member."""

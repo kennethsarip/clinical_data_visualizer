@@ -81,8 +81,13 @@ def drug_key(raw: str) -> str:
 
 
 def label_for(entity_type: EntityType, raws: Iterable[str]) -> str:
-    """The most common cleaned spelling; ties go to the alphabetically first."""
-    counts = Counter(_clean(entity_type, raw) for raw in raws)
+    """The most common cleaned spelling of an entity's raw names."""
+    return most_common_spelling(_clean(entity_type, raw) for raw in raws)
+
+
+def most_common_spelling(spellings: Iterable[str]) -> str:
+    """The most frequent spelling; ties go to the alphabetically first, so output is stable."""
+    counts = Counter(spellings)
     return min(counts, key=lambda spelling: (-counts[spelling], spelling))
 
 
