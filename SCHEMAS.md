@@ -10,7 +10,7 @@ The renderer contract: a frontend engineer should be able to implement a rendere
 
 | Field | Type | Required | Validation | Maps to API param |
 |---|---|---|---|---|
-| query | string | yes | Non-empty; max length OPEN (CLAUDE.md §13.1) | - (the planner reads it) |
+| query | string | yes | 1-1000 chars after trimming whitespace | - (the planner reads it) |
 | drug_name | string | no | 1-200 chars after trimming whitespace | `query.intr` |
 | condition | string | no | 1-200 chars after trimming whitespace | `query.cond` |
 | trial_phase | Phase enum | no | One of NA, EARLY_PHASE1, PHASE1, PHASE2, PHASE3, PHASE4 | `filter.advanced=AREA[Phase]...` |
@@ -19,14 +19,14 @@ The renderer contract: a frontend engineer should be able to implement a rendere
 | start_year | int | no | `start_year <= end_year` | `filter.advanced=AREA[StartDate]RANGE[...]` |
 | end_year | int | no | `start_year <= end_year` | same |
 
-Unknown fields are rejected. The query, or a field, must name a drug, condition or sponsor; otherwise the response is `clarification_needed` (§5).
+Unknown fields are rejected. The query, or a field, must name a drug, condition or sponsor; otherwise the response is `clarification_needed` (§5). If a field and the query name different values for the same filter, the field wins and `meta.notes` says the query's value was overridden.
 
 ```json
 {"query": "How has the number of trials for this drug changed over time?",
  "drug_name": "Pembrolizumab"}
 ```
 
-**HTTP codes:** 200 for every `status` in §2 (each is a valid answer to render); 422 for request validation, before any LLM or API call (contradictory inputs are rejected, never turned into an empty chart); 502 when ClinicalTrials.gov or the LLM fails.
+**HTTP codes:** 200 for every `status` in §2 (each is a valid answer to render); 422 for request validation, before any LLM or API call (contradictory inputs are rejected, never turned into an empty chart); 502 when ClinicalTrials.gov or the LLM is unreachable or errors (body `{"detail": "<message>"}`). The split: a 200 means the system ran but may not have produced a chart; a 502 means a dependency is down and a retry may succeed.
 
 ## 2. Response envelope
 
@@ -298,3 +298,5 @@ An entity that matches no trial on its own:
           "errors": [{"check": "encoding", "message": "Field 'phase' is missing from row 3."}],
           "notes": []}}
 ```
+
+`degraded` has two causes, named by `errors[].check`: `plan` when the LLM's plan still fails validation after one retry (`visualization` is null and `filters` holds only the request fields), or a §7.6 check name when the spec still fails after one repair. A failed title is not a cause: the response stays `ok` with a plain generated title and a note.

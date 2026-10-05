@@ -4,7 +4,7 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ## Shipped
 
-### Phase 2: Aggregation, citations, checks (done 2026-10-04 on `phase-2-core`)
+### Phase 2: Aggregation, citations, checks (done 2026-10-04; merged and tagged `phase-2`)
 
 - **Done when, met:** every §1 row has a registered aggregator (22); all six viz types assemble specs that pass every check, offline on the fixture and live on real records; each aggregator test matches hand-computed rows; each check has a passing and a failing fixture.
 - **2.7 Spec assembly** (2026-10-04): `viz.assemble` builds the full `ok` response from an aggregator's result.
@@ -135,3 +135,12 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
   - Phase 3: `gpt-5.4-mini` at low reasoning effort (planning is enum classification; latency matters more than depth). Two calls (the plan; title and notes); an invalid plan is retried once with its error. Anchor = drug, condition or sponsor, since a time period alone charts a capped slice of the whole registry. `POST /api/visualize`, 200 for all statuses. Stated filter = from a field or verbatim in the query. Zero results trigger a probe of each entity alone, to tell "not found" from "over-filtered".
   - Phase 4: a search-first UI following the cited-answer search pattern under its own branding; npm and `openapi-typescript`, so `schemas.py` stays the single source.
   - Phase 5-6: a 2-3 min demo video, and a README that leads with deep citations and condition-anchored networks. No deploy. The zip includes `.git` history, built from a copy without the interview notes. A model comparison was planned, then dropped by the user the same day: the eval stays one model, baseline and after.
+- **Phase 3 decide-first** (user approval, 2026-10-04):
+  - Plan `analysis` is one enum of registered keys, generated from the registry: the schema makes an unregistered (intent, dimension) unrepresentable, which separate intent and dimension enums would not, and strict structured outputs handle a flat enum more simply than a union per intent.
+  - Python, not the LLM, labels filters stated or inferred, applying the §7.3 verbatim test; the LLM could mislabel, and the definition is mechanical.
+  - A request field beats a conflicting query value and the override is noted: a structured field is the more deliberate input.
+  - A failed title falls back to `default_title` and stays `ok`: the rows are already verified, so prose should not cost the user the chart.
+  - Comparisons take 2-4 cohorts, each overriding one entity: covers "A vs B" and "A, B, C" while capping latency at 8 pages and keeping grouped bars readable.
+  - Errors split by cause: plan invalid twice or spec failing after repair -> 200 `degraded`; LLM or ClinicalTrials.gov down -> 502, so a frontend can tell "try again" from "rephrase".
+  - Date basis closed as start date by year, which Phase 2 already implements; `query` capped at 1,000 characters to bound prompt size.
+  - The eval question set moves to Phase 3 step 0, so expected plans exist before the planner prompt and act as its red-first acceptance tests.

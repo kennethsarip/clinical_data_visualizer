@@ -172,6 +172,12 @@ def test_blank_query_is_rejected(query: str) -> None:
         VisualizeRequest.model_validate({"query": query})
 
 
+def test_query_is_capped_at_1000_characters() -> None:
+    VisualizeRequest.model_validate({"query": "q" * 1000})
+    with pytest.raises(ValidationError, match="1000"):
+        VisualizeRequest.model_validate({"query": "q" * 1001})
+
+
 def test_request_rejects_contradictory_years() -> None:
     with pytest.raises(ValidationError, match="start_year"):
         VisualizeRequest.model_validate({"query": "q", "start_year": 2020, "end_year": 2015})
