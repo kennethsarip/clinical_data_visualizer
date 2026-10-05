@@ -4,7 +4,7 @@
 >
 > **The one thing to understand first:** the LLM never produces a number, count, date, NCT ID, excerpt or data row. It does exactly two things: plan the query and write prose (title, notes). Retrieval, aggregation, viz type selection, citations and checks are deterministic Python, so every row traces back to cached API records by NCT ID (§7.2).
 >
-> **Status:** Phases 1-2 are done (Phase 2 on `phase-2-core`, awaiting push, CI and merge); Phase 3 is next (§14). The repo is `github.com/kennethsarip/cheiron_task` (private, §12). Runs locally only; no deploy is planned (§13.4).
+> **Status:** Phases 1-2 are done (merged, tagged `phase-2`); Phase 3 decisions are recorded and its build is next (§14). The repo is `github.com/kennethsarip/cheiron_task` (private, §12). Runs locally only; no deploy is planned (§13.4).
 >
 > **Definition of done:** `uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest`, all green. CI (`.github/workflows/ci.yml`) runs exactly these, so local green means CI green. `main` stays runnable.
 >
@@ -182,6 +182,7 @@ eval/                # eval questions, runner, baseline + after results (§9)
 examples/            # 3-5 real request/response JSON pairs from the running system
 docker-compose.yml   # local Postgres
 frontend/            # Vite + React + TS app; renders specs from SCHEMAS.md (Phase 4)
+docs/                # GITIGNORED, local only: assignment screenshots + assignment.md (source of truth for requirements)
 ```
 
 ## 5. Commands
@@ -265,22 +266,24 @@ The steps are in §1. Only steps 2 and 7 touch the LLM; everything else is deter
 
 Why: in a visualization agent, the hallucination-prone step is letting the model emit data. Keeping the model in a schema-validated planning role makes numeric hallucination structurally impossible, rather than something to detect afterwards. The viz type is Python too (decided 2026-10-04): each row shape maps to exactly one type, so an LLM pick would add a failure mode and no choice.
 
-**Calls** (decided 2026-10-04): two per request. (1) The plan, via OpenAI structured outputs with a JSON schema generated from the registry, so only registered (intent, dimension) pairs can be chosen. (2) Title and notes, after aggregation; the model sees the plan, row shape, columns and filters, never row values. A title containing a number that is not in the filters fails a check. If the plan fails validation, retry once with the validation error; if it fails again, return `degraded`.
+**Calls** (decided 2026-10-04): two per request. (1) The plan, via OpenAI structured outputs with a JSON schema generated from the registry, so only registered (intent, dimension) pairs can be chosen. (2) Title and notes, after aggregation; the model sees the plan, row shape, columns and filters, never row values. A title containing a number that is not in the filters fails a check. If the plan fails validation, retry once with the validation error; if it fails again, return `degraded` (`errors[].check = "plan"`). If the title call fails or its title fails the `title` check, the response stays `ok` with `viz.default_title`, no LLM notes and a note saying so: the data is already verified, so prose never costs the user the chart.
+
+**Plan shape** (decided 2026-10-04): `analysis`, a single enum of registered keys (`"distribution.phase"`, `"network.drug_drug"`, ...) generated from `REGISTRY.registered()`, so an unregistered pair is unrepresentable rather than retried; `filters` (the `RetrievalFilters` fields, values only); `cohorts` (comparison only, else null): 2-4 entries, each a `label` plus exactly one entity override (drug, condition or sponsor) on the shared filters, one fetch per cohort, anything else -> `clarification_needed`; `missing_anchor`. The LLM never labels a filter stated or inferred (§7.3).
 
 ### 7.3 Retrieval
 - API params come only from the validated plan, never from raw LLM text.
 - `query.*` params are searches, not exact filters, and the API expands drug synonyms. `query.intr` returns 2,968 trials for pembrolizumab, Keytruda and MK-3475 alike. Consequences: a matched record may not contain the user's wording, so excerpts quote the record's own values (§7.5); network nodes need name normalization (§6); and synonym resolution has a lower priority (§13.4).
-- Unambiguous filters (dates, status, phase, country) are applied hard. A filter inferred from ambiguous wording is disclosed as an assumption, because a wrong silent filter removes the correct answer. A filter is **stated** if and only if its value comes from a request field or appears verbatim in `query`; otherwise it is **inferred** (decided 2026-10-04).
+- Unambiguous filters (dates, status, phase, country) are applied hard. A filter inferred from ambiguous wording is disclosed as an assumption, because a wrong silent filter removes the correct answer. A filter is **stated** if and only if its value comes from a request field or appears verbatim in `query`; otherwise it is **inferred** (decided 2026-10-04). Python applies this test to the plan's filter values, case-insensitively, and writes the assumption for each inferred filter. When a request field and the query name different values for one filter, Python overwrites the plan's value with the field's and `meta.notes` says so (decided 2026-10-04).
 - Paginate with `nextPageToken` at `pageSize` 1000 (the API clamps larger values to 1000) and stop at `FETCH_CAP` (default 2000, two pages). Send `countTotal=true` so `meta` can report "fetched N of total M" when capped.
 - Cache by API params (§6).
-- Upstream errors: 30 s timeout; retry twice with backoff on 5xx and 429, then raise a typed `UpstreamError` (its status mapping is decided in Phase 3).
+- Upstream errors: 30 s timeout; retry twice with backoff on 5xx and 429, then raise a typed `UpstreamError` (mapped to 502, §7.7).
 
 ### 7.4 Aggregation
 - A registry maps (intent, dimension) to an aggregator. Route handlers never branch on question type, so a new question class means a new registered aggregator plus its tests.
 - Each aggregator declares its output columns, row shape and excerpt source. Viz selection and checks read that declaration.
 - **Viz type is a fixed table in `viz.py`** (decided 2026-10-04): categorical -> `bar_chart`; two-categorical -> `grouped_bar_chart`; temporal -> `time_series`; per-trial numeric -> `scatter_plot`; binned numeric -> `histogram`; graph -> `network_graph`. Python reads rows only for edge cases (zero rows, a network emptied by pruning).
 - Every row carries the set of contributing NCT IDs, by construction, as `nct_ids`. A count is the size of that set (§8.5).
-- Time series zero-fill gap years, because a missing year is information, not missing data. The range spans the stated years and every trial's year, so it never drops a trial. Granularity is OPEN.
+- Time series zero-fill gap years, because a missing year is information, not missing data. The range spans the stated years and every trial's year, so it never drops a trial. Basis and granularity (decided 2026-10-04): start date, by year, disclosed in `assumptions`; first-posted date waits for an eval question that needs it.
 - Networks are co-occurrence aggregations over records, not graph retrieval: one generic co-occurrence aggregator, registered per entity pair (sponsor-drug, drug-drug, condition-drug). A node is an entity; an edge's weight is the number of trials in which both endpoints appear, and the edge carries those NCT IDs.
 - **Pruning** (decided 2026-10-04): drop edges with weight < 2; keep the top 50 nodes by weighted degree (alphabetical tie-break); drop edges touching removed nodes, then orphan nodes. If that empties the graph, rerun at weight 1. `meta.pruning` records the thresholds used, the fallback and what was removed.
 - **Anchor hub:** a queried entity appears in every trial, so a drug-drug network for one drug is a star. Its node gets `is_anchor: true` so a renderer can de-emphasize it, and `meta.notes` says so. Condition-anchored networks are the showcase case.
@@ -315,6 +318,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 
 ### 7.7 Failure policy and statuses
 - If a spec check fails, regenerate the spec once from the same rows. Never re-query the API to fix a spec problem. If it still fails, return `degraded` with an explicit error. The other statuses are set in §1 steps 3, 5 and 9.
+- **Error -> response** (decided 2026-10-04; mapped only in `pipeline.py`): plan invalid after one retry -> 200 `degraded`; spec check failing after one repair -> 200 `degraded`; LLM transport error or timeout, or a ClinicalTrials.gov `UpstreamError` -> 502. A 200 means the system ran but could not chart; a 502 means a dependency is down and a retry may succeed.
 - Abstaining and asking for clarification are correct outputs, not fallbacks. A system that always produces a fluent answer has no observable failure mode.
 
 ### 7.8 User-facing edge cases
@@ -331,7 +335,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 ### 8.1 Endpoints
 | Method | Path | Purpose | Status codes |
 |---|---|---|---|
-| POST | `/api/visualize` | Natural-language query -> visualization spec | 200 for all four statuses (each is a valid answer the frontend renders); 422 for request validation; 502 for upstream or LLM failure (decided 2026-10-04) |
+| POST | `/api/visualize` | Natural-language query -> visualization spec | 200 for all four statuses (each is a valid answer the frontend renders); 422 for request validation; 502 for upstream or LLM failure, body `{"detail": ...}` (decided 2026-10-04; mapping in §7.7) |
 
 ### 8.2 ID formats
 - `nct_id` matches `^NCT\d{8}$`, is the only trial ID, and is matched exactly. A missing ID is reported as not found, never replaced by the nearest match.
@@ -450,13 +454,10 @@ Items marked **ask first** are hard to reverse; ask the user before choosing the
 |---|---|
 | Internal ID scheme (**ask first**) | IDs for requests and eval runs (§8.2) |
 | Auth model (**ask first**) | Who may call the endpoint |
-| Request fields | Final set; `query` max length (filter text fields are capped at 200, §8.3) |
-| Source documents | Save the assignment prompt and project brief in the repo; they are the source of truth for tests and README claims |
-| Plan schema | The rest of the plan around the `Intent` and `Dimension` enums (now in `aggregators/registry.py`); comparison cohorts as `cohorts: [{label, filters}]`, one API query per cohort (proposal, Phase 3) |
-| Date basis and granularity | Start date vs first-posted date for "trials per year"; year vs finer buckets |
+| Source documents | The assignment is saved in `docs/` (screenshots + `assignment.md` transcription), gitignored at the user's request so it never reaches GitHub (2026-10-04). The project brief is not saved yet |
 | Per-bucket totals | Alternative to the capped sample: exact per-bucket totals via `countTotal=true` queries, with citations from the sample (§13.5) |
 
-Decided 2026-10-04 and recorded where they govern: LLM model and calls (§3, §7.2), viz type by Python (§7.4), drug rule, name normalization and enrollment split (§6), pruning (§7.4), citations (§7.5), stated vs inferred (§7.3), anchor rule and not-found probe (§7.8), endpoint and HTTP codes (§8.1), response contract (SCHEMAS.md), zip contents (§12), hosting (not planned, §13.4).
+Decided 2026-10-04 and recorded where they govern: LLM model and calls (§3, §7.2), viz type by Python (§7.4), drug rule, name normalization and enrollment split (§6), pruning (§7.4), citations (§7.5), stated vs inferred and field-vs-query conflicts (§7.3), plan shape, cohorts and title fallback (§7.2), error mapping (§7.7), date basis (§7.4), request fields and `query` cap of 1,000 (SCHEMAS.md §1), anchor rule and not-found probe (§7.8), endpoint and HTTP codes (§8.1), response contract (SCHEMAS.md), zip contents (§12), hosting (not planned, §13.4).
 
 ### 13.2 Decided
 Each decision is recorded in the section it governs (§3, §6, §7), with its reasoning in `BUILD_HISTORY.md` under Decisions.
@@ -490,7 +491,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) makes results visible for the demo.
 
-**Next move:** push `phase-2-core`, get CI green, merge and tag `phase-2`; then Phase 3 "Decide first" (the plan schema).
+**Next move:** Phase 3 step 0 (the eval question set).
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
@@ -499,9 +500,10 @@ The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) m
 - **Ship-then-prune:** when a step is done, delete it from its phase here and add a few 1-2 line bullets for it under that phase's heading in `BUILD_HISTORY.md`, in the SAME commit. Remaining steps keep their numbers. When a phase's "Done when" passes, delete the whole phase.
 
 ### Phase 3: LLM planning and the endpoint (end to end)
-Goal: a natural-language request returns the right status and a checked spec over HTTP. Decided: §3 model, §7.2 calls and retry, §7.3 stated vs inferred, §7.8 anchor rule and not-found probe, §8.1 endpoint and HTTP codes. Decide first: the plan schema (§13.1).
+Goal: a natural-language request returns the right status and a checked spec over HTTP. Decided: §3 model, §7.2 calls and retry, §7.3 stated vs inferred, §7.8 anchor rule and not-found probe, §8.1 endpoint and HTTP codes, §7.2 plan shape, cohorts and title fallback, §7.7 error mapping.
 
 Steps, in order:
+0. **Eval questions first** (moved from Phase 5, decided 2026-10-04). `eval/questions.*`: 20-25 questions (§9), each with its expected `analysis` key, filters (stated vs inferred), status and viz type, written before the planner prompt so the prompt cannot be tuned to them. Include condition-anchored networks, a drug-anchored one (the star case), a 3-cohort comparison and a field-vs-query conflict. They are the planner's acceptance tests: stubbed offline, and live under `-m live`.
 1. **LLM client.** `llm.py`: an OpenAI structured-output call returning validated Pydantic models; malformed output raises a typed error; `uv add openai`. Verify the `gpt-5.4-mini` parameters (reasoning effort, structured outputs) against OpenAI's docs first.
 2. **Planner.** `planner.py`: the plan's JSON schema is generated from the registry, so the planner can only choose what exists. Validate, retry once with the error, then apply the anchor rule and classify filters as stated or inferred.
 3. **Title and notes.** The LLM part of `viz.py`: title and notes from plan, shape, columns and filters; never data. The `title` check guards it.
@@ -529,7 +531,7 @@ Done when:
 
 ### Phase 5: Eval and iteration
 Goal: measured evidence of iteration, including evidence for the bonuses.
-1. **Question set.** 20-25 questions (§9), each with its expected intent, viz type and status written before any run. Include condition-anchored network questions and a drug-anchored one (the star case).
+1. **Question set.** Written in Phase 3 step 0; add any question a Phase 3 bug exposed, never edit an expectation to match output.
 2. **Runner.** Calls the pipeline directly and records per question: intent, viz type, status, record count, check pass/fail, latency, failure mode, plus citation metrics (share of rows fully cited, excerpt-check pass rate) and network metrics (nodes and edges after pruning, whether the fallback fired, placebo and non-drug exclusions).
 3. **Baseline, fix, rerun.** Baseline on `gpt-5.4-mini`; fix the largest failure class; rerun. Keep both result sets.
 4. The frontend is used to eyeball each chart the runner flags.

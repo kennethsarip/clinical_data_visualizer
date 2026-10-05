@@ -10,6 +10,7 @@ from app.vocab import Phase, Status
 # The cap keeps an arbitrary string out of the API URL; real drug, condition, sponsor and country
 # names are far shorter.
 FILTER_TEXT_MAX_LENGTH = 200
+QUERY_MAX_LENGTH = 1000
 FilterText = Annotated[
     str, StringConstraints(strip_whitespace=True, min_length=1, max_length=FILTER_TEXT_MAX_LENGTH)
 ]
@@ -54,8 +55,10 @@ class RetrievalFilters(_FilterFields):
 class VisualizeRequest(_FilterFields):
     """The `POST /api/visualize` body (SCHEMAS.md §1). Only `query` is required."""
 
-    # Max length is still OPEN (CLAUDE.md §13.1).
-    query: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+    # The cap bounds prompt size and cost; a real question is far shorter.
+    query: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=QUERY_MAX_LENGTH)
+    ]
 
 
 # --- response (SCHEMAS.md §2-§5) ---
