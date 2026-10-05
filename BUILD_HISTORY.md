@@ -4,7 +4,7 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ## Shipped
 
-### Phase 4: Frontend (done 2026-10-05; PR #5, awaiting merge and the `phase-4` tag)
+### Phase 4: Frontend (done 2026-10-05; merged in PR #5 and tagged `phase-4`)
 
 - **Done when, checked** (2026-10-05): every SCHEMAS.md visualization example renders in Vitest (4.6); every status view plus 422 and 502 was reached from the running backend (4.5); lint, typecheck, tests and the type-drift check run in CI (4.2, 4.3). Datum -> card -> Viewer, live in headless Chrome with real mouse events on the largest datum: time series (2023 point), bar (Not Applicable), grouped bar (Phase 2 · pembrolizumab), histogram (100-249 · Actual), scatter (an adalimumab point), network node (Pembrolizumab) and network edge (Ipilimumab – Nivolumab) each opened the first trial with its excerpt marked at the cited path and no change warning.
 - **4.10 Response JSON and export** (2026-10-05): the chart card header has Chart | Response JSON tabs and, on the chart, SVG and PNG downloads (PNG only for networks, which Cytoscape draws to canvas). The JSON tab shows the response pretty-printed with its size, Copy (shows Copied / Copy failed) and Download JSON. Files are named from the title (`breast-cancer-trials-by-phase.svg`). Renderer handles are now stable (`useImperativeHandle` deps), so the card holds the handle in state and shows export only once the lazy renderer has mounted.

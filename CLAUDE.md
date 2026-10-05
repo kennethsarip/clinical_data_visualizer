@@ -4,9 +4,9 @@
 >
 > **The one thing to understand first:** the LLM never produces a number, count, date, NCT ID, excerpt or data row. It does exactly two things: plan the query and write prose (title, notes). Retrieval, aggregation, viz type selection, citations and checks are deterministic Python, so every row traces back to cached API records by NCT ID (§7.2).
 >
-> **Status:** Phases 1-4 are done (Phase 3 tagged `phase-3`; Phase 4 on PR #5, awaiting merge): `POST /api/visualize` answers end to end, live 29/29 on the eval questions, and the frontend renders every viz type with clickable citations. Phase 5 (eval) is next (§14). The repo is `github.com/kennethsarip/cheiron_task` (private, §12). Runs locally only; no deploy is planned (§13.4).
+> **Status:** Phases 1-4 are done (each merged and tagged `phase-N`; Phase 4 on 2026-10-05): `POST /api/visualize` answers end to end, live 29/29 on the eval questions, and the frontend renders every viz type with clickable citations. Phase 5 (eval) is next (§14). The repo is `github.com/kennethsarip/cheiron_task` (private, §12). Runs locally only; no deploy is planned (§13.4).
 >
-> **Definition of done:** `uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest`, plus `cd frontend && npm run lint && npm run typecheck && npm test`, all green. CI (`.github/workflows/ci.yml`) runs exactly these, so local green means CI green. `main` stays runnable.
+> **Definition of done:** `uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest`, plus `cd frontend && npm run lint && npm run typecheck && npm test && npm run check:types`, all green (`check:types` diffs against git, so commit regenerated types first). CI (`.github/workflows/ci.yml`) runs exactly these, so local green means CI green. `main` stays runnable.
 >
 > **Read before coding:** Objectives, §6 Data model, §7 How things work, §11 Don't do, §14 Build plan.
 
@@ -497,7 +497,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4, done) makes results visible for the demo.
 
-**Next move:** merge PR #5 and tag `phase-4`, then Phase 5 step 2 (eval runner).
+**Next move:** Phase 5 step 2 (eval runner), on branch `phase-5-eval`.
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
