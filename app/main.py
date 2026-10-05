@@ -15,6 +15,7 @@ from typing import Annotated, Any
 
 import psycopg
 from fastapi import Depends, FastAPI, HTTPException, Path
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.openapi.utils import get_openapi
 
 from app import aggregators  # noqa: F401  (registers every aggregator)
@@ -40,6 +41,9 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(messag
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="ClinicalTrials.gov Query-to-Visualization Agent")
+# Responses carry every charted trial; at the 10,000-record cap a comparison is ~7 MB of JSON,
+# ~1.4 MB gzipped (BUILD_HISTORY.md 5.3). Starlette's middleware, no new dependency.
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 
 def _openapi() -> dict[str, Any]:

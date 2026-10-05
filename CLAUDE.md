@@ -434,7 +434,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 - Don't add an agent framework, embeddings, vector search or rerankers (§13.3).
 - Don't branch on question type in route handlers; register an aggregator (§7.4).
 - Don't substitute a similar entity or NCT ID for one that wasn't found (§7.8, §8.2).
-- Don't silently widen a search, apply an inferred filter or truncate results (§7.3, §7.8).
+- Don't silently widen a search, apply an inferred filter or truncate results (§7.3, §7.8). A capped chart says so on its count axis and in a caption.
 - Don't drop records with missing or multi-valued fields without a documented rule and a count in `meta` (§6, §7.4).
 - Don't re-query the API to repair a spec; a repair reuses the same rows (§7.7).
 - Don't build synonym resolution, multi-agent or iterative retrieval without a logged eval failure that justifies it (§13.4).
@@ -479,7 +479,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 ### 13.4 Deferred
 - Synonym resolution of inputs. Trigger: an eval run logs a zero-result query that a synonym would have fixed. The API already expands drug synonyms (§7.3).
-- Upstream hardening: honoring `Retry-After` on 429 and retrying timeouts. Trigger: a logged 429 or timeout in an eval or example run (rate limits are unverified, §8.4). Observed 2026-10-04: two 429s in a Phase 2 live sweep (~22 requests in ~20 s), both absorbed by the existing retries.
+- Upstream hardening: honoring `Retry-After` on 429 and retrying timeouts. Trigger: a logged 429 or timeout in an eval or example run (rate limits are unverified, §8.4). Observed 2026-10-04: two 429s in a Phase 2 live sweep (~22 requests in ~20 s), both absorbed by the existing retries. Trigger met 2026-10-05: the Phase 5 after-run at the 10,000 cap logged two 429s on a two-cohort comparison (absorbed; 25 s for that question), so this is the next upstream fix if a run fails on one.
 - Multi-value phase and status filters (e.g. "Phase 2 or 3"). Trigger: an eval question that needs one; the API syntax is unverified.
 - Brand <-> generic and code-name merging of network nodes (Keytruda, MK-3475 -> pembrolizumab). Trigger: an eval network splits one drug across nodes in a way the §6 name rules miss.
 - Investigator and site networks (the assignment lists both entities). Trigger: every Phase 2-6 "Done when" passes with time left. First verify `overallOfficials[].name` and `locations[].facility` on the live API; site names are messy free text.
@@ -497,7 +497,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4, done) makes results visible for the demo.
 
-**Next move:** Phase 5 step 3 (baseline run), on branch `phase-5-eval`.
+**Next move:** Phase 5 step 4 (eyeball the charts the runner flags), on branch `phase-5-eval`; then Phase 5 "Done when".
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
@@ -508,7 +508,6 @@ The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4, d
 ### Phase 5: Eval and iteration
 Goal: measured evidence of iteration, including evidence for the bonuses.
 1. **Question set.** Written in Phase 3 step 0; add any question a Phase 3 bug exposed, never edit an expectation to match output.
-3. **Baseline, fix, rerun.** Baseline on `gpt-5.4-mini`; fix the largest failure class; rerun. Keep both result sets.
 4. The frontend is used to eyeball each chart the runner flags.
 
 Done when: the baseline and after results are saved in `eval/` with per-question metrics, and the README cites only comparisons that were actually run.
