@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { visualize, type ApiResult, type VisualizeRequest, type VisualizeResponse } from './api/client'
-import { ChartCard } from './answer/ChartCard'
+import { Answer } from './answer/Answer'
 import { SearchForm, type SearchFormHandle } from './search/SearchForm'
 import { LoadingView } from './status/LoadingView'
 import { StatusView } from './status/StatusView'
@@ -61,7 +61,7 @@ export default function App() {
         {!busy && outcome && (
           <StatusView result={outcome} onRetry={retry} onAddAnchor={(anchor) => form.current?.openFilter(anchor)} />
         )}
-        {!busy && chart && <ChartCard key={runId} visualization={chart.visualization} meta={chart.meta} />}
+        {!busy && chart && <Answer key={runId} response={chart} />}
       </div>
     </main>
   )
