@@ -75,6 +75,8 @@ def test_fields_trim_to_record_paths() -> None:
     fields = build_params(RetrievalFilters(), 1000)["fields"].split(",")
     assert "protocolSection.identificationModule.nctId" in fields
     assert all(path.startswith("protocolSection.") for path in fields)
+    # Phase 8 step 5: each intervention's registered other names are the synonym evidence.
+    assert "protocolSection.armsInterventionsModule.interventions.otherNames" in fields
 
 
 # --- params_key ---

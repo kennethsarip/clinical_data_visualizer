@@ -26,8 +26,8 @@ from app.aggregators.common import (
 )
 from app.aggregators.registry import Dimension, RowShape
 from app.ctgov import build_params
-from app.entities import EntityType, entity_key
-from app.normalize import normalize_records
+from app.entities import EntityType, drug_aliases, drug_key, entity_key, select_drugs
+from app.normalize import NormalizedTrial, normalize_records
 from app.recount import NETWORK_ENDS, RecountedGraph, recount_network
 from app.schemas import (
     RESPONSE_ADAPTER,
@@ -389,11 +389,28 @@ def _network(response: OkResponse, context: CheckContext) -> list[str]:
     spec, pruning = response.visualization, response.meta.pruning
     if not isinstance(spec, NetworkVisualization) or pruning is None:
         return []  # the disclosures check reports a missing or misplaced pruning
+    dimension = response.meta.interpretation.dimension
+    if dimension not in NETWORK_ENDS:
+        return [f"dimension {dimension} is not a registered network"]
+    trials = _charted_trials(response, context)
     return [
         *_pruned_shape(spec, pruning),
-        *_anchor_flags(response, spec),
-        *_recount_mismatches(response, spec, pruning, context),
+        *_anchor_flags(response, spec, drug_aliases(trials)),
+        *_recount_mismatches(Dimension(dimension), spec, pruning, trials),
     ]
+
+
+def _charted_trials(response: OkResponse, context: CheckContext) -> list[NormalizedTrial]:
+    """The retrieved records the chart was built from, normalized: the pipeline drops records
+    outside an exact filter before aggregating."""
+    filters = response.meta.filters
+    shared = {**filters.stated, **filters.inferred}
+    charted = [
+        record
+        for record in context.records.values()
+        if all(_meets_raw(record.get("protocolSection", {}), k, v) for k, v in shared.items())
+    ]
+    return normalize_records(charted).trials
 
 
 def _pruned_shape(spec: NetworkVisualization, pruning: Pruning) -> list[str]:
@@ -412,16 +429,21 @@ def _pruned_shape(spec: NetworkVisualization, pruning: Pruning) -> list[str]:
     return messages
 
 
-def _anchor_flags(response: OkResponse, spec: NetworkVisualization) -> list[str]:
-    """is_anchor marks exactly the named entities' nodes. A named entity may have no node: the
-    API expands synonyms (§7.3), so a Keytruda query charts pembrolizumab."""
+def _anchor_flags(
+    response: OkResponse, spec: NetworkVisualization, aliases: Mapping[str, str]
+) -> list[str]:
+    """is_anchor marks exactly the named entities' nodes; a named drug that is a merged synonym
+    marks the drug it merged into. A named entity may have no node: the API expands synonyms
+    (§7.3) that the trials may not register, so a query can chart only other names."""
     filters = response.meta.filters
     shared = {**filters.stated, **filters.inferred}
-    named = {
-        f"{kind}:{entity_key(kind, str(shared[key]))}"
-        for key, kind in ANCHOR_FILTERS.items()
-        if key in shared
-    }
+    named = set()
+    for key, kind in ANCHOR_FILTERS.items():
+        if key in shared:
+            entity = entity_key(kind, str(shared[key]))
+            named.add(
+                f"{kind}:{aliases.get(entity, entity) if kind is EntityType.DRUG else entity}"
+            )
     return [
         f"node {node.id} has is_anchor {node.is_anchor}, but it is "
         f"{'' if node.id in named else 'not '}the entity the query named"
@@ -431,20 +453,12 @@ def _anchor_flags(response: OkResponse, spec: NetworkVisualization) -> list[str]
 
 
 def _recount_mismatches(
-    response: OkResponse, spec: NetworkVisualization, pruning: Pruning, context: CheckContext
+    dimension: Dimension,
+    spec: NetworkVisualization,
+    pruning: Pruning,
+    trials: Sequence[NormalizedTrial],
 ) -> list[str]:
-    dimension = response.meta.interpretation.dimension
-    if dimension not in NETWORK_ENDS:
-        return [f"dimension {dimension} is not a registered network"]
-    filters = response.meta.filters
-    shared = {**filters.stated, **filters.inferred}
-    # The charted set: the pipeline drops records outside an exact filter before aggregating.
-    charted = [
-        record
-        for record in context.records.values()
-        if all(_meets_raw(record.get("protocolSection", {}), k, v) for k, v in shared.items())
-    ]
-    graph = recount_network(Dimension(dimension), normalize_records(charted).trials)
+    graph = recount_network(dimension, trials)
     shown_nodes = {node.id: frozenset(node.nct_ids) for node in spec.data.nodes}
     shown_edges = {(e.source, e.target): frozenset(e.nct_ids) for e in spec.data.edges}
     return [
@@ -479,6 +493,59 @@ def _pruning_diff(pruning: Pruning, graph: RecountedGraph) -> list[str]:
     ]
 
 
+# Dimensions charted from drug mentions, so the synonym rule applies (§14 Phase 8 step 5).
+DRUG_DIMENSIONS = frozenset({"drug", "drug_drug", "sponsor_drug", "condition_drug"})
+
+
+def _name_merges(response: OkResponse, context: CheckContext) -> list[str]:
+    """Phase 8 step 5: every disclosed merge cites retrieved trials that register the excerpt as
+    an other name of that very drug, within the citation cap; and a recount of the synonym rule
+    from the charted records gives exactly the merges disclosed, so none is hidden or invented."""
+    meta = response.meta
+    messages = []
+    for merge in meta.name_merges:
+        if len(merge.evidence) > meta.citation_cap:
+            messages.append(
+                f"merge {merge.name} cites {len(merge.evidence)} listings, over citation_cap "
+                f"{meta.citation_cap}"
+            )
+        for citation in merge.evidence:
+            record = context.records.get(citation.nct_id)
+            if record is None:
+                messages.append(f"merge {merge.name}: {citation.nct_id} was not retrieved")
+            elif not _lists_other_name(record, merge.name, citation.excerpt):
+                messages.append(
+                    f"merge {merge.name}: {citation.nct_id} does not register "
+                    f"{citation.excerpt!r} as an other name of {merge.name}"
+                )
+    return messages + _merge_recount(response, context)
+
+
+def _lists_other_name(record: Mapping[str, Any], drug: str, excerpt: str | None) -> bool:
+    module = record.get("protocolSection", {}).get("armsInterventionsModule", {})
+    return any(
+        excerpt in (item.get("otherNames") or [])
+        and isinstance(item.get("name"), str)
+        and drug_key(item["name"]) == drug_key(drug)
+        for item in module.get("interventions") or []
+    )
+
+
+def _merge_recount(response: OkResponse, context: CheckContext) -> list[str]:
+    shown = {(m.name, tuple(m.merged_names)) for m in response.meta.name_merges}
+    expected: set[tuple[str, tuple[str, ...]]] = set()
+    if response.meta.grouping.dimension in DRUG_DIMENSIONS:
+        trials = _charted_trials(response, context)
+        expected = {(m.label, m.merged_names) for m in select_drugs(trials).merges}
+    return [
+        f"merge {name} <- {', '.join(names)} is disclosed but a recount does not make it"
+        for name, names in sorted(shown - expected)
+    ] + [
+        f"merge {name} <- {', '.join(names)} is applied but not disclosed"
+        for name, names in sorted(expected - shown)
+    ]
+
+
 CHECKS: tuple[tuple[str, Check], ...] = (
     ("schema", _schema),
     ("encoding", _encoding),
@@ -491,6 +558,7 @@ CHECKS: tuple[tuple[str, Check], ...] = (
     ("disclosures", _disclosures),
     ("conformance", _conformance),
     ("network", _network),
+    ("name merges", _name_merges),
 )
 
 
@@ -508,4 +576,5 @@ CHECK_RULES: Mapping[str, str] = {
     "disclosures": "Sample caps, pruning and top-N limits are disclosed consistently.",
     "conformance": "Every charted trial meets each exact filter; the filters shown are those sent.",
     "network": "Each network obeys its pruning, marks the named entity, and matches a recount.",
+    "name merges": "Each merged drug name is registered as its other name, as a recount finds.",
 }

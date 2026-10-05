@@ -70,6 +70,20 @@ def test_complete_record_maps_every_field() -> None:
     assert trial.gaps == frozenset()
 
 
+def test_other_names_are_kept_per_intervention() -> None:
+    # Phase 8 step 5: synonym evidence is the alias list registered with each intervention.
+    record = _record(
+        armsInterventionsModule={
+            "interventions": [
+                {"type": "DRUG", "name": "Everolimus", "otherNames": ["RAD001", "Afinitor"]},
+                {"type": "DRUG", "name": "Letrozole"},
+            ]
+        }
+    )
+    trial = normalize_record(record)
+    assert [i.other_names for i in trial.interventions] == [("RAD001", "Afinitor"), ()]
+
+
 # --- phases: one category per combination ---
 
 

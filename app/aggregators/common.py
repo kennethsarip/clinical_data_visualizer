@@ -16,6 +16,7 @@ from app.aggregators.registry import (
     Evidence,
 )
 from app.entities import (
+    DrugMerge,
     condition_mentions,
     most_common_spelling,
     select_drugs,
@@ -31,6 +32,7 @@ F_START_DATE = "statusModule.startDateStruct.date"
 F_COUNTRY = "contactsLocationsModule.locations.country"
 F_INTERVENTION_TYPE = "armsInterventionsModule.interventions.type"
 F_INTERVENTION_NAME = "armsInterventionsModule.interventions.name"
+F_INTERVENTION_OTHER_NAMES = "armsInterventionsModule.interventions.otherNames"
 F_SPONSOR = "sponsorCollaboratorsModule.leadSponsor.name"
 F_SPONSOR_CLASS = "sponsorCollaboratorsModule.leadSponsor.class"
 F_CONDITION = "conditionsModule.conditions"
@@ -59,6 +61,7 @@ class Assignment:
 class Categorized:
     by_trial: Mapping[str, tuple[Assignment, ...]]  # nct_id -> categories; empty = left out
     excluded: Mapping[str, int]  # counting rule -> trials (non-zero only)
+    merges: tuple[DrugMerge, ...] = ()  # synonyms merged into one drug (drug dimension only)
 
 
 @dataclass
@@ -128,8 +131,14 @@ def gap_counts(trials: Sequence[NormalizedTrial], *gaps: Gap) -> dict[str, int]:
 class Categorizer:
     dimension: Dimension
     excerpt_fields: tuple[str, ...]
-    assign: Callable[[Sequence[NormalizedTrial]], Categorized]
+    # (trials to categorize, trials synonym evidence comes from: every cohort in a comparison)
+    assign: Callable[[Sequence[NormalizedTrial], Sequence[NormalizedTrial]], Categorized]
     top_n: int | None = None
+
+    def categorize(
+        self, trials: Sequence[NormalizedTrial], universe: Sequence[NormalizedTrial] | None = None
+    ) -> Categorized:
+        return self.assign(trials, trials if universe is None else universe)
 
     @property
     def column(self) -> str:
@@ -154,7 +163,9 @@ def _phase_rank(phases: tuple[Phase, ...]) -> tuple[int, ...]:
     return (0, *sorted(_PHASE_INDEX[p] for p in phases))
 
 
-def _assign_phase(trials: Sequence[NormalizedTrial]) -> Categorized:
+def _assign_phase(
+    trials: Sequence[NormalizedTrial], _universe: Sequence[NormalizedTrial]
+) -> Categorized:
     def one(t: NormalizedTrial) -> Iterable[Assignment]:
         ordered_phases = tuple(p for p in Phase if p in t.phases)
         evidence = tuple(Evidence(F_PHASES, str(p)) for p in ordered_phases) or (
@@ -166,7 +177,9 @@ def _assign_phase(trials: Sequence[NormalizedTrial]) -> Categorized:
     return Categorized(_per_trial(trials, one), {})
 
 
-def _assign_status(trials: Sequence[NormalizedTrial]) -> Categorized:
+def _assign_status(
+    trials: Sequence[NormalizedTrial], _universe: Sequence[NormalizedTrial]
+) -> Categorized:
     def one(t: NormalizedTrial) -> Iterable[Assignment]:
         status = t.overall_status
         yield Assignment(str(status), label(status), (Evidence(F_STATUS, str(status)),))
@@ -174,7 +187,9 @@ def _assign_status(trials: Sequence[NormalizedTrial]) -> Categorized:
     return Categorized(_per_trial(trials, one), {})
 
 
-def _assign_sponsor_class(trials: Sequence[NormalizedTrial]) -> Categorized:
+def _assign_sponsor_class(
+    trials: Sequence[NormalizedTrial], _universe: Sequence[NormalizedTrial]
+) -> Categorized:
     def one(t: NormalizedTrial) -> Iterable[Assignment]:
         cls = t.sponsor_class
         yield Assignment(str(cls), label(cls), (Evidence(F_SPONSOR_CLASS, str(cls)),))
@@ -182,7 +197,9 @@ def _assign_sponsor_class(trials: Sequence[NormalizedTrial]) -> Categorized:
     return Categorized(_per_trial(trials, one), {})
 
 
-def _assign_intervention_type(trials: Sequence[NormalizedTrial]) -> Categorized:
+def _assign_intervention_type(
+    trials: Sequence[NormalizedTrial], _universe: Sequence[NormalizedTrial]
+) -> Categorized:
     # Unnamed interventions are left out (§6); the trial still counts through its named ones.
     def one(t: NormalizedTrial) -> Iterable[Assignment]:
         seen = set()
@@ -197,7 +214,9 @@ def _assign_intervention_type(trials: Sequence[NormalizedTrial]) -> Categorized:
     return Categorized(_per_trial(trials, one), excluded)
 
 
-def _assign_country(trials: Sequence[NormalizedTrial]) -> Categorized:
+def _assign_country(
+    trials: Sequence[NormalizedTrial], _universe: Sequence[NormalizedTrial]
+) -> Categorized:
     def one(t: NormalizedTrial) -> Iterable[Assignment]:
         for country in t.countries:  # already deduped per trial (§6)
             yield Assignment(country, country, (Evidence(F_COUNTRY, country),))
@@ -205,8 +224,10 @@ def _assign_country(trials: Sequence[NormalizedTrial]) -> Categorized:
     return Categorized(_per_trial(trials, one), gap_counts(trials, Gap.NO_LOCATIONS))
 
 
-def _assign_drug(trials: Sequence[NormalizedTrial]) -> Categorized:
-    selection = select_drugs(trials)
+def _assign_drug(
+    trials: Sequence[NormalizedTrial], universe: Sequence[NormalizedTrial]
+) -> Categorized:
+    selection = select_drugs(trials, universe)
     by_trial = {
         nct_id: tuple(
             Assignment(m.key, m.label, (Evidence(F_INTERVENTION_NAME, m.raw),)) for m in mentions
@@ -216,10 +237,12 @@ def _assign_drug(trials: Sequence[NormalizedTrial]) -> Categorized:
     excluded = nonzero(selection.excluded) | gap_counts(
         trials, Gap.NO_INTERVENTIONS, Gap.UNNAMED_INTERVENTION
     )
-    return Categorized(by_trial, excluded)
+    return Categorized(by_trial, excluded, selection.merges)
 
 
-def _assign_sponsor(trials: Sequence[NormalizedTrial]) -> Categorized:
+def _assign_sponsor(
+    trials: Sequence[NormalizedTrial], _universe: Sequence[NormalizedTrial]
+) -> Categorized:
     def one(t: NormalizedTrial) -> Iterable[Assignment]:
         m = sponsor_mention(t)
         yield Assignment(m.key, m.label, (Evidence(F_SPONSOR, m.raw),))
@@ -227,7 +250,9 @@ def _assign_sponsor(trials: Sequence[NormalizedTrial]) -> Categorized:
     return Categorized(_per_trial(trials, one), {})
 
 
-def _assign_condition(trials: Sequence[NormalizedTrial]) -> Categorized:
+def _assign_condition(
+    trials: Sequence[NormalizedTrial], _universe: Sequence[NormalizedTrial]
+) -> Categorized:
     def one(t: NormalizedTrial) -> Iterable[Assignment]:
         for m in condition_mentions(t):
             yield Assignment(m.key, m.label, (Evidence(F_CONDITION, m.raw),))
@@ -236,7 +261,9 @@ def _assign_condition(trials: Sequence[NormalizedTrial]) -> Categorized:
     return Categorized(_per_trial(trials, one), excluded)
 
 
-def _assign_start_year(trials: Sequence[NormalizedTrial]) -> Categorized:
+def _assign_start_year(
+    trials: Sequence[NormalizedTrial], _universe: Sequence[NormalizedTrial]
+) -> Categorized:
     def one(t: NormalizedTrial) -> Iterable[Assignment]:
         if t.start_year is not None and t.start_date is not None:
             evidence = (Evidence(F_START_DATE, t.start_date),)

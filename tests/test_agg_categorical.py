@@ -17,7 +17,7 @@ from app.aggregators.registry import (
     Intent,
 )
 from app.schemas import RetrievalFilters, TopN
-from tests.factories import FIXTURE, T1, T2, T4, cohort
+from tests.factories import FIXTURE, T1, T2, T4, cohort, make_trial
 
 Summary = list[tuple[Any, ...]]
 
@@ -274,3 +274,60 @@ def test_result_types_match_the_declared_shape() -> None:
         result = aggregator.aggregate(cohorts)
         expected = GraphAggregation if intent is Intent.NETWORK else Aggregation
         assert isinstance(result, expected), (intent, dimension)
+
+
+# --- synonym merges (Phase 8 step 5) ---
+
+# Two trials register RAD001 as an other name of everolimus; a third names RAD001 itself.
+_EVEROLIMUS = [
+    make_trial("NCT00000011", [("DRUG", "Everolimus", ["RAD001"])]),
+    make_trial("NCT00000012", [("DRUG", "Everolimus", ["RAD001"])]),
+]
+_RAD001 = make_trial("NCT00000013", [("DRUG", "RAD001")])
+
+
+def test_top_drugs_merge_a_synonym_and_report_it() -> None:
+    result = _run(Intent.DISTRIBUTION, Dimension.DRUG, cohort([*_EVEROLIMUS, _RAD001]))
+    assert _rows(result, "drug") == [
+        ("Everolimus", 3, ["NCT00000011", "NCT00000012", "NCT00000013"]),
+    ]
+    assert [(m.key, m.merged_names) for m in result.name_merges] == [("everolimus", ("RAD001",))]
+
+
+def test_comparison_merges_with_evidence_from_every_cohort() -> None:
+    # The RAD001 cohort holds no listing itself; the other cohort's trials supply the evidence,
+    # so both cohorts chart one Everolimus category.
+    result = _run(
+        Intent.COMPARISON,
+        Dimension.DRUG,
+        cohort(_EVEROLIMUS, label="A"),
+        cohort([_RAD001], label="B"),
+    )
+    assert _rows(result, "drug", "cohort") == [
+        ("Everolimus", "A", 2, ["NCT00000011", "NCT00000012"]),
+        ("Everolimus", "B", 1, ["NCT00000013"]),
+    ]
+    assert [m.key for m in result.name_merges] == ["everolimus"]
+
+
+def test_charts_without_drugs_report_no_merges() -> None:
+    result = _run(Intent.DISTRIBUTION, Dimension.PHASE, cohort([*_EVEROLIMUS, _RAD001]))
+    assert result.name_merges == ()
+
+
+def test_a_trial_in_two_cohorts_counts_once_as_synonym_evidence() -> None:
+    # Live (comparison-drug): a trial matching both cohorts was counted twice, which changed the
+    # merged drug's label. Own spellings once each: "Everolimus" 1, "everolimus" 2.
+    shared = make_trial("NCT00000011", [("DRUG", "Everolimus", ["RAD001"])])
+    result = _run(
+        Intent.COMPARISON,
+        Dimension.DRUG,
+        cohort(
+            [shared, make_trial("NCT00000012", [("DRUG", "everolimus", ["RAD001"])])], label="A"
+        ),
+        cohort(
+            [shared, make_trial("NCT00000014", [("DRUG", "everolimus")]), _RAD001],
+            label="B",
+        ),
+    )
+    assert [(m.label, m.merged_names) for m in result.name_merges] == [("everolimus", ("RAD001",))]

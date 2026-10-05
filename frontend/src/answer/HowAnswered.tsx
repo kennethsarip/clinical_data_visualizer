@@ -92,6 +92,19 @@ export function HowAnswered({ meta }: { meta: OkMeta }) {
           )}
         </Section>
 
+        {meta.name_merges.length > 0 && (
+          <Section title="Merged drug names">
+            <ul className="how-list" aria-label="Merged drug names">
+              {meta.name_merges.map((merge) => (
+                <li key={merge.name}>
+                  {merge.merged_names.join(', ')} charted as {merge.name}: registered as its other name in{' '}
+                  {merge.evidence.map((citation) => citation.nct_id).join(', ')}.
+                </li>
+              ))}
+            </ul>
+          </Section>
+        )}
+
         <Section title="Checks passed" wide>
           <ul className="how-checks" aria-label="Checks passed">
             {CHECKS.map((check) => (

@@ -271,3 +271,29 @@ def test_every_coverage_matrix_class_is_registered() -> None:
         }
     )
     assert set(REGISTRY.registered()) == expected
+
+
+def test_networks_merge_synonyms_and_report_them() -> None:
+    # Phase 8 step 5: RAD001 is everolimus by two trials' registered other names.
+    trials = [
+        make_trial("NCT00000011", [("DRUG", "Everolimus", ["RAD001"]), ("DRUG", "Exemestane")]),
+        make_trial("NCT00000012", [("DRUG", "Everolimus", ["RAD001"]), ("DRUG", "Exemestane")]),
+        make_trial("NCT00000013", [("DRUG", "RAD001"), ("DRUG", "Exemestane")]),
+    ]
+    graph = _graph(Dimension.DRUG_DRUG, cohort(trials))
+    assert _edges(graph) == [
+        ("drug:everolimus", "drug:exemestane", ["NCT00000011", "NCT00000012", "NCT00000013"])
+    ]
+    assert [m.key for m in graph.name_merges] == ["everolimus"]
+
+
+def test_a_named_synonym_anchors_the_drug_it_merged_into() -> None:
+    # The API expands "Keytruda" to pembrolizumab trials; two register Keytruda as its other name.
+    trials = [
+        make_trial("NCT00000011", [("DRUG", "Pembrolizumab", ["Keytruda"]), ("DRUG", "Axitinib")]),
+        make_trial("NCT00000012", [("DRUG", "Pembrolizumab", ["Keytruda"]), ("DRUG", "Axitinib")]),
+    ]
+    graph = _graph(
+        Dimension.DRUG_DRUG, cohort(trials, filters=RetrievalFilters(drug_name="Keytruda"))
+    )
+    assert [n.values["id"] for n in graph.nodes if n.values["is_anchor"]] == ["drug:pembrolizumab"]

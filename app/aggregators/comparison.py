@@ -26,6 +26,7 @@ from app.aggregators.registry import (
     Intent,
     RowShape,
 )
+from app.entities import combine_merges
 from app.schemas import TopN
 
 COHORT_COLUMN = "cohort"
@@ -57,7 +58,9 @@ class ComparisonAggregator:
 
     def aggregate(self, cohorts: Sequence[CohortTrials]) -> Aggregation:
         labels = _cohort_labels(cohorts)
-        per_cohort = [self.categorizer.assign(c.batch.trials) for c in cohorts]
+        # Synonym evidence comes from every cohort, so one drug has one category in each.
+        universe = [t for c in cohorts for t in c.batch.trials]
+        per_cohort = [self.categorizer.categorize(c.batch.trials, universe) for c in cohorts]
         # A trial in two cohorts gets the same categories in both, so a merged view is consistent.
         combined = Categorized(
             {nct: a for cat in per_cohort for nct, a in cat.by_trial.items()}, {}
@@ -80,7 +83,8 @@ class ComparisonAggregator:
             for label, cat in zip(labels, per_cohort, strict=True)
             for rule, n in cat.excluded.items()
         }
-        return Aggregation(tuple(rows), excluded, top_n)
+        merges = combine_merges(*(cat.merges for cat in per_cohort))
+        return Aggregation(tuple(rows), excluded, top_n, merges)
 
 
 def _cohort_labels(cohorts: Sequence[CohortTrials]) -> list[str]:

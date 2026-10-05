@@ -40,10 +40,38 @@ describe('HowAnswered (SCHEMAS.md §4 meta)', () => {
     const drawer = await open(META)
     const checks = within(drawer).getByRole('list', { name: 'Checks passed' })
     const items = within(checks).getAllByRole('listitem')
-    expect(items).toHaveLength(11) // CLAUDE.md §7.6, conformance (Phase 6.4), network (Phase 8.1)
+    expect(items).toHaveLength(12) // CLAUDE.md §7.6, conformance (6.4), network (8.1), name merges (8.5)
     expect(items[0]).toHaveTextContent('schema: The response matches the documented schema.')
     expect(items[9]).toHaveTextContent('conformance: Every charted trial meets each exact filter')
     expect(items[10]).toHaveTextContent('network: Each network obeys its pruning')
+    expect(items[11]).toHaveTextContent('name merges: Each merged drug name is registered as its other name')
+  })
+
+  it('lists merged drug names with the trials that register them (SCHEMAS.md §4 name_merges)', async () => {
+    const field = 'armsInterventionsModule.interventions.otherNames'
+    const drawer = await open({
+      ...META,
+      name_merges: [
+        {
+          entity_type: 'drug',
+          name: 'Everolimus',
+          merged_names: ['RAD001'],
+          evidence: [
+            { nct_id: 'NCT00000012', excerpt: 'RAD001', field },
+            { nct_id: 'NCT00000011', excerpt: 'RAD001', field },
+          ],
+        },
+      ],
+    })
+    const merges = within(drawer).getByRole('list', { name: 'Merged drug names' })
+    const item = within(merges).getByRole('listitem')
+    expect(item).toHaveTextContent('RAD001 charted as Everolimus')
+    expect(item).toHaveTextContent('registered as its other name in NCT00000012, NCT00000011')
+  })
+
+  it('has no merged-names section when nothing merged', async () => {
+    const drawer = await open(META)
+    expect(within(drawer).queryByRole('list', { name: 'Merged drug names' })).not.toBeInTheDocument()
   })
 
   it('flags a capped sample and inferred filters, even while collapsed', async () => {

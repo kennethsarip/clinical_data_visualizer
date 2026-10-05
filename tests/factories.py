@@ -6,7 +6,8 @@ from app.aggregators.registry import CohortTrials
 from app.normalize import Gap, NormalizedBatch, NormalizedTrial, UnreadableRecord
 from app.schemas import RetrievalFilters
 
-Interventions = list[tuple[str, str | None]]
+# (type, name) or (type, name, other names)
+Interventions = list[tuple[str, str | None] | tuple[str, str | None, list[str]]]
 
 
 def make_trial(
@@ -22,7 +23,10 @@ def make_trial(
         "start_year": None,
         "sponsor_name": "Merck Sharp & Dohme LLC",
         "sponsor_class": "INDUSTRY",
-        "interventions": [{"type": t, "name": n} for t, n in interventions],
+        "interventions": [
+            {"type": i[0], "name": i[1], "other_names": i[2] if len(i) == 3 else ()}
+            for i in interventions
+        ],
         "conditions": [],
         "countries": [],
         "enrollment": None,
@@ -74,7 +78,9 @@ def raw_record(trial: NormalizedTrial) -> dict[str, Any]:
     if trial.interventions:
         section["armsInterventionsModule"] = {
             "interventions": [
-                {"type": str(i.type)} | ({"name": i.name} if i.name is not None else {})
+                {"type": str(i.type)}
+                | ({"name": i.name} if i.name is not None else {})
+                | ({"otherNames": list(i.other_names)} if i.other_names else {})
                 for i in trial.interventions
             ]
         }

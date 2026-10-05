@@ -45,6 +45,7 @@ RECORD_FIELDS = (
     "protocolSection.sponsorCollaboratorsModule.leadSponsor.class",
     "protocolSection.armsInterventionsModule.interventions.type",
     "protocolSection.armsInterventionsModule.interventions.name",
+    "protocolSection.armsInterventionsModule.interventions.otherNames",
     "protocolSection.conditionsModule.conditions",
     "protocolSection.contactsLocationsModule.locations.country",
 )

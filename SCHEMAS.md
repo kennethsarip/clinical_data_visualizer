@@ -142,6 +142,7 @@ One row per category. Sort: count descending, ties alphabetical; phase uses its 
    "excluded": [],
    "top_n": null,
    "pruning": null,
+   "name_merges": [],
    "notes": ["Counts every trial that mentions pembrolizumab as an intervention."]}}
 ```
 
@@ -262,12 +263,15 @@ The full `meta` of an `ok` response is in §3.1.
 | excluded | when `ok` | `[{rule, count}]`: trials a counting rule acted on. In a comparison each rule ends with its cohort, `"<rule> (<cohort>)"`. Most rules leave the trial out (`missing start date`, `no drug intervention`, `unreadable record`, and `outside the <filter> filter` for a fetched trial that fails an exact filter sent: phase, status, start year, end year or country); `placebo` and `non-drug intervention` count trials that had such an intervention dropped but may still appear through their other drugs |
 | top_n | when `ok` | `null`, or `{limit, categories_total}` for a top-N bar chart |
 | pruning | when `ok` | `null` unless network: `{min_edge_weight, top_n_nodes, fallback_used, nodes_removed, edges_removed}` |
+| name_merges | when `ok` | `[{entity_type, name, merged_names, evidence}]`: drug names charted as one drug because trials register them as its other names (`interventions[].otherNames`, CLAUDE.md §14 Phase 8 step 5). `name` is the label charted, `merged_names` the registered own names now charted under it, `evidence` up to `citation_cap` citations of the other-name listings (`field` `armsInterventionsModule.interventions.otherNames`). Empty for charts without drugs and when nothing merged |
 | notes | always | LLM-written prose about the interpretation |
 | missing | `clarification_needed` only | The anchors the request lacks |
 | not_found | `no_results` only | Entities that match no trial on their own; empty when the filters together match nothing |
 | errors | `degraded` only | `[{check, message}]` |
 
 Network `pruning` example: `{"min_edge_weight": 2, "top_n_nodes": 50, "fallback_used": false, "nodes_removed": 12, "edges_removed": 40}`.
+
+`name_merges` example: `[{"entity_type": "drug", "name": "Everolimus", "merged_names": ["RAD001"], "evidence": [{"nct_id": "NCT00000012", "excerpt": "RAD001", "field": "armsInterventionsModule.interventions.otherNames"}]}]`.
 
 ## 5. Non-`ok` statuses
 

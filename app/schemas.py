@@ -279,6 +279,15 @@ class Exclusion(_Contract):
     count: Count
 
 
+class NameMerge(_Contract):
+    """Names charted as one drug because trials register them as its other names (SCHEMAS.md §4)."""
+
+    entity_type: Literal["drug"]
+    name: str  # the label the merged drug is charted under
+    merged_names: list[str]  # registered own names now charted as `name`
+    evidence: list[Citation]  # other-name listings that justify it, at most `citation_cap`
+
+
 class TopN(_Contract):
     limit: Count
     categories_total: Count
@@ -316,6 +325,7 @@ class OkMeta(_MetaBase):
     excluded: list[Exclusion]
     top_n: TopN | None
     pruning: Pruning | None
+    name_merges: list[NameMerge]
 
 
 class ClarificationMeta(_MetaBase):

@@ -44,7 +44,7 @@ class CategoricalAggregator:
         return self.categorizer.excerpt_fields
 
     def aggregate(self, cohorts: Sequence[CohortTrials]) -> Aggregation:
-        categorized = self.categorizer.assign(single_cohort(cohorts).batch.trials)
+        categorized = self.categorizer.categorize(single_cohort(cohorts).batch.trials)
         buckets = ordered(count_by(categorized).values())
         top_n = None
         if self.categorizer.top_n is not None:
@@ -52,7 +52,7 @@ class CategoricalAggregator:
             buckets = buckets[: self.categorizer.top_n]
         column = self.categorizer.column
         rows = tuple(b.row({column: b.label}) for b in buckets)
-        return Aggregation(rows, dict(categorized.excluded), top_n)
+        return Aggregation(rows, dict(categorized.excluded), top_n, categorized.merges)
 
 
 for _categorizer in CATEGORICAL:

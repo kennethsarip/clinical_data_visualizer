@@ -13,6 +13,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Protocol
 
+from app.aggregators.common import F_INTERVENTION_OTHER_NAMES
 from app.aggregators.registry import (
     Aggregation,
     Aggregator,
@@ -29,6 +30,7 @@ from app.normalize import UNREADABLE_RULE
 from app.schemas import (
     Channel,
     ChartVisualization,
+    Citation,
     Cohort,
     Edge,
     Exclusion,
@@ -36,6 +38,7 @@ from app.schemas import (
     Grouping,
     Interpretation,
     LLMProse,
+    NameMerge,
     NetworkData,
     NetworkEncoding,
     NetworkVisualization,
@@ -165,6 +168,7 @@ def assemble(
         excluded=_excluded(result, cohorts),
         top_n=None if isinstance(result, GraphAggregation) else result.top_n,
         pruning=result.pruning if isinstance(result, GraphAggregation) else None,
+        name_merges=_name_merges(result),
         notes=list(notes),
     )
     return OkResponse(
@@ -173,6 +177,22 @@ def assemble(
         trials=trial_summaries(trials, nct_ids),
         meta=meta,
     )
+
+
+def _name_merges(result: Aggregation | GraphAggregation) -> list[NameMerge]:
+    """Each synonym merge with its other-name listings as citations, capped like a row's."""
+    return [
+        NameMerge(
+            entity_type="drug",
+            name=merge.label,
+            merged_names=list(merge.merged_names),
+            evidence=[
+                Citation(nct_id=nct_id, excerpt=raw, field=F_INTERVENTION_OTHER_NAMES)
+                for nct_id, raw in merge.evidence[:CITATION_CAP]
+            ],
+        )
+        for merge in result.name_merges
+    ]
 
 
 def _check_filters(cohorts: Sequence[CohortTrials], filters: Filters) -> None:

@@ -61,6 +61,7 @@ class Intervention(BaseModel):
 
     type: InterventionType
     name: str | None  # free text as registered; a few live records omit it
+    other_names: tuple[str, ...] = ()  # aliases registered with it: synonym evidence (§6)
 
 
 class NormalizedTrial(BaseModel):
@@ -155,7 +156,11 @@ def normalize_record(record: dict[str, Any]) -> NormalizedTrial:
         "sponsor_name": sponsor.get("name"),
         "sponsor_class": sponsor.get("class"),
         "interventions": [
-            {"type": item.get("type"), "name": item.get("name")}
+            {
+                "type": item.get("type"),
+                "name": item.get("name"),
+                "other_names": item.get("otherNames") or (),
+            }
             for item in _get(section, "armsInterventionsModule", "interventions") or ()
         ],
         "conditions": _get(section, "conditionsModule", "conditions") or (),

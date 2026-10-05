@@ -223,6 +223,23 @@ export interface components {
             /** Intent */
             intent: string;
         };
+        /**
+         * NameMerge
+         * @description Names charted as one drug because trials register them as its other names (SCHEMAS.md §4).
+         */
+        NameMerge: {
+            /**
+             * Entity Type
+             * @constant
+             */
+            entity_type: "drug";
+            /** Evidence */
+            evidence: components["schemas"]["Citation"][];
+            /** Merged Names */
+            merged_names: string[];
+            /** Name */
+            name: string;
+        };
         /** NetworkData */
         NetworkData: {
             /** Edges */
@@ -314,6 +331,8 @@ export interface components {
             filters: components["schemas"]["Filters"];
             grouping: components["schemas"]["Grouping"];
             interpretation: components["schemas"]["Interpretation"];
+            /** Name Merges */
+            name_merges: components["schemas"]["NameMerge"][];
             /** Notes */
             notes: string[];
             pruning: components["schemas"]["Pruning"] | null;

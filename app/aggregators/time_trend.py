@@ -42,7 +42,7 @@ class TimeTrendAggregator:
 
     def aggregate(self, cohorts: Sequence[CohortTrials]) -> Aggregation:
         cohort = single_cohort(cohorts)
-        categorized = START_YEAR.assign(cohort.batch.trials)
+        categorized = START_YEAR.categorize(cohort.batch.trials)
         buckets = count_by(categorized)
         stated = cohort.filters
         years = [key for key in buckets if isinstance(key, int)]

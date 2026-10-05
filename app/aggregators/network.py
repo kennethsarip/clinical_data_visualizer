@@ -36,9 +36,12 @@ from app.aggregators.registry import (
     RowShape,
 )
 from app.entities import (
+    DrugMerge,
     EntityType,
     Mention,
+    combine_merges,
     condition_mentions,
+    drug_aliases,
     entity_key,
     most_common_spelling,
     select_drugs,
@@ -52,7 +55,10 @@ TOP_N_NODES = 50
 
 Mentions = dict[str, tuple[Mention, ...]]  # nct_id -> entities in that trial
 End = tuple["Side", Mention]
-Extract = Callable[[Sequence[NormalizedTrial]], tuple[Mentions, dict[str, int]]]
+# trials -> (entities per trial, counting-rule exclusions, synonym merges applied)
+Extract = Callable[
+    [Sequence[NormalizedTrial]], tuple[Mentions, dict[str, int], tuple[DrugMerge, ...]]
+]
 
 
 @dataclass(frozen=True)
@@ -64,21 +70,27 @@ class Side:
     extract: Extract
 
 
-def _drugs(trials: Sequence[NormalizedTrial]) -> tuple[Mentions, dict[str, int]]:
+def _drugs(
+    trials: Sequence[NormalizedTrial],
+) -> tuple[Mentions, dict[str, int], tuple[DrugMerge, ...]]:
     selection = select_drugs(trials)
     excluded = nonzero(selection.excluded) | gap_counts(
         trials, Gap.NO_INTERVENTIONS, Gap.UNNAMED_INTERVENTION
     )
-    return selection.mentions, excluded
+    return selection.mentions, excluded, selection.merges
 
 
-def _sponsors(trials: Sequence[NormalizedTrial]) -> tuple[Mentions, dict[str, int]]:
-    return {t.nct_id: (sponsor_mention(t),) for t in trials}, {}
+def _sponsors(
+    trials: Sequence[NormalizedTrial],
+) -> tuple[Mentions, dict[str, int], tuple[DrugMerge, ...]]:
+    return {t.nct_id: (sponsor_mention(t),) for t in trials}, {}, ()
 
 
-def _conditions(trials: Sequence[NormalizedTrial]) -> tuple[Mentions, dict[str, int]]:
+def _conditions(
+    trials: Sequence[NormalizedTrial],
+) -> tuple[Mentions, dict[str, int], tuple[DrugMerge, ...]]:
     excluded = nonzero({NO_CONDITIONS_RULE: sum(not t.conditions for t in trials)})
-    return {t.nct_id: condition_mentions(t) for t in trials}, excluded
+    return {t.nct_id: condition_mentions(t) for t in trials}, excluded, ()
 
 
 DRUG_SIDE = Side(EntityType.DRUG, F_INTERVENTION_NAME, _drugs)
@@ -134,11 +146,13 @@ class CooccurrenceAggregator:
     def aggregate(self, cohorts: Sequence[CohortTrials]) -> GraphAggregation:
         cohort = single_cohort(cohorts)
         trials = cohort.batch.trials
-        first, excluded = self.first.extract(trials)
-        second, second_excluded = (first, {}) if self._one_type else self.second.extract(trials)
+        first, excluded, merges = self.first.extract(trials)
+        second, second_excluded, second_merges = (
+            (first, {}, ()) if self._one_type else self.second.extract(trials)
+        )
         nodes, edges = self._accumulate(trials, first, second)
         kept_nodes, kept_edges, pruning = self._prune(nodes, edges)
-        anchors = _anchor_ids(cohort.filters)
+        anchors = _anchor_ids(cohort.filters, drug_aliases(trials))
         node_rows = sorted(
             (_node_row(node_id, nodes[node_id], node_id in anchors) for node_id in kept_nodes),
             key=lambda row: (-len(row.nct_ids), row.values["id"]),
@@ -148,7 +162,11 @@ class CooccurrenceAggregator:
             key=lambda row: (-len(row.nct_ids), row.values["source"], row.values["target"]),
         )
         return GraphAggregation(
-            tuple(node_rows), tuple(edge_rows), excluded | second_excluded, pruning
+            tuple(node_rows),
+            tuple(edge_rows),
+            excluded | second_excluded,
+            pruning,
+            combine_merges(merges, second_merges),
         )
 
     def _accumulate(
@@ -226,14 +244,20 @@ def _edge_row(pair: tuple[str, str], acc: _Accumulator) -> AggRow:
     return AggRow({"source": pair[0], "target": pair[1]}, frozenset(acc.nct_ids), acc.evidence)
 
 
-def _anchor_ids(filters: RetrievalFilters) -> set[str]:
-    """Nodes for the entities the request named: they sit in every trial, so they are hubs."""
+def _anchor_ids(filters: RetrievalFilters, aliases: Mapping[str, str]) -> set[str]:
+    """Nodes for the entities the request named: they sit in every trial, so they are hubs. A
+    named drug that is a merged synonym ("Keytruda") anchors the drug it merged into."""
     named = [
         (EntityType.DRUG, filters.drug_name),
         (EntityType.SPONSOR, filters.sponsor),
         (EntityType.CONDITION, filters.condition),
     ]
-    return {f"{kind}:{entity_key(kind, name)}" for kind, name in named if name is not None}
+    ids = set()
+    for kind, name in named:
+        if name is not None:
+            key = entity_key(kind, name)
+            ids.add(f"{kind}:{aliases.get(key, key) if kind is EntityType.DRUG else key}")
+    return ids
 
 
 REGISTRY.register(CooccurrenceAggregator(Dimension.SPONSOR_DRUG, SPONSOR_SIDE, DRUG_SIDE))

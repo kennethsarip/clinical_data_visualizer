@@ -543,6 +543,43 @@
         "title": "Interpretation",
         "type": "object"
       },
+      "NameMerge": {
+        "additionalProperties": false,
+        "description": "Names charted as one drug because trials register them as its other names (SCHEMAS.md \u00a74).",
+        "properties": {
+          "entity_type": {
+            "const": "drug",
+            "title": "Entity Type",
+            "type": "string"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "merged_names": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Merged Names",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "entity_type",
+          "name",
+          "merged_names",
+          "evidence"
+        ],
+        "title": "NameMerge",
+        "type": "object"
+      },
       "NetworkData": {
         "additionalProperties": false,
         "properties": {
@@ -787,6 +824,13 @@
           "interpretation": {
             "$ref": "#/components/schemas/Interpretation"
           },
+          "name_merges": {
+            "items": {
+              "$ref": "#/components/schemas/NameMerge"
+            },
+            "title": "Name Merges",
+            "type": "array"
+          },
           "notes": {
             "items": {
               "type": "string"
@@ -863,7 +907,8 @@
           "citation_cap",
           "excluded",
           "top_n",
-          "pruning"
+          "pruning",
+          "name_merges"
         ],
         "title": "OkMeta",
         "type": "object"
@@ -1749,6 +1794,10 @@
     {
       "name": "network",
       "rule": "Each network obeys its pruning, marks the named entity, and matches a recount."
+    },
+    {
+      "name": "name merges",
+      "rule": "Each merged drug name is registered as its other name, as a recount finds."
     }
   ]
 }

@@ -50,6 +50,8 @@ def test_raw_record_factory_round_trips_through_normalize() -> None:
     # The excerpt check below is only meaningful if these records are faithful.
     for trial in FIXTURE:
         assert normalize_record(raw_record(trial)) == trial
+    with_aliases = make_trial("NCT00000009", [("DRUG", "Everolimus", ["RAD001", "Afinitor"])])
+    assert normalize_record(raw_record(with_aliases)) == with_aliases
 
 
 # --- the Phase 2 "Done when" ---

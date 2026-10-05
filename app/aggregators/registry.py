@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Protocol
 
+from app.entities import DrugMerge
 from app.normalize import NormalizedBatch
 from app.schemas import Provenance, Pruning, RetrievalFilters, TopN
 
@@ -108,6 +109,7 @@ class Aggregation:
     rows: tuple[AggRow, ...]  # in render order (SCHEMAS.md §4 `sort`)
     excluded: Mapping[str, int]  # counting-rule name -> records left out (`meta.excluded`)
     top_n: TopN | None = None
+    name_merges: tuple[DrugMerge, ...] = ()  # synonyms merged into one drug (`meta.name_merges`)
 
 
 @dataclass(frozen=True)
@@ -116,6 +118,7 @@ class GraphAggregation:
     edges: tuple[AggRow, ...]
     excluded: Mapping[str, int]
     pruning: Pruning
+    name_merges: tuple[DrugMerge, ...] = ()
 
 
 class Aggregator(Protocol):
