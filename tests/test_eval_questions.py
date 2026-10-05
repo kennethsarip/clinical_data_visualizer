@@ -120,3 +120,12 @@ def test_status_specific_fields(question: EvalQuestion) -> None:
         assert expected.status == "no_results"
     if expected.field_override:
         assert expected.status == "ok"
+
+
+@pytest.mark.parametrize("question", QUESTIONS, ids=_ids(QUESTIONS))
+def test_every_refusal_is_a_named_hallucination_probe(question: EvalQuestion) -> None:
+    """A question whose right answer is a refusal exists to catch an agent that would answer
+    anyway, so it says what that wrong answer would be (eval/questions.py `probe`)."""
+    e = question.expected
+    if e.http == 422 or e.status in ("clarification_needed", "no_results"):
+        assert question.probe, "a refusal question must name the hallucination it probes"

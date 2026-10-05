@@ -68,6 +68,7 @@ class OffFilterMetrics(_Result):
 class QuestionResult(_Result):
     id: str
     question_class: str
+    probe: bool = False  # a hallucination probe (eval/questions.py)
     passed: bool
     failures: list[str]
     http: int
@@ -92,6 +93,7 @@ class Summary(_Result):
     questions: int
     passed: int
     by_class: dict[str, list[int]]  # class -> [passed, total]
+    probes: list[int]  # hallucination probes [held, total]
     failure_modes: dict[str, int]
     repaired: int
     prose_fallbacks: int
@@ -167,6 +169,7 @@ def _result(
     return QuestionResult(
         id=question.id,
         question_class=question.question_class,
+        probe=question.probe is not None,
         passed=not failures,
         failures=failures,
         http=http,
@@ -367,6 +370,7 @@ def summarize(results: list[QuestionResult]) -> Summary:
         questions=len(results),
         passed=sum(r.passed for r in results),
         by_class=by_class,
+        probes=[sum(r.passed for r in results if r.probe), sum(r.probe for r in results)],
         failure_modes=dict(Counter(f for r in results for f in r.failures)),
         repaired=sum(r.repaired for r in results),
         prose_fallbacks=sum(r.prose_fallback for r in results),

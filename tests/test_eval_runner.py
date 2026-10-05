@@ -494,6 +494,21 @@ def test_summary_rolls_up_by_class_failure_mode_and_latency() -> None:
     assert (s.excerpts_passed, s.citations) == (18, 20)
 
 
+def test_summary_counts_hallucination_probes_held() -> None:
+    results = [
+        _result("a", "edge_case", True, 1.0, [], probe=True),
+        _result("b", "edge_case", False, 1.0, ["wrong_status"], probe=True),
+        _result("c", "distribution", False, 1.0, ["wrong_analysis"]),
+    ]
+    assert summarize(results).probes == [1, 2]
+
+
+def test_a_probe_question_is_marked_on_its_result() -> None:
+    probe = PHASES.model_copy(update={"probe": "charts trials the user did not ask about"})
+    assert run_phases(probe).probe is True
+    assert run_phases().probe is False
+
+
 def test_summary_totals_trials_checked_and_off_filter() -> None:
     results = [
         _result(

@@ -98,7 +98,16 @@ def test_an_off_filter_trial_is_dropped_and_counted() -> None:
     off = make_trial("NCT00000099", phases=["PHASE2"], countries=["United States"])
     response, _ = run(
         "Phases of melanoma trials in Germany",
-        [json_reply(reply(condition="melanoma", country="Germany")), json_reply(PROSE)],
+        [
+            json_reply(
+                reply(
+                    condition="melanoma",
+                    country="Germany",
+                    constraints=[constraint("Germany", "country")],
+                )
+            ),
+            json_reply(PROSE),
+        ],
         FakeFetcher({GERMANY: [*IN_GERMANY, off]}),
     )
     assert isinstance(response, OkResponse)
@@ -114,7 +123,16 @@ def test_mostly_off_filter_records_are_degraded_not_charted() -> None:
     """FIXTURE by hand: T2 (US), T3 (no sites) and T4 (France) have no site in Germany."""
     response, _ = run(
         "Phases of melanoma trials in Germany",
-        [json_reply(reply(condition="melanoma", country="Germany")), json_reply(PROSE)],
+        [
+            json_reply(
+                reply(
+                    condition="melanoma",
+                    country="Germany",
+                    constraints=[constraint("Germany", "country")],
+                )
+            ),
+            json_reply(PROSE),
+        ],
         FakeFetcher({GERMANY: FIXTURE}),
     )
     assert isinstance(response, DegradedResponse)
@@ -288,7 +306,15 @@ def test_lone_entity_with_zero_results_is_not_found_without_a_probe() -> None:
     fetcher = FakeFetcher()
     response, _ = run(
         "Trials per year for Zorblaxumab",
-        [json_reply(reply("time_trend.start_year", drug_name="Zorblaxumab"))],
+        [
+            json_reply(
+                reply(
+                    "time_trend.start_year",
+                    drug_name="Zorblaxumab",
+                    constraints=[constraint("Zorblaxumab", "drug_name")],
+                )
+            )
+        ],
         fetcher,
     )
     assert isinstance(response, NoResultsResponse)
@@ -338,7 +364,16 @@ def test_comparison_with_every_cohort_empty_probes_each_entity() -> None:
     ]
     response, _ = run(
         "Compare phases for aspirin vs Zorblaxumab in Iceland",
-        [json_reply(reply("comparison.phase", cohorts, country="Iceland"))],
+        [
+            json_reply(
+                reply(
+                    "comparison.phase",
+                    cohorts,
+                    country="Iceland",
+                    constraints=[constraint("Iceland", "country")],
+                )
+            )
+        ],
         fetcher,
     )
     assert isinstance(response, NoResultsResponse)
@@ -502,7 +537,10 @@ def test_title_call_overlaps_the_fetch() -> None:
 
 
 NOT_OK = {
-    "not found": (reply("time_trend.start_year", drug_name="Zorblaxumab"), FakeFetcher()),
+    "not found": (
+        reply("time_trend.start_year", drug_name="Zorblaxumab"),
+        FakeFetcher(),
+    ),
     "nothing charted": (
         reply("geographic.country", condition="melanoma"),
         FakeFetcher({MELANOMA: [T3, make_trial("NCT00000099", conditions=["Melanoma"])]}),
@@ -587,7 +625,15 @@ def test_a_bug_in_an_abandoned_title_thread_is_logged_not_lost(
     monkeypatch.setattr("app.pipeline.write_prose", broken)
     response, _ = run(
         "Trials per year for Zorblaxumab",
-        [json_reply(reply("time_trend.start_year", drug_name="Zorblaxumab"))],
+        [
+            json_reply(
+                reply(
+                    "time_trend.start_year",
+                    drug_name="Zorblaxumab",
+                    constraints=[constraint("Zorblaxumab", "drug_name")],
+                )
+            )
+        ],
         FakeFetcher(),
     )
     assert isinstance(response, NoResultsResponse)

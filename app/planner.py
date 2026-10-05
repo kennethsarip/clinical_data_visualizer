@@ -15,7 +15,8 @@ fix returns a `Clarification`.
 """
 
 import logging
-from collections.abc import Mapping
+import re
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import date
 from typing import Any, get_args
@@ -32,7 +33,18 @@ from app.schemas import (
     RetrievalFilters,
     VisualizeRequest,
 )
-from app.vocab import Phase, Status, label
+from app.vocab import (
+    AGENCY_CLASS_LABELS,
+    COUNTRIES,
+    ENROLLMENT_TYPE_LABELS,
+    INTERVENTION_TYPE_LABELS,
+    PHASE_LABELS,
+    STATUS_LABELS,
+    STUDY_TYPE_LABELS,
+    Phase,
+    Status,
+    label,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -84,6 +96,71 @@ _ENUM_FILTERS: Mapping[str, type[Phase] | type[Status]] = {
     "trial_phase": Phase,
     "overall_status": Status,
 }
+
+
+# --- name coverage: the hallucination guard on dropped constraints ---
+# The LLM lists the question's constraints, but can leave one out ("Beijing, Japan" planned as
+# Japan alone). Python finds the names in the question itself and requires each to be quoted by
+# some constraint or cohort, so dropping one is detected, not left to the prompt.
+_WORD = re.compile(r"[A-Za-z][\w'’-]*")
+_SENTENCE_END = (".", "?", "!")
+# Capitalized words that are chart categories or labels, not constraints ("industry, NIH or ...").
+_LABEL_WORDS = frozenset(
+    word.casefold()
+    for labels in (
+        PHASE_LABELS,
+        STATUS_LABELS,
+        INTERVENTION_TYPE_LABELS,
+        AGENCY_CLASS_LABELS,
+        ENROLLMENT_TYPE_LABELS,
+        STUDY_TYPE_LABELS,
+    )
+    for text in labels.values()
+    for word in _WORD.findall(text)
+) | {"i"}
+# Registry country names in any case, longest first so "South Korea" wins over a shorter match.
+_COUNTRY_NAMES = re.compile(
+    r"\b(?:"
+    + "|".join(re.escape(c.strip()) for c in sorted(COUNTRIES, key=len, reverse=True))
+    + r")\b",
+    re.IGNORECASE,
+)
+# Lowercase words for constraints no filter expresses (age group, sex). The name rule cannot see
+# them, and an LLM that drops one charts every age or sex (seen live: "pediatric asthma" charted
+# as asthma), so each must be quoted. Extend the list when an eval question shows another.
+UNFILTERABLE_WORDS = frozenset(
+    {
+        "pediatric", "paediatric", "child", "children", "kids", "infant", "infants", "neonatal",
+        "newborn", "newborns", "adolescent", "adolescents", "teen", "teens", "teenagers",
+        "adult", "adults", "elderly", "geriatric", "seniors",
+        "women", "woman", "men", "man", "female", "females", "male", "males", "pregnant",
+        "pregnancy",
+    }
+)  # fmt: skip
+UNACCOUNTED_REASON = "the plan did not account for it"
+
+
+def _bare(word: str) -> str:
+    """A word without a possessive, case-folded: "Pfizer's" -> "pfizer"."""
+    return re.sub(r"['’]s$", "", word).casefold()
+
+
+def unaccounted_names(query: str, accounted: Iterable[str]) -> list[str]:
+    """Names in `query` that no accounted string quotes as whole words: capitalized words that do
+    not start a sentence (minus vocab labels), registry country names in any case, and the
+    age and sex words no filter expresses."""
+    quoted = {_bare(w) for text in accounted for w in _WORD.findall(text)}
+    names: list[str] = []
+    for match in _WORD.finditer(query):
+        before = query[: match.start()].rstrip(" \t\n\"'(“‘[")
+        word = match.group()
+        starts_sentence = not before or before.endswith(_SENTENCE_END)
+        if word[0].isupper() and not starts_sentence and _bare(word) not in _LABEL_WORDS:
+            names.append(re.sub(r"['’]s$", "", word))
+    names += [m.group() for m in _COUNTRY_NAMES.finditer(query)]
+    names += [w for w in _WORD.findall(query) if w.casefold() in UNFILTERABLE_WORDS]
+    missing = [n for n in names if not all(_bare(w) in quoted for w in _WORD.findall(n))]
+    return list(dict.fromkeys(missing))
 
 
 class PlanError(RuntimeError):
@@ -168,6 +245,10 @@ that appears only in the structured fields.
   start_year (resolve relative periods against today's date, {today}). Set end_year only when the
   question names an upper bound ("until 2020", "before 2020", "between 2015 and 2020").
 
+For a comparison.* key, the dimension is what is counted inside each cohort, never the kind of
+thing compared: "compare sponsor categories across lung cancer and colorectal cancer" is
+comparison.sponsor_class with two condition cohorts, not comparison.condition.
+
 `cohorts`: only for a comparison.* key, else null. One cohort per compared drug, condition or
 sponsor, all of the same kind: `label` is the name as written, `entity` its kind, `value` the
 name to search. List every compared item, even if there are more than 4. Do not also put the
@@ -179,7 +260,9 @@ group, sex, city or region), never the chart's dimension. `quote`: the words exa
 the question. `applied_as`: the filter key it set, or null when no filter can express it, with
 `reason` a short phrase saying why (e.g. "no filter for age group"); `reason` is null otherwise. In
 a comparison, quote each compared item with its entity kind. A place you cannot map to one country
-(a city, a region) is not applied; never pick a country for it. Leave out a phrase that only points
+(a city, a region) is not applied; never pick a country for it. Quote every name the question
+contains (each place, organization, drug or condition), even when no filter can express it: Python
+rejects a plan that leaves a name unquoted. Leave out a phrase that only points
 to a structured field ("this drug" when drug_name is supplied): the field already applies it.
 
 `suggested_query`: when a constraint is not applied, or the question gives one filter two values,
@@ -216,13 +299,19 @@ def plan_request(
     except LLMOutputError as first:
         retry = f"{message}\n\nYour previous answer was rejected: {first}\nAnswer again."
         try:
-            return _attempt(request, llm, system, retry, registry)
+            # A name still unquoted after the retry becomes a clarification, never a chart.
+            return _attempt(request, llm, system, retry, registry, ask_unaccounted=True)
         except LLMOutputError as second:
             raise PlanError(f"plan invalid after one retry: {second}") from second
 
 
 def _attempt(
-    request: VisualizeRequest, llm: LLMClient, system: str, message: str, registry: Registry
+    request: VisualizeRequest,
+    llm: LLMClient,
+    system: str,
+    message: str,
+    registry: Registry,
+    ask_unaccounted: bool = False,
 ) -> QueryPlan | Clarification:
     llm_plan = llm.complete(
         instructions=system,
@@ -231,14 +320,22 @@ def _attempt(
         output_type=LLMPlan,
         schema=plan_schema(registry),
     )
-    return build_plan(request, llm_plan, registry)
+    return build_plan(request, llm_plan, registry, ask_unaccounted=ask_unaccounted)
 
 
 def build_plan(
-    request: VisualizeRequest, llm_plan: LLMPlan, registry: Registry = REGISTRY
+    request: VisualizeRequest,
+    llm_plan: LLMPlan,
+    registry: Registry = REGISTRY,
+    *,
+    ask_unaccounted: bool = False,
 ) -> QueryPlan | Clarification:
-    """The deterministic half of planning: no LLM, so every rule is unit-tested."""
+    """The deterministic half of planning: no LLM, so every rule is unit-tested.
+
+    A name in the question that the plan does not quote raises for the retry, or, on the retry
+    (`ask_unaccounted`), is listed as unapplied so the answer asks instead of charting."""
     intent, dimension = _parse_analysis(llm_plan.analysis, registry)
+    _check_compared_kind(intent, dimension, llm_plan.cohorts)
     filters, notes = _merge(request, llm_plan.filters)
     stated, inferred = _classify(request, filters)
     cohorts, cohort_problem = _cohorts(intent, llm_plan.cohorts, filters)
@@ -247,6 +344,7 @@ def build_plan(
     has_anchor = bool(llm_plan.cohorts) or any(getattr(filters, key) for key in ANCHORS)
     missing = () if has_anchor else ANCHORS
     unapplied, conflicts = _account(request, llm_plan, cohort_entity=_cohort_entity(llm_plan))
+    unapplied += _unaccounted(request, llm_plan, ask_unaccounted)
     problems = [p for p in (llm_plan.unsupported_reason, cohort_problem) if p]
     problems += [f'"{quote}" cannot be applied: {reason}.' for quote, reason in unapplied]
     problems += [
@@ -269,6 +367,40 @@ def build_plan(
     return QueryPlan(intent, dimension, filters, cohorts, stated, inferred, assumptions, notes)
 
 
+def _unaccounted(
+    request: VisualizeRequest, llm_plan: LLMPlan, ask: bool
+) -> tuple[tuple[str, str], ...]:
+    accounted = [c.quote for c in llm_plan.constraints]
+    accounted += [t for c in llm_plan.cohorts or [] for t in (c.label, c.value)]
+    names = unaccounted_names(request.query, accounted)
+    if names and not ask:
+        raise LLMOutputError(
+            f"constraints: the question names {', '.join(map(repr, names))} but no constraint "
+            "quotes it; quote every name in the question, applied or not"
+        )
+    return tuple((name, UNACCOUNTED_REASON) for name in names)
+
+
+# The comparison dimension that would chart each cohort by its own kind: almost always a misread
+# of "compare X across conditions A and B", where X is the dimension.
+_DIMENSION_ENTITY: Mapping[Dimension, FilterKey] = {
+    Dimension.CONDITION: "condition",
+    Dimension.DRUG: "drug_name",
+    Dimension.SPONSOR: "sponsor",
+}
+
+
+def _check_compared_kind(
+    intent: Intent, dimension: Dimension, cohorts: list[LLMCohort] | None
+) -> None:
+    kind = _DIMENSION_ENTITY.get(dimension)
+    if intent is Intent.COMPARISON and cohorts and kind and cohorts[0].entity == kind:
+        raise LLMOutputError(
+            f"analysis: comparison.{dimension} charts each compared {kind} by {dimension}; the "
+            "dimension is what is counted inside each cohort (e.g. comparison.sponsor_class)"
+        )
+
+
 def _cohort_entity(llm_plan: LLMPlan) -> FilterKey | None:
     """The entity a comparison's cohorts vary: its several values are cohorts, not a conflict."""
     return llm_plan.cohorts[0].entity if llm_plan.cohorts else None
@@ -281,6 +413,8 @@ def _account(
     filter. Returns the constraints no filter expresses and the filters quoted with several
     values; an inconsistency only the LLM can fix raises for the retry."""
     query = request.query.casefold()
+    # A compared item is applied by its cohort's search, whatever applied_as the LLM gave it.
+    compared = {t.casefold() for c in llm_plan.cohorts or [] for t in (c.label, c.value)}
     by_filter: dict[FilterKey, list[str]] = {}
     unapplied: list[tuple[str, str]] = []
     for c in llm_plan.constraints:
@@ -288,6 +422,8 @@ def _account(
             raise LLMOutputError(
                 f"constraints: {c.quote!r} is not in the question; quote it exactly"
             )
+        if c.quote.casefold() in compared:
+            continue
         if c.applied_as is None:
             unapplied.append((c.quote, _reason(c)))
         elif c.applied_as == cohort_entity:

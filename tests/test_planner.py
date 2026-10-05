@@ -23,6 +23,7 @@ from app.planner import (
     instructions,
     plan_request,
     plan_schema,
+    unaccounted_names,
 )
 from app.schemas import LLMPlan, RetrievalFilters, VisualizeRequest
 from app.vocab import COUNTRIES, Phase, Status
@@ -202,7 +203,12 @@ def test_a_country_variant_mapped_to_its_registry_name_is_inferred() -> None:
     plan = ok(
         build(
             "Lung cancer trials in Korea per year",
-            reply("time_trend.start_year", condition="lung cancer", country="South Korea"),
+            reply(
+                "time_trend.start_year",
+                condition="lung cancer",
+                country="South Korea",
+                constraints=[constraint("Korea", "country")],
+            ),
         )
     )
     assert plan.stated == {"condition": "lung cancer"}
@@ -292,6 +298,25 @@ def test_compared_entities_are_cohorts_not_a_conflict() -> None:
     assert len(plan.cohorts) == 2
 
 
+def test_a_compared_item_marked_not_applied_is_applied_by_its_cohort() -> None:
+    """Seen live (2 in 20): the LLM quotes each cohort with applied_as null, "used as comparison
+    cohort". The cohort's own search applies it, so it is not a constraint left out."""
+    plan = ok(
+        build(
+            "Compare sponsor categories across lung cancer and colorectal cancer trials.",
+            reply(
+                "comparison.sponsor_class",
+                [cohort("lung cancer", "condition"), cohort("colorectal cancer", "condition")],
+                constraints=[
+                    constraint("lung cancer", None, "used as comparison cohort"),
+                    constraint("colorectal cancer", None, "used as comparison cohort"),
+                ],
+            ),
+        )
+    )
+    assert [c.label for c in plan.cohorts] == ["lung cancer", "colorectal cancer"]
+
+
 def test_every_applied_constraint_keeps_the_plan() -> None:
     plan = ok(
         build(
@@ -313,6 +338,114 @@ def test_every_applied_constraint_keeps_the_plan() -> None:
 def test_an_inconsistent_constraint_is_an_output_error(bad: dict[str, Any], error: str) -> None:
     with pytest.raises(LLMOutputError, match=error):
         build("Phases of melanoma trials", reply(condition="melanoma", constraints=[bad]))
+
+
+# --- name coverage: no name in the question is silently dropped (hallucination guard) ---
+
+BEIJING_JAPAN = "How are lung cancer trials in Beijing, Japan distributed across phases?"
+JAPAN_ONLY = reply(
+    condition="lung cancer",
+    country="Japan",
+    constraints=[constraint("lung cancer", "condition"), constraint("Japan", "country")],
+)
+
+
+def test_a_name_no_constraint_quotes_is_an_output_error_naming_it() -> None:
+    with pytest.raises(LLMOutputError, match="Beijing"):
+        build(BEIJING_JAPAN, JAPAN_ONLY)
+
+
+def test_a_name_still_unquoted_after_the_retry_asks_instead_of_charting() -> None:
+    """The LLM drops "Beijing" twice: Python, not the LLM, refuses to chart Japan alone."""
+    llm, bodies = fake_llm(replies(json_reply(JAPAN_ONLY), json_reply(JAPAN_ONLY)))
+    result = clarify(plan_request(VisualizeRequest(query=BEIJING_JAPAN), llm, TODAY))
+    assert result.unapplied == (("Beijing", "the plan did not account for it"),)
+    assert any("Beijing" in note for note in result.notes)
+    assert "no constraint quotes" in bodies[1]["input"] and "Beijing" in bodies[1]["input"]
+
+
+def test_a_lowercase_country_name_must_be_quoted_too() -> None:
+    with pytest.raises(LLMOutputError, match="japan"):
+        build(
+            "lung cancer trials in beijing and japan by phase",
+            reply(
+                condition="lung cancer",
+                constraints=[
+                    constraint("lung cancer", "condition"),
+                    constraint("beijing", None, "a city"),
+                ],
+            ),
+        )
+
+
+def test_an_age_or_sex_word_no_constraint_quotes_is_an_output_error() -> None:
+    """Seen live (1 in 10): "pediatric" left out and asthma charted for every age. Lowercase, so
+    the name rule misses it; no filter expresses age or sex, so such words must be quoted."""
+    with pytest.raises(LLMOutputError, match="pediatric"):
+        build(PEDIATRIC, reply(condition="asthma", constraints=[ASTHMA]))
+    with pytest.raises(LLMOutputError, match="women"):
+        build("Melanoma trials in women by phase", reply(condition="melanoma"))
+
+
+def test_an_age_word_inside_a_condition_quote_is_accounted_for() -> None:
+    llm = reply(
+        condition="pediatric asthma", constraints=[constraint("pediatric asthma", "condition")]
+    )
+    ok(build(PEDIATRIC, llm))
+
+
+@pytest.mark.parametrize(
+    "query,filters,quotes",
+    [
+        # a possessive is the name
+        ("What is the status breakdown of Pfizer's trials?", {"sponsor": "Pfizer"}, ["Pfizer"]),
+        # a vocab label is a chart category, not a constraint
+        ("Who funds asthma trials: industry, NIH or universities?", {"condition": "asthma"}, []),
+        # a one-letter word counts when it is a whole word of a quote
+        ("Enrollment for hepatitis C trials", {"condition": "hepatitis C"}, ["hepatitis C"]),
+        # sentence starts are not names
+        ("Melanoma trials by phase. Show them.", {"condition": "melanoma"}, []),
+    ],
+)
+def test_quoted_names_labels_and_sentence_starts_are_accounted_for(
+    query: str, filters: dict[str, str], quotes: list[str]
+) -> None:
+    key = next(iter(filters))
+    llm = reply(constraints=[constraint(q, key) for q in quotes])
+    llm["filters"] |= filters
+    ok(build(query, llm))
+
+
+def test_compared_names_are_accounted_for_by_their_cohorts() -> None:
+    ok(
+        build(
+            "Compare Keytruda and Opdivo by phase",
+            reply("comparison.phase", [cohort("Keytruda"), cohort("Opdivo")]),
+        )
+    )
+
+
+# --- a comparison's dimension is never the kind being compared ---
+
+
+def test_comparing_conditions_by_condition_is_an_output_error() -> None:
+    with pytest.raises(LLMOutputError, match="comparison"):
+        build(
+            "Compare sponsor categories across lung cancer and colorectal cancer trials.",
+            reply(
+                "comparison.condition",
+                [cohort("lung cancer", "condition"), cohort("colorectal cancer", "condition")],
+            ),
+        )
+
+
+def test_comparing_drugs_by_condition_is_allowed() -> None:
+    ok(
+        build(
+            "Conditions for pembrolizumab vs nivolumab",
+            reply("comparison.condition", [cohort("pembrolizumab"), cohort("nivolumab")]),
+        )
+    )
 
 
 def test_stated_match_ignores_case() -> None:
@@ -347,7 +480,7 @@ def test_no_anchor_asks_for_one() -> None:
 
 @pytest.mark.parametrize("anchor", ANCHORS)
 def test_each_anchor_satisfies_the_rule(anchor: str) -> None:
-    llm = reply()
+    llm = reply(constraints=[constraint("X", anchor)])
     llm["filters"][anchor] = "X"
     ok(build("trials by phase for X", llm))
 
@@ -506,11 +639,23 @@ ACCEPTANCE = [q for q in load_questions() if _derivable(q)]
 
 
 def _stub_reply(q: EvalQuestion) -> dict[str, Any]:
+    """A correct LLM answer derived from the expectation: each stated value is quoted where the
+    question writes it, and a name left over is the wording of the one inferred filter
+    ("Korea" for South Korea), as the prompt asks."""
     e = q.expected
     filters: dict[str, Any] = {k: v for k, v in e.stated.items() if k not in q.request}
     filters |= {k: values[0] for k, values in e.inferred.items()}
     cohorts = [c.model_dump() for c in e.cohorts] if e.cohorts else None
-    return reply(e.analysis or "distribution.phase", cohorts, **filters)
+    query = str(q.request["query"])
+    quotes = [
+        constraint(str(v), k) for k, v in filters.items() if str(v).casefold() in query.casefold()
+    ]
+    left = unaccounted_names(
+        query, [c["quote"] for c in quotes] + [c.label for c in e.cohorts or []]
+    )
+    if left and len(e.inferred) == 1:
+        quotes += [constraint(name, next(iter(e.inferred))) for name in left]
+    return reply(e.analysis or "distribution.phase", cohorts, constraints=quotes, **filters)
 
 
 @pytest.mark.parametrize("question", ACCEPTANCE, ids=[q.id for q in ACCEPTANCE])
