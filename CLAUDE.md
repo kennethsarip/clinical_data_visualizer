@@ -135,7 +135,7 @@ Happy path (LLM steps marked):
 | LLM | OpenAI `gpt-5.4-mini`, low reasoning effort | The company supplied the key and an allowed-model list. Planning is enum classification, so a current mini model gives accuracy at low latency. No model benchmarking (user decision, 2026-10-04). Set in `OPENAI_MODEL`. Used only for planning and prose (§7.2) |
 | Orchestration | Hand-rolled Python | No agent framework (§13.3) |
 | Vector DB | None | Rejected (§13.3) |
-| HTTP client | httpx (sync) | FastAPI runs sync routes in a threadpool and requests are sequential, so async adds complexity without need; `MockTransport` serves test fixtures without a mocking dependency |
+| HTTP client | httpx (sync) | FastAPI runs sync routes in a threadpool and requests are sequential, so async adds complexity without need; `MockTransport` serves test fixtures without a mocking dependency. The OpenAI SDK (3.x) brings its own fork, `httpx2`, so the LLM fakes use `httpx2.MockTransport` (a declared dev dependency) |
 | DB driver, migrations | psycopg3; numbered SQL files in `migrations/` applied by `app/migrate.py` | Two tables do not justify an ORM |
 | Frontend | Vite + React + TypeScript (npm); Vega-Lite (`react-vega`) for charts, Cytoscape.js for networks | `frontend/`; types generated from FastAPI's `/openapi.json` with `openapi-typescript`, so `schemas.py` stays the single source (§14 Phase 4) |
 | Package manager | uv | `uv.lock` is committed; reviewers run `uv sync` |
@@ -194,7 +194,7 @@ docs/                # GITIGNORED, local only: assignment screenshots + assignme
 | Lint | `uv run ruff check . && uv run ruff format --check .` (auto-fix: `uv run ruff check --fix . && uv run ruff format .`) |
 | Typecheck | `uv run mypy` |
 | Test | `uv run pytest` (offline; needs the Compose Postgres) |
-| Live tests | `uv run pytest -m live` (real API; excluded from the default run) |
+| Live tests | `uv run --env-file .env pytest -m live` (real ClinicalTrials.gov and OpenAI APIs; excluded from the default run) |
 | Add a dependency | `uv add <pkg>` (dev only: `uv add --dev <pkg>`); state why in the commit (§11) |
 | Start Postgres | `docker compose up -d` |
 | Migrate | `uv run --env-file .env python -m app.migrate` (idempotent; needs only `DATABASE_URL`) |
@@ -375,6 +375,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 | API client | Param building, pagination and the cap, against small recorded fixtures |
 | Planner / viz | Parsing and validation of LLM output with a stubbed LLM, including malformed output |
 | Frontend | Each viz renderer against the `SCHEMAS.md` examples; status views (Vitest; Phase 4) |
+| Live LLM | `tests/test_live_llm.py` (`-m live`): OpenAI accepts the strict schema `llm.strict_json_schema` generates and the reply validates |
 | Live core | `tests/test_live_core.py` (`-m live`): every registered aggregator plus citations on real records; checks provenance, retrieved IDs, excerpts, §8.5 reconciliation and network edges. Extended by each later step |
 | Eval | `eval/questions.json` (30 questions, loaded by `tests/eval_questions.py`, coherence-tested by `tests/test_eval_questions.py`): every §1 class plus ambiguous input, a zero-result combination, a nonexistent entity, a contradictory date range, multi-phase or missing-field records, and a very broad condition. For each question, record the intent, viz type, record count, check pass/fail, latency and failure mode |
 
@@ -491,7 +492,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) makes results visible for the demo.
 
-**Next move:** Phase 3 step 1 (the LLM client).
+**Next move:** replace the rejected `OPENAI_API_KEY` in `.env` and pass `tests/test_live_llm.py`; then Phase 3 step 2 (the planner).
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
@@ -503,7 +504,6 @@ The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) m
 Goal: a natural-language request returns the right status and a checked spec over HTTP. Decided: §3 model, §7.2 calls and retry, §7.3 stated vs inferred, §7.8 anchor rule and not-found probe, §8.1 endpoint and HTTP codes, §7.2 plan shape, cohorts and title fallback, §7.7 error mapping.
 
 Steps, in order:
-1. **LLM client.** `llm.py`: an OpenAI structured-output call returning validated Pydantic models; malformed output raises a typed error; `uv add openai`. Verify the `gpt-5.4-mini` parameters (reasoning effort, structured outputs) against OpenAI's docs first.
 2. **Planner.** `planner.py`: the plan's JSON schema is generated from the registry, so the planner can only choose what exists. Validate, retry once with the error, then apply the anchor rule and classify filters as stated or inferred.
 3. **Title and notes.** The LLM part of `viz.py`: title and notes from plan, shape, columns and filters; never data. The `title` check guards it.
 4. **Pipeline.** `pipeline.py`: the §1 steps, per-cohort fetches, the not-found probe, repair-once, and typed error -> status mapping in one place. A result with no trials in any row (or a network with no edges) becomes `no_results` naming the exclusions, before the checks (which would block it as an empty chart). `assemble` refuses `meta.filters` that differ from the filters a single cohort was fetched with, so the planner's stated/inferred split must cover exactly the applied filters.

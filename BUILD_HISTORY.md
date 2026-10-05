@@ -6,6 +6,13 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ### Phase 3: LLM planning and the endpoint (in progress)
 
+- **3.1 LLM client** (2026-10-04): `app/llm.py` `LLMClient.complete(instructions, user_input, name, output_type)` makes one Responses API call in strict structured-output mode and returns a validated Pydantic model.
+  - `gpt-5.4-mini` checked against OpenAI's model page: Responses API, structured outputs, reasoning effort `none` (the default), `low`, `medium`, `high` or `xhigh`. `OPENAI_REASONING_EFFORT` defaults to `low`. Timeout 30 s, 2 SDK retries, 4,000 output tokens.
+  - `strict_json_schema` turns a model's schema into strict form (every property required, no extras, null unions kept) and drops keywords strict mode may reject (lengths, defaults, titles), which Pydantic re-checks after the call.
+  - Typed errors for the §7.7 mapping: `LLMUpstreamError` (HTTP error or unreachable -> 502) and `LLMOutputError` (refusal, incomplete reply, non-JSON or invalid output; keeps the raw text and a compact `field: message` summary for the retry prompt).
+  - 17 offline tests on an `httpx2.MockTransport` fake, seen red (16 failures) against a stub. The OpenAI SDK 3.x uses its own `httpx2`, not `httpx`, so passing an `httpx` client only worked by duck typing; the fakes now use `httpx2`.
+  - The live smoke test `tests/test_live_llm.py` is blocked: OpenAI rejects the key in `.env` with 401 `invalid_api_key`. `OPENAI_MODEL` was blank in `.env` and is now `gpt-5.4-mini`.
+
 - **3.0 Eval questions first** (2026-10-04): `eval/questions.json` holds 30 questions with the expected status, `analysis` key, viz type, stated and inferred filters, cohorts, missing anchors and not-found entities, each with a written `why`. All 9 appendix examples are included (the unanchored drug-drug one expects `clarification_needed`), plus every question class, every viz type and each §7.8 edge case.
   - `tests/test_eval_questions.py` checks every expectation against the registry, the request model and the §7.2/§7.3/§7.8 rules, so a wrong expectation cannot certify a wrong planner. Breaking four expectations (viz type, stated vs inferred, cohort count, anchor) failed 6 tests for those reasons.
   - Inferred filters list every acceptable value ("last five years" -> 2021 or 2022), since inference is ambiguous by definition. An enum filter counts as stated when its display label appears ("recruiting" -> `RECRUITING`), which the planner's stated test must match.

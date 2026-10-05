@@ -274,6 +274,8 @@ Network `pruning` example: `{"min_edge_weight": 2, "top_n_nodes": 50, "fallback_
           "notes": ["Name a drug, condition or sponsor to chart."]}}
 ```
 
+`missing` lists absent anchors only. A request that is anchored but cannot be planned, such as a comparison of more than 4 cohorts, returns `clarification_needed` with `missing: []` and the reason in `notes`.
+
 Zero results with every entity found (the filters together match nothing):
 
 ```json
