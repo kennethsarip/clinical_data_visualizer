@@ -1,0 +1,23 @@
+# Local Postgres for the API response cache (CLAUDE.md §6). Start: `docker compose up -d`.
+# The credentials are for a throwaway local database bound to 127.0.0.1 only; they are not secrets.
+# DATABASE_URL in .env must match: postgresql://cheiron:cheiron@127.0.0.1:5432/cheiron
+services:
+  postgres:
+    image: postgres:18.6-alpine  # pinned; CI uses the same image
+    environment:
+      POSTGRES_USER: cheiron
+      POSTGRES_PASSWORD: cheiron
+      POSTGRES_DB: cheiron
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      # Postgres 18 images keep data under /var/lib/postgresql/<major>/, so mount the parent.
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cheiron -d cheiron"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+volumes:
+  pgdata:

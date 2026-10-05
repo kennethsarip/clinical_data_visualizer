@@ -6,6 +6,8 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.142.2",
+    "httpx>=0.28.1",
+    "psycopg[binary]>=3.3.6",
     "uvicorn>=0.54.0",
 ]
 
@@ -25,6 +27,9 @@ plugins = ["pydantic.mypy"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+# Live tests hit the real API; the Definition of done stays offline. Run them with `pytest -m live`.
+addopts = "-m 'not live'"
+markers = ["live: calls the real ClinicalTrials.gov API (run with -m live)"]
 
 [dependency-groups]
 dev = [
