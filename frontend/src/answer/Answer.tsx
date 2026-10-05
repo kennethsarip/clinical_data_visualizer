@@ -28,8 +28,7 @@ export function Answer({ response }: { response: OkResponse }) {
     <div className="answer">
       <div className="answer-main">
         <ChartCard
-          visualization={viz}
-          meta={response.meta}
+          response={response}
           highlighted={highlighted}
           onSelect={(next) => {
             // A new click asks "which trials?", so the list comes back into view.

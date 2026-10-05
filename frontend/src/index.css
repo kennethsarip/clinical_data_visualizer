@@ -907,3 +907,74 @@ a {
 .how-checks li {
   break-inside: avoid;
 }
+
+/* --- response JSON and export (Phase 4 step 10) --- */
+
+.chart-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.chart-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tabs-compact {
+  margin: 0;
+  padding: 3px;
+}
+
+.tabs-compact .tab {
+  flex: none;
+  font-size: 13px;
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
+.export-buttons,
+.json-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.button-small {
+  font-size: 13px;
+  padding: 4px 10px;
+}
+
+.json-actions {
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+.json-size {
+  margin-right: auto;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.json-view {
+  margin: 0;
+  max-height: 560px;
+  overflow: auto;
+  padding: 14px 16px;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  color: var(--color-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre;
+}
+
+.export-buttons .button-small {
+  gap: 4px;
+  border-color: var(--color-blue-border);
+}

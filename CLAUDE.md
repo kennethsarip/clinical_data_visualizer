@@ -4,7 +4,7 @@
 >
 > **The one thing to understand first:** the LLM never produces a number, count, date, NCT ID, excerpt or data row. It does exactly two things: plan the query and write prose (title, notes). Retrieval, aggregation, viz type selection, citations and checks are deterministic Python, so every row traces back to cached API records by NCT ID (§7.2).
 >
-> **Status:** Phases 1-3 are done (Phase 3 tagged `phase-3`): `POST /api/visualize` answers end to end, live 29/29 on the eval questions. Phase 4 (frontend) is next (§14). The repo is `github.com/kennethsarip/cheiron_task` (private, §12). Runs locally only; no deploy is planned (§13.4).
+> **Status:** Phases 1-4 are done (Phase 3 tagged `phase-3`; Phase 4 on PR #5, awaiting merge): `POST /api/visualize` answers end to end, live 29/29 on the eval questions, and the frontend renders every viz type with clickable citations. Phase 5 (eval) is next (§14). The repo is `github.com/kennethsarip/cheiron_task` (private, §12). Runs locally only; no deploy is planned (§13.4).
 >
 > **Definition of done:** `uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest`, plus `cd frontend && npm run lint && npm run typecheck && npm test`, all green. CI (`.github/workflows/ci.yml`) runs exactly these, so local green means CI green. `main` stays runnable.
 >
@@ -29,7 +29,7 @@ Taken from the assignment document. Where a later section conflicts with this on
 
 **Interfaces the reviewer reads** (both documented in `SCHEMAS.md`, §8.3):
 - **Request schema:** field names, types, required/optional, validation. Only `query` is required; the optional fields are ours to define.
-- **Response schema**, documented so that **a frontend engineer can implement a renderer without guessing**. Required parts: `visualization` (`type`, `title`, `encoding`, `data`) and `meta` (units, sorting, time granularity, grouping choices, plus notes on assumptions, filters applied and query interpretation). No frontend is required; we build one anyway as a demo (§14 Phase 4).
+- **Response schema**, documented so that **a frontend engineer can implement a renderer without guessing**. Required parts: `visualization` (`type`, `title`, `encoding`, `data`) and `meta` (units, sorting, time granularity, grouping choices, plus notes on assumptions, filters applied and query interpretation). No frontend is required; we build one anyway as a demo (`frontend/`; `BUILD_HISTORY.md` Phase 4).
 
 **Bonus, deep citations:** every datum (bar, time bucket, node, edge weight) references the trial records that produced it, each as `nct_id` plus an exact text excerpt from the API response, or a specific field/value (§7.5). The assignment calls this intentionally challenging: implement as much as the time box allows.
 
@@ -112,7 +112,7 @@ Happy path (LLM steps marked):
 - Deterministic aggregation for every question class (§1) and every target viz type (Objectives).
 - Deep citations on every row, including network edges.
 - Explicit statuses and handling of the edge cases in §7.8.
-- A Vite + React + TypeScript frontend with citation and `meta` panels (§14 Phase 4).
+- A Vite + React + TypeScript frontend with citation and `meta` panels (`BUILD_HISTORY.md` Phase 4).
 - An eval set of ~20-25 questions with a baseline run and an after run, both kept (§9).
 - Bonuses, shown off in the README (§14 Phase 6): deep citations, condition-anchored networks, a 2-3 min demo video.
 - The submission zip: code; the README (how to run, schemas, design decisions and tradeoffs, limitations and what more time would improve, AI tools used, how correctness was validated, and what was designed deliberately versus generated and adapted); and 3-5 example runs with the actual JSON outputs.
@@ -137,7 +137,7 @@ Happy path (LLM steps marked):
 | Vector DB | None | Rejected (§13.3) |
 | HTTP client | httpx (sync) | FastAPI runs sync routes in a threadpool and requests are sequential, so async adds complexity without need; `MockTransport` serves test fixtures without a mocking dependency. The OpenAI SDK (3.x) brings its own fork, `httpx2`, so the LLM fakes use `httpx2.MockTransport` (a declared dev dependency) |
 | DB driver, migrations | psycopg3; numbered SQL files in `migrations/` applied by `app/migrate.py` | Two tables do not justify an ORM |
-| Frontend | Vite + React + TypeScript (npm), oxlint, Vitest + Testing Library (jsdom), Pretendard font; Vega-Lite (via `vega-embed`) for charts, Cytoscape.js for networks | `frontend/`; types generated from FastAPI's `/openapi.json` with `openapi-typescript`, so `schemas.py` stays the single source (§14 Phase 4) |
+| Frontend | Vite + React + TypeScript (npm), oxlint, Vitest + Testing Library (jsdom), Pretendard font; Vega-Lite (via `vega-embed`) for charts, Cytoscape.js for networks | `frontend/`; types generated from FastAPI's `/openapi.json` with `openapi-typescript`, so `schemas.py` stays the single source |
 | Package manager | uv | `uv.lock` is committed; reviewers run `uv sync` |
 | Lint / format / typecheck / test | ruff / ruff format / mypy (strict, pydantic plugin) / pytest | All configured in `pyproject.toml` |
 | CI | GitHub Actions | Runs the Definition of done on every push to `main` and every PR: a backend job with a Postgres service container, and a frontend job (Node from `frontend/.nvmrc`) |
@@ -146,7 +146,7 @@ Happy path (LLM steps marked):
 
 ## 4. Repository structure
 
-Modules hold only a docstring until their phase ships (§14); `frontend/` arrives in Phase 4. Keep this tree in sync.
+Modules hold only a docstring until their phase ships (§14). Keep this tree in sync.
 
 ```
 CLAUDE.md            # spec + working context (this file)
@@ -351,7 +351,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 - Every encoding channel names its field and a type (`quantitative`, `nominal`, `ordinal`, `temporal`), plus an optional `scale`, so a renderer never infers one.
 - A top-level `trials` map gives each cited NCT ID its title, status, phase and start date, so a sources panel needs no second request.
 - **Renderer contract bar:** a frontend engineer can implement a renderer without guessing (Objectives). For each viz type it states the `encoding` channels, every row field with its type and unit, the sort order, and how citations attach to rows, nodes and edges.
-- The frontend (§14 Phase 4) consumes only this contract, which makes it proof that the contract is renderable without guessing. The README links to `SCHEMAS.md` and shows real examples from `examples/`.
+- The frontend (`frontend/`) consumes only this contract, which makes it proof that the contract is renderable without guessing. The README links to `SCHEMAS.md` and shows real examples from `examples/`.
 
 ### 8.4 ClinicalTrials.gov API facts (verified 2026-10-04, apiVersion 2.0.5)
 - Base URL `https://clinicaltrials.gov/api/v2`. `GET /studies` returns `{totalCount, studies, nextPageToken}`; `fields=` trims the payload.
@@ -377,7 +377,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 | Checks | Each §7.6 check, with one passing and one failing fixture |
 | API client | Param building, pagination and the cap, against small recorded fixtures |
 | Planner / viz | Parsing and validation of LLM output with a stubbed LLM, including malformed output |
-| Frontend | Each viz renderer against the `SCHEMAS.md` examples; status views (Vitest; Phase 4) |
+| Frontend | Each viz renderer against the `SCHEMAS.md` examples; status views, sources, viewer, drawer and export (Vitest) |
 | Live pipeline | `tests/test_live_pipeline.py` (`-m live`, Compose Postgres): every plannable eval question end to end (real LLM, API and cache) against its expected status, analysis, viz type, not-found names and cap |
 | Live LLM | `tests/test_live_llm.py` (`-m live`): OpenAI accepts the strict schema `llm.strict_json_schema` generates and the reply validates. `tests/test_live_planner.py`: the real planner against every eval expectation, one test per question. `tests/test_live_prose.py`: an LLM title without fallback for every `ok` eval question |
 | Live core | `tests/test_live_core.py` (`-m live`): every registered aggregator plus citations on real records; checks provenance, retrieved IDs, excerpts, §8.5 reconciliation and network edges. Extended by each later step |
@@ -495,33 +495,15 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 ## 14. Build plan (what is left to build)
 
-The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) makes results visible for the demo.
+The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4, done) makes results visible for the demo.
 
-**Next move:** Phase 4 step 10 (raw JSON toggle and export).
+**Next move:** merge PR #5 and tag `phase-4`, then Phase 5 step 2 (eval runner).
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
 - **Foundation before features:** a phase starts only when the previous phase's "Done when" passes, because each phase consumes the previous one's output (records -> rows -> responses -> rendered charts -> measured results).
 - **Decide first:** each phase's open decisions are settled before its code is written, and recorded in the section they govern plus `BUILD_HISTORY.md` → Decisions. Items marked PROPOSED are recommendations awaiting the user's yes.
 - **Ship-then-prune:** when a step is done, delete it from its phase here and add a few 1-2 line bullets for it under that phase's heading in `BUILD_HISTORY.md`, in the SAME commit. Remaining steps keep their numbers. When a phase's "Done when" passes, delete the whole phase.
-
-### Phase 4: Frontend (render every viz type)
-Goal: a search-first app where a user asks a question, sees the chart as the answer, and inspects the trials behind any datum. It follows the reference product in `docs/product_frontend/` (gitignored screenshots) for both the interaction pattern (query -> answer -> sources -> record viewer) and the visual design: its light-blue/white palette, typeface, card and chip shapes (user decision, 2026-10-04, superseding the earlier "no copied styling"). It still carries no Cheiron name or logo, and nothing claims to be their product (§2).
-
-**Decided** (user, 2026-10-04): a two-column answer view, with the chart (~65%) and the "How this was answered" drawer under it on the left and the sources panel on the right; one column on narrow screens. Plain CSS with design tokens on `:root`, with no CSS framework or component library. Light theme only, because the reference shows no dark theme to follow; the tokens keep one possible later.
-
-**Design tokens** (sampled from the screenshots, 2026-10-04; text colors read darker than the anti-aliased samples): page `#f6f6f6`, panel `#f7f8fa`, surface `#ffffff`; light-blue card header `#eaf0f6`, chip `#dceaf8`, card border `#cddaea`, citation underline `#c9dcef` (dotted); accent blue `#4a8fd8` (links, active tab), citation bubble `#b7bdc9` and active `#5b84aa`; text `#1a1a1a` headings, `#4a5057` body, `#8f8f8f` muted; neutral border `#ececec`; excerpt highlight `#fcf090`; source badge teal `#2aa7b0` on `#e3f5f8`. Typeface Pretendard (npm `pretendard`, OFL-1.1), falling back to the system sans. Shapes: 12 px radius cards with a 1 px border and a soft shadow, 6 px chips, small round numbered bubbles, and segmented tabs (grey track, white active pill). Loading shows a spinner, the elapsed time and a cancel button (`AbortController`); no server-sent progress, because that would change the backend contract.
-
-**Decided from the reference pass** (user, 2026-10-04; patterns in `BUILD_HISTORY.md` → Decisions): a right panel with **Sources | Viewer** tabs; numbered source cards; a datum tooltip of "N trials, click to see sources"; reverse highlight (hovering a card highlights every row whose `nct_ids` holds that trial); a Viewer showing the cached record with the cited field highlighted; export as chart SVG/PNG plus response JSON. Two of these changed the backend contract (step 1, shipped: `BUILD_HISTORY.md`).
-
-Steps, in order:
-10. **Raw JSON toggle and export.** A "Response JSON" tab beside the chart that shows the exact response, so a reviewer can check the spec and citations against `SCHEMAS.md`, with copy and download buttons; chart SVG/PNG download sits in the chart header.
-
-Done when:
-- A Vitest test renders every `SCHEMAS.md` example per viz type without error.
-- Every status view, plus the 422 and 502 views, is reachable from the running backend.
-- Clicking a datum, then a card, opens the Viewer with that trial's excerpt highlighted in its cached record, for every viz type.
-- `npm run lint && npm run typecheck && npm test` passes (in the Definition of done and CI since step 2), and the type-drift check is in CI (since step 3).
 
 ### Phase 5: Eval and iteration
 Goal: measured evidence of iteration, including evidence for the bonuses.

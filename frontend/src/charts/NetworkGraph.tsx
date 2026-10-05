@@ -31,7 +31,7 @@ export function NetworkGraph({ visualization, highlighted, onSelect, ref }: Rend
       if (!cy.current) throw new Error('The network has not rendered yet')
       return cy.current.png({ output: 'base64uri', full: true, scale: 2, bg: '#ffffff' })
     },
-  }))
+  }), [])
 
   useEffect(() => {
     if (!container.current) return

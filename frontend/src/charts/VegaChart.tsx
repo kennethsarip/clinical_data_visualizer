@@ -21,8 +21,8 @@ export function VegaChart({ visualization, meta, highlighted, onSelect, ref }: R
   useImperativeHandle(ref, () => ({
     ready: () => view.current !== null,
     toSVG: () => requireView(view.current).toSVG(),
-    toPNG: () => requireView(view.current).toImageURL('png', 2),
-  }))
+    toPNG: async () => onWhite(await requireView(view.current).toCanvas(2)),
+  }), [])
 
   useEffect(() => {
     let cancelled = false
@@ -55,6 +55,19 @@ export function VegaChart({ visualization, meta, highlighted, onSelect, ref }: R
 
 function applyHighlight(view: View, viz: ChartVisualization, highlighted: ReadonlySet<string>) {
   return view.signal(HIGHLIGHT_PARAM, highlightedIndexes(viz.data, highlighted)).runAsync()
+}
+
+/** The chart is transparent so it sits on the card; a saved PNG gets a white page, as the network's does. */
+function onWhite(chart: HTMLCanvasElement): string {
+  const page = document.createElement('canvas')
+  page.width = chart.width
+  page.height = chart.height
+  const context = page.getContext('2d')
+  if (!context) throw new Error('Canvas is unavailable')
+  context.fillStyle = '#ffffff'
+  context.fillRect(0, 0, page.width, page.height)
+  context.drawImage(chart, 0, 0)
+  return page.toDataURL('image/png')
 }
 
 function requireView(view: View | null): View {
