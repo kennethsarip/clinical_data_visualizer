@@ -4,7 +4,7 @@
 >
 > **The one thing to understand first:** the LLM never produces a number, count, date, NCT ID, excerpt or data row. It does exactly two things: plan the query and write prose (title, notes). Retrieval, aggregation, viz type selection, citations and checks are deterministic Python, so every row traces back to cached API records by NCT ID (§7.2).
 >
-> **Status:** Phases 1-4 are done (each merged and tagged `phase-N`; Phase 4 on 2026-10-05): `POST /api/visualize` answers end to end, live 29/29 on the eval questions, and the frontend renders every viz type with clickable citations. Phase 5 (eval) is next (§14). The repo is `github.com/kennethsarip/cheiron_task` (private, §12). Runs locally only; no deploy is planned (§13.4).
+> **Status:** Phases 1-5 are done (each merged and tagged `phase-N`; Phase 5 on 2026-10-05): `POST /api/visualize` answers end to end, live 30/30 on the eval questions with baseline and after runs saved in `eval/results/`, and the frontend renders every viz type with clickable citations. Phase 6 (query understanding and retrieval) is in progress (§14). The repo is `github.com/kennethsarip/cheiron_task` (private, §12). Runs locally only; no deploy is planned (§13.4).
 >
 > **Definition of done:** `uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest`, plus `cd frontend && npm run lint && npm run typecheck && npm test && npm run check:types`, all green (`check:types` diffs against git, so commit regenerated types first). CI (`.github/workflows/ci.yml`) runs exactly these, so local green means CI green. `main` stays runnable.
 >
@@ -503,7 +503,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4, done) makes results visible for the demo.
 
-**Next move:** Phase 5 "Done when" (README citations wait for Phase 6/9), then merge PR #6 and tag `phase-5`, then Phase 6 step 0 before any Phase 6 code.
+**Next move:** Phase 6 step 0 (questions and a pre-fix run) before any other Phase 6 code.
 
 Phases 6-9 were planned with the user on 2026-10-05 (reasons in `BUILD_HISTORY.md` → Decisions): fix query understanding and retrieval first, because a citation cannot rescue a trial that should never have been retrieved; then verify every step and show the result to the user; then the network showcase; then submission.
 
@@ -512,12 +512,6 @@ Phases 6-9 were planned with the user on 2026-10-05 (reasons in `BUILD_HISTORY.m
 - **Foundation before features:** a phase starts only when the previous phase's "Done when" passes, because each phase consumes the previous one's output (records -> rows -> responses -> rendered charts -> measured results).
 - **Decide first:** each phase's open decisions are settled before its code is written, and recorded in the section they govern plus `BUILD_HISTORY.md` → Decisions. Items marked PROPOSED are recommendations awaiting the user's yes.
 - **Ship-then-prune:** when a step is done, delete it from its phase here and add a few 1-2 line bullets for it under that phase's heading in `BUILD_HISTORY.md`, in the SAME commit. Remaining steps keep their numbers. When a phase's "Done when" passes, delete the whole phase.
-
-### Phase 5: Eval and iteration
-Goal: measured evidence of iteration, including evidence for the bonuses.
-1. **Question set.** Written in Phase 3 step 0; add any question a Phase 3 bug exposed, never edit an expectation to match output.
-
-Done when: the baseline and after results are saved in `eval/` with per-question metrics, and the README cites only comparisons that were actually run.
 
 ### Phase 6: Query understanding and retrieval
 Goal: every constraint in the question is either applied exactly or disclosed as not applied, and every charted trial meets the filters applied. Evidence: the country filter is a text search (§8.4), so "breast cancer trials in Japan" charts 9 trials sited only in China, and every §7.6 check passes.

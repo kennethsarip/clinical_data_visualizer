@@ -4,7 +4,9 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ## Shipped
 
-### Phase 5: Eval and iteration (in progress)
+### Phase 5: Eval and iteration (done 2026-10-05; merged in PR #6 and tagged `phase-5`)
+
+- **Done when, checked** (2026-10-05): baseline and after runs are saved in `eval/results/` with per-question metrics (5.3). The README does not yet cite them; its comparisons are written in Phases 7 and 9 from these saved runs only.
 
 - **Frontend polish** (2026-10-05, alongside Phase 5): a landing layout (centred title, one-line tagline, a chart-type guide naming what each of the six viz types answers) replaces the example chips; the question box gets an inline send button with Filters beside it; the loading view echoes the question being answered; network nodes are coloured by entity type (drug, sponsor, condition) with a legend. Label collisions remain (Phase 8 step 2).
 - **5.4 Eyeballing** (2026-10-05): every charted eval answer (23) rendered through the frontend at commit `5354715` and screenshotted. Bars, grouped bars, time series, the histogram and the scatter read correctly; the 4 capped answers, and only they, show the caption, the "(capped sample)" axis title and the badge; titles at `none` effort are plain, number-free and specific. Findings, not yet fixed:
