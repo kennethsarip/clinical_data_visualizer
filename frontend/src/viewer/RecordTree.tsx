@@ -4,13 +4,14 @@
 interface Props {
   section: Record<string, unknown>
   highlights: ReadonlySet<string> // concrete paths under protocolSection
+  open: ReadonlySet<string> // modules to show expanded
 }
 
-export function RecordTree({ section, highlights }: Props) {
+export function RecordTree({ section, highlights, open }: Props) {
   return (
     <div className="record-tree">
       {Object.entries(section).map(([module, value]) => (
-        <details key={module} open={hasHighlight(module, highlights)}>
+        <details key={module} open={open.has(module)}>
           <summary>{module}</summary>
           <Node value={value} path={module} highlights={highlights} />
         </details>
@@ -51,9 +52,4 @@ function Node({ value, path, highlights }: { value: unknown; path: string; highl
   ) : (
     <span data-path={path}>{text}</span>
   )
-}
-
-function hasHighlight(module: string, highlights: ReadonlySet<string>): boolean {
-  for (const path of highlights) if (path === module || path.startsWith(`${module}.`)) return true
-  return false
 }

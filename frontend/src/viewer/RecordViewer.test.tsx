@@ -47,7 +47,7 @@ describe('RecordViewer', () => {
       'href',
       'https://clinicaltrials.gov/study/NCT00000001',
     )
-    expect(screen.getByText(/Cached 2026-10-05/)).toBeInTheDocument()
+    expect(screen.getByText('Cached 2026-10-05, the version the answer was checked against.')).toBeInTheDocument()
   })
 
   it('lists each citation with what was found', async () => {
@@ -68,6 +68,11 @@ describe('RecordViewer', () => {
       'The cached record has changed since this answer was checked. designModule.phases no longer contains "PHASE3".',
     )
     expect(screen.queryByText('PHASE3', { selector: 'mark' })).not.toBeInTheDocument()
+    // The record now disagrees with the answer, so the viewer must not claim it is that version,
+    // and it opens the changed field's module so its current value is visible.
+    expect(screen.getByText(/^Cached 2026-10-05\.$/)).toBeInTheDocument()
+    expect(screen.queryByText(/the version the answer was checked against/)).not.toBeInTheDocument()
+    expect(screen.getByText('designModule').closest('details')).toHaveAttribute('open')
   })
 
   it('says when a trial counts but was not quoted (citation cap)', async () => {

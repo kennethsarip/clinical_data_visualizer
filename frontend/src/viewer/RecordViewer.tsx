@@ -61,6 +61,15 @@ function LoadedRecord({ stored, citations }: { stored: StoredTrial; citations: C
     [matches],
   )
   const changed = matches.flatMap(({ match }) => (match.status === 'changed' ? [match.message] : []))
+  // Open every module that holds a highlight or a changed field, so its current value is in view.
+  const open = useMemo(
+    () =>
+      new Set([
+        ...[...highlights].map(moduleOf),
+        ...matches.flatMap(({ citation, match }) => (match.status === 'changed' ? [moduleOf(citation.field)] : [])),
+      ]),
+    [highlights, matches],
+  )
   const section = (stored.record as { protocolSection?: Record<string, unknown> }).protocolSection ?? {}
 
   useEffect(() => {
@@ -70,7 +79,11 @@ function LoadedRecord({ stored, citations }: { stored: StoredTrial; citations: C
 
   return (
     <div ref={container} className="viewer-body">
-      <p className="viewer-cached">Cached {stored.fetched_at.slice(0, 10)}, the version the answer was checked against.</p>
+      <p className="viewer-cached">
+        {changed.length > 0
+          ? `Cached ${stored.fetched_at.slice(0, 10)}.`
+          : `Cached ${stored.fetched_at.slice(0, 10)}, the version the answer was checked against.`}
+      </p>
       {changed.length > 0 && (
         <p className="viewer-warning" role="alert">
           The cached record has changed since this answer was checked. {changed.join(' ')}
@@ -85,9 +98,13 @@ function LoadedRecord({ stored, citations }: { stored: StoredTrial; citations: C
           ))}
         </ul>
       )}
-      <RecordTree section={section} highlights={highlights} />
+      <RecordTree section={section} highlights={highlights} open={open} />
     </div>
   )
+}
+
+function moduleOf(path: string): string {
+  return path.split('.')[0]
 }
 
 function describe(citation: Citation, match: CitationMatch): string {
