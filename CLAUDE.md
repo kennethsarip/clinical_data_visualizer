@@ -491,7 +491,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 |---|---|
 | The API needs no key and tolerates our request rate | Responses come back 401, 403 or 429 |
 | Listing "vector databases" in the stack does not require using one; a documented rejection shows judgment | The assignment or interviewer says one is required |
-| A capped sample with a disclosed total is useful for broad queries | Eval shows the sample's distribution differs materially from per-bucket totals |
+| A capped sample with a disclosed total is useful for broad queries | Eval shows the sample's distribution differs materially from per-bucket totals. Checked 2026-10-05 on two capped time trends: shares within 0.9 pp (holds); absolute counts understated (`BUILD_HISTORY.md` 5.3) |
 
 ## 14. Build plan (what is left to build)
 
