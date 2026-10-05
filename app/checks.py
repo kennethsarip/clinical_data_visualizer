@@ -11,6 +11,7 @@ The §7.6 WARN items (capped sample, counting-rule exclusions, network pruning) 
 
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from typing import Any
 
 from pydantic import ValidationError
@@ -40,10 +41,10 @@ from app.ctgov import build_params
 from app.entities import EntityType, entity_key
 from app.normalize import (
     UNREADABLE_RULE,
+    NormalizedTrial,
     RecordShapeError,
     batch_of,
     normalize_record,
-    normalize_records,
 )
 from app.schemas import (
     RESPONSE_ADAPTER,
@@ -95,6 +96,19 @@ class CheckContext:
     # For `recount`: the aggregator that built the answer and the NCT IDs each cohort fetched.
     aggregator: Aggregator | None = None
     cohort_ids: Sequence[frozenset[str]] | None = None
+    # Each raw record normalized once per answer and shared by membership and recount (None:
+    # unreadable). Built from `records` only, so it adds no input a check could be fooled by.
+    _trials: dict[str, NormalizedTrial | None] = dataclass_field(
+        default_factory=dict, compare=False
+    )
+
+    def trial(self, nct_id: str) -> NormalizedTrial | None:
+        if nct_id not in self._trials:
+            try:
+                self._trials[nct_id] = normalize_record(self.records[nct_id])
+            except RecordShapeError:
+                self._trials[nct_id] = None
+        return self._trials[nct_id]
 
 
 Check = Callable[[OkResponse, CheckContext], list[str]]
@@ -422,7 +436,7 @@ def _membership(response: OkResponse, context: CheckContext) -> list[str]:
             and all(_meets_raw(r.get("protocolSection", {}), k, v) for k, v in filters.items())
         )
     }
-    keys, unreadable = _categories(categorizer, pool)
+    keys, unreadable = _categories(categorizer, context, pool)
     messages = [f"{n} cannot be re-read to verify its category" for n in sorted(unreadable)]
     label_keys: dict[object, set[object]] = {}
     for assigned in keys.values():
@@ -443,15 +457,16 @@ def _membership(response: OkResponse, context: CheckContext) -> list[str]:
 
 
 def _categories(
-    categorizer: Categorizer, records: Mapping[str, dict[str, Any]]
+    categorizer: Categorizer, context: CheckContext, nct_ids: Iterable[str]
 ) -> tuple[dict[str, list[tuple[object, object]]], set[str]]:
     """nct_id -> its (key, label) categories, from each raw record normalized afresh."""
     trials, unreadable = [], set()
-    for nct_id, record in records.items():
-        try:
-            trials.append(normalize_record(record))
-        except RecordShapeError:
+    for nct_id in nct_ids:
+        trial = context.trial(nct_id)
+        if trial is None:
             unreadable.add(nct_id)
+        else:
+            trials.append(trial)
     by_trial = categorizer.assign(trials).by_trial
     return {n: [(a.key, a.label) for a in assigned] for n, assigned in by_trial.items()}, unreadable
 
@@ -599,10 +614,12 @@ def _rebuilt_cohorts(
     cohorts = []
     for (label, values), nct_ids, sample in zip(specs, cohort_ids, meta.sample, strict=True):
         # The cache's order, as the pipeline saw it, so label votes break ties the same way.
-        records = [r for n, r in context.records.items() if n in nct_ids]
-        batch = normalize_records(records)
+        trials = [context.trial(n) for n in context.records if n in nct_ids]
+        readable = [t for t in trials if t is not None]
+        if len(readable) < len(trials):
+            raise ValueError(f"{len(trials) - len(readable)} records could not be re-read")
         filters = RetrievalFilters.model_validate(values)
-        kept, off_filter = conform(batch.trials, filters)
+        kept, off_filter = conform(readable, filters)
         cohorts.append(CohortTrials(label, batch_of(kept, []), filters, sample.total, off_filter))
     return cohorts
 
