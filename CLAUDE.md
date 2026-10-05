@@ -64,7 +64,7 @@ Taken from the assignment document. Where a later section conflicts with this on
 - **In:** `POST` with a required `query` and optional filter fields (§8.3). **Out:** `{status, visualization, meta}` (§8.3).
 - **Entity flow:** request -> plan -> API params -> records (cached) -> rows with citations -> spec -> checks -> response.
 
-**Coverage matrix** (the target, one row per question class). Examples come from the assignment appendix (`docs/assignment.md`), except condition-drug and the numeric class, which are our extensions (the assignment lists conditions as network entities and scatter plots and histograms as viz types). Intent and dimension names are the `Intent` and `Dimension` enums in `aggregators/registry.py`. The viz type is not a per-class branch: Python reads it off the aggregator's declared row shape (§7.4).
+**Coverage matrix** (the target, one row per question class). Examples come from the assignment appendix (`docs/project_details/assignment.md`), except condition-drug and the numeric class, which are our extensions (the assignment lists conditions as network entities and scatter plots and histograms as viz types). Intent and dimension names are the `Intent` and `Dimension` enums in `aggregators/registry.py`. The viz type is not a per-class branch: Python reads it off the aggregator's declared row shape (§7.4).
 
 | Class | Example question | Dimension | Row shape | Viz |
 |---|---|---|---|---|
@@ -182,7 +182,7 @@ eval/                # eval questions, runner, baseline + after results (§9)
 examples/            # 3-5 real request/response JSON pairs from the running system
 docker-compose.yml   # local Postgres
 frontend/            # Vite + React + TS app; renders specs from SCHEMAS.md (Phase 4)
-docs/                # GITIGNORED, local only: assignment screenshots + assignment.md (source of truth for requirements)
+docs/                # GITIGNORED, local only: project_details/ (assignment screenshots + assignment.md, source of truth for requirements); product_frontend/ (product reference screenshots, Phase 4)
 ```
 
 ## 5. Commands
@@ -456,7 +456,7 @@ Items marked **ask first** are hard to reverse; ask the user before choosing the
 |---|---|
 | Internal ID scheme (**ask first**) | IDs for requests and eval runs (§8.2) |
 | Auth model (**ask first**) | Who may call the endpoint |
-| Source documents | The assignment is saved in `docs/` (screenshots + `assignment.md` transcription), gitignored at the user's request so it never reaches GitHub (2026-10-04). There is no separate project brief (user, 2026-10-04) |
+| Source documents | The assignment is saved in `docs/project_details/` (screenshots + `assignment.md` transcription), gitignored at the user's request so it never reaches GitHub (2026-10-04). There is no separate project brief (user, 2026-10-04) |
 | Per-bucket totals | Alternative to the capped sample: exact per-bucket totals via `countTotal=true` queries, with citations from the sample (§13.5) |
 
 Decided 2026-10-04 and recorded where they govern: LLM model and calls (§3, §7.2), viz type by Python (§7.4), drug rule, name normalization and enrollment split (§6), pruning (§7.4), citations (§7.5), stated vs inferred and field-vs-query conflicts (§7.3), plan shape, cohorts and title fallback (§7.2), error mapping (§7.7), date basis (§7.4), request fields and `query` cap of 1,000 (SCHEMAS.md §1), anchor rule and not-found probe (§7.8), endpoint and HTTP codes (§8.1), response contract (SCHEMAS.md), zip contents (§12), hosting (not planned, §13.4).
@@ -494,7 +494,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) makes results visible for the demo.
 
-**Next move:** Phase 4 step 1 (frontend scaffold).
+**Next move:** Phase 4 step 0 (reference pass over the product screenshots), then step 1 (scaffold).
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
@@ -503,21 +503,25 @@ The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) m
 - **Ship-then-prune:** when a step is done, delete it from its phase here and add a few 1-2 line bullets for it under that phase's heading in `BUILD_HISTORY.md`, in the SAME commit. Remaining steps keep their numbers. When a phase's "Done when" passes, delete the whole phase.
 
 ### Phase 4: Frontend (render every viz type)
-Goal: a search-first app where a user asks a question, sees the chart as the answer, and inspects the trials behind any datum. It follows the interaction pattern of a cited-answer search product (query -> answer -> sources) under its own branding: no Cheiron name, logo or copied styling (§2).
+Goal: a search-first app where a user asks a question, sees the chart as the answer, and inspects the trials behind any datum. It follows the interaction pattern of a cited-answer search product (query -> answer -> sources) under its own branding: no Cheiron name, logo or copied styling (§2). Reference screenshots of that product live in `docs/product_frontend/` (gitignored); use them for the flow only, never for visual style.
+
+**Decided** (user, 2026-10-04): a two-column answer view, with the chart (~65%) and the "How this was answered" drawer under it on the left and the sources panel on the right; one column on narrow screens. Plain CSS with design tokens on `:root` plus dark mode, with no CSS framework or component library. Loading shows a spinner, the elapsed time and a cancel button (`AbortController`); no server-sent progress, because that would change the backend contract.
 
 Steps, in order:
+0. **Reference pass.** Read the screenshots and list in `BUILD_HISTORY.md` → Decisions the interaction patterns taken from them and the visual elements deliberately not copied.
 1. **Scaffold.** `frontend/` with Vite + React + TypeScript (strict), npm. ESLint, `tsc --noEmit`, Vitest. The Vite dev server proxies `/api` to `127.0.0.1:8000`, so no CORS config is needed.
-2. **Types and client.** Generate `frontend/src/api/types.ts` from `/openapi.json` with `openapi-typescript`; a small `fetch` client.
+2. **Types and client.** Dump the OpenAPI schema from the app object (no running server) and generate `frontend/src/api/types.ts` from it with `openapi-typescript`; a small `fetch` client. CI regenerates the types and fails on a diff, so `schemas.py` stays the single source.
 3. **Search page.** One large query box, example-question chips (one per §1 class, which also shows coverage), and the optional filters in a collapsible row; client-side checks mirror request validation, and the server stays authoritative.
-4. **Status views.** `clarification_needed` (the missing anchor, with suggestion chips), `no_results` and not found (the filters applied), `degraded` (the errors) and loading.
+4. **Status views.** `clarification_needed` (the missing anchor, with suggestion chips), `no_results` and not found (the filters applied), `degraded` (the errors), and loading (spinner, elapsed time, cancel). HTTP errors as well: 422 shows the field errors, and 502 says a dependency is down and offers a retry. No response ever renders as a blank page.
 5. **Renderer dispatch.** One map from `type` to renderer. Vega-Lite renders the five chart types by translating `encoding` (fields, channel types, scale) + `data`; Cytoscape.js renders `network_graph`, de-emphasizing `is_anchor` nodes. Renderers read only `encoding` and never hardcode a column.
 6. **Sources panel.** Lists the cited trials from `trials` (NCT ID, title, status, link to `https://clinicaltrials.gov/study/<nct_id>`). Clicking a bar, point, node or edge filters it to that datum's trials and shows each excerpt with its field. This is where deep citations become visible.
 7. **"How this was answered" drawer.** Interpretation, stated vs inferred filters, assumptions, "fetched N of M", citation cap, exclusions, pruning, and the checks that passed.
+8. **Raw JSON toggle.** A "Response JSON" tab beside the chart that shows the exact response, so a reviewer can check the spec and citations against `SCHEMAS.md`.
 
 Done when:
 - A Vitest test renders every `SCHEMAS.md` example per viz type without error.
-- Every status view is reachable from the running backend.
-- `npm run lint && npm run typecheck && npm test` passes and is added to the Definition of done and CI.
+- Every status view, plus the 422 and 502 views, is reachable from the running backend.
+- `npm run lint && npm run typecheck && npm test` passes and is added to the Definition of done and CI, along with the type-drift check.
 
 ### Phase 5: Eval and iteration
 Goal: measured evidence of iteration, including evidence for the bonuses.
