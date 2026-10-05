@@ -137,7 +137,7 @@ Happy path (LLM steps marked):
 | Vector DB | None | Rejected (§13.3) |
 | HTTP client | httpx (sync) | FastAPI runs sync routes in a threadpool and requests are sequential, so async adds complexity without need; `MockTransport` serves test fixtures without a mocking dependency. The OpenAI SDK (3.x) brings its own fork, `httpx2`, so the LLM fakes use `httpx2.MockTransport` (a declared dev dependency) |
 | DB driver, migrations | psycopg3; numbered SQL files in `migrations/` applied by `app/migrate.py` | Two tables do not justify an ORM |
-| Frontend | Vite + React + TypeScript (npm), oxlint, Vitest + Testing Library (jsdom), Pretendard font; Vega-Lite (`react-vega`) for charts, Cytoscape.js for networks | `frontend/`; types generated from FastAPI's `/openapi.json` with `openapi-typescript`, so `schemas.py` stays the single source (§14 Phase 4) |
+| Frontend | Vite + React + TypeScript (npm), oxlint, Vitest + Testing Library (jsdom), Pretendard font; Vega-Lite (via `vega-embed`) for charts, Cytoscape.js for networks | `frontend/`; types generated from FastAPI's `/openapi.json` with `openapi-typescript`, so `schemas.py` stays the single source (§14 Phase 4) |
 | Package manager | uv | `uv.lock` is committed; reviewers run `uv sync` |
 | Lint / format / typecheck / test | ruff / ruff format / mypy (strict, pydantic plugin) / pytest | All configured in `pyproject.toml` |
 | CI | GitHub Actions | Runs the Definition of done on every push to `main` and every PR: a backend job with a Postgres service container, and a frontend job (Node from `frontend/.nvmrc`) |
@@ -497,7 +497,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) makes results visible for the demo.
 
-**Next move:** Phase 4 step 6 (renderer dispatch).
+**Next move:** Phase 4 step 7 (sources panel, Sources tab).
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
@@ -515,7 +515,6 @@ Goal: a search-first app where a user asks a question, sees the chart as the ans
 **Decided from the reference pass** (user, 2026-10-04; patterns in `BUILD_HISTORY.md` → Decisions): a right panel with **Sources | Viewer** tabs; numbered source cards; a datum tooltip of "N trials, click to see sources"; reverse highlight (hovering a card highlights every row whose `nct_ids` holds that trial); a Viewer showing the cached record with the cited field highlighted; export as chart SVG/PNG plus response JSON. Two of these changed the backend contract (step 1, shipped: `BUILD_HISTORY.md`).
 
 Steps, in order:
-6. **Renderer dispatch.** One map from `type` to renderer. Vega-Lite renders the five chart types by translating `encoding` (fields, channel types, scale) + `data`; Cytoscape.js renders `network_graph`, de-emphasizing `is_anchor` nodes. Renderers read only `encoding` and never hardcode a column. Each renderer takes a `highlighted` NCT ID set (for reverse highlight) and exposes SVG/PNG export (Vega `view.toSVG()`/`toImageURL()`, Cytoscape `png()`).
 7. **Sources panel, Sources tab.** Numbered cards for the cited trials from `trials`: NCT ID, title, and status, phase, start date, sponsor and condition chips. Clicking a bar, point, node or edge filters the list to that datum's trials and shows each excerpt with its field; hovering a card highlights the rows that trial contributes to. This is where deep citations become visible.
 8. **Sources panel, Viewer tab.** Clicking a card opens its record from `GET /api/trials/{nct_id}` with the cited fields highlighted and scrolled into view, plus "Open on ClinicalTrials.gov" (`https://clinicaltrials.gov/study/<nct_id>`). It shows a mismatch notice when the cached record has changed (SCHEMAS.md §6).
 9. **"How this was answered" drawer.** Interpretation, stated vs inferred filters, assumptions, "fetched N of M", citation cap, exclusions, pruning, and the checks that passed.

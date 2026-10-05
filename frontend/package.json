@@ -14,9 +14,13 @@
     "check:types": "npm run gen:types && git diff --exit-code -- openapi.json src/api/types.ts"
   },
   "dependencies": {
+    "cytoscape": "^3.34.3",
     "pretendard": "^1.3.9",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "vega": "^6.4.0",
+    "vega-embed": "^7.3.0",
+    "vega-lite": "^6.4.3"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.1",
@@ -31,7 +35,8 @@
     "oxlint": "^1.81.0",
     "typescript": "~6.0.2",
     "vite": "^8.3.0",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.11",
+    "vitest-canvas-mock": "^1.2.0"
   },
   "overrides": {
     "openapi-typescript": {

@@ -6,6 +6,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type { VisualizeResponse } from '../api/client'
+import type { Visualization } from '../charts/types'
 
 const schemasMd = readFileSync(resolve(__dirname, '../../../SCHEMAS.md'), 'utf8')
 
@@ -18,3 +19,10 @@ export function exampleWith(predicate: (r: VisualizeResponse) => boolean): Visua
   if (!found) throw new Error('No SCHEMAS.md example matches')
   return found
 }
+
+/** Every visualization in SCHEMAS.md: inside `ok` responses and the standalone §3 examples. */
+export const VISUALIZATION_EXAMPLES: Visualization[] = blocks.flatMap((b) => {
+  if ('encoding' in b) return [b as unknown as Visualization]
+  const viz = (b as { visualization?: Visualization | null }).visualization
+  return viz ? [viz] : []
+})

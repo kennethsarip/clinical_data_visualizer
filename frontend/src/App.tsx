@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { visualize, type ApiResult, type VisualizeRequest, type VisualizeResponse } from './api/client'
+import { ChartCard } from './answer/ChartCard'
 import { SearchForm, type SearchFormHandle } from './search/SearchForm'
 import { LoadingView } from './status/LoadingView'
 import { StatusView } from './status/StatusView'
@@ -9,6 +10,7 @@ type Outcome = ApiResult<VisualizeResponse>
 export default function App() {
   const [startedAt, setStartedAt] = useState<number | null>(null) // set while a request runs
   const [outcome, setOutcome] = useState<Outcome | null>(null)
+  const [runId, setRunId] = useState(0) // a new answer gets fresh chart state (selection)
   const inFlight = useRef<AbortController | null>(null)
   const lastRequest = useRef<VisualizeRequest | null>(null)
   const form = useRef<SearchFormHandle>(null)
@@ -18,6 +20,7 @@ export default function App() {
     const controller = new AbortController()
     inFlight.current = controller
     lastRequest.current = request
+    setRunId((id) => id + 1)
     setOutcome(null)
     setStartedAt(Date.now())
     try {
@@ -58,8 +61,7 @@ export default function App() {
         {!busy && outcome && (
           <StatusView result={outcome} onRetry={retry} onAddAnchor={(anchor) => form.current?.openFilter(anchor)} />
         )}
-        {/* Placeholder until the renderers land (Phase 4 step 6). */}
-        {!busy && chart && <p className="result-placeholder">Chart ready ({chart.visualization.type}).</p>}
+        {!busy && chart && <ChartCard key={runId} visualization={chart.visualization} meta={chart.meta} />}
       </div>
     </main>
   )
