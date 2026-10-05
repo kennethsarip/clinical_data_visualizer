@@ -13,7 +13,7 @@ deterministic Python, so every datum traces back to a cached API record by NCT I
 - Request and response contract: [SCHEMAS.md](SCHEMAS.md) (one example per viz type)
 - Real outputs: [`examples/`](examples/) and the eval runs in [`eval/results/`](eval/results/)
 - Build log with the reasoning behind every decision: [BUILD_HISTORY.md](BUILD_HISTORY.md)
-- Demo video: _link_
+- Demo video: [Loom walkthrough](https://www.loom.com/share/fd2ac9d61ddc41d1b0b3a27423f0b2f4)
 
 ## Contents
 
