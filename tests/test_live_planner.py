@@ -12,7 +12,7 @@ from app.config import load_settings
 from app.llm import LLMClient
 from app.planner import Clarification, QueryPlan, plan_request
 from app.schemas import FilterKey, VisualizeRequest
-from tests.eval_questions import EvalQuestion, load_questions
+from eval.questions import EvalQuestion, load_questions
 
 pytestmark = pytest.mark.live
 

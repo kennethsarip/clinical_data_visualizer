@@ -13,7 +13,7 @@ from app.aggregators.registry import REGISTRY, Dimension, Intent
 from app.planner import is_stated
 from app.schemas import VisualizeRequest
 from app.viz import VIZ_TYPE
-from tests.eval_questions import EvalQuestion, load_questions
+from eval.questions import EvalQuestion, load_questions
 
 QUESTIONS = load_questions()
 ANCHORS = ("drug_name", "condition", "sponsor")

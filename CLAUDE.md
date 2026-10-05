@@ -179,7 +179,7 @@ app/
   pipeline.py        # §1 steps, repair-once, status selection, error -> status mapping
 migrations/          # SINGLE SOURCE of DB schema truth
 tests/               # unit + contract tests; small synthetic fixtures (§9)
-eval/                # eval questions, runner, baseline + after results (§9)
+eval/                # questions.json + questions.py (typed loader); runner.py (scoring, metrics); run.py (CLI); results/ (baseline + after, §9)
 examples/            # 3-5 real request/response JSON pairs from the running system
 docker-compose.yml   # local Postgres
 frontend/            # Vite + React + TS app; renders specs from SCHEMAS.md. src/api/: generated types.ts + client.ts (the only backend caller)
@@ -201,7 +201,7 @@ docs/                # GITIGNORED, local only: project_details/ (assignment scre
 | Migrate | `uv run --env-file .env python -m app.migrate` (idempotent; needs only `DATABASE_URL`) |
 | Frontend types | `cd frontend && npm run gen:types` after any `schemas.py` or route change (rewrites `frontend/openapi.json` and `src/api/types.ts`); `npm run check:types` fails on drift (CI) |
 | Frontend | `cd frontend && npm install && npm run dev` (http://localhost:5173; proxies `/api` to port 8000). Checks: `npm run lint && npm run typecheck && npm test` |
-| Eval run | TBD (Phase 5) |
+| Eval run | `uv run --env-file .env python -m eval.run eval/results/<name>.json [--only ID ...]` (live; needs the migrated Compose Postgres; prints a summary) |
 
 API probe: `curl -s 'https://clinicaltrials.gov/api/v2/studies?query.intr=pembrolizumab&pageSize=1&countTotal=true&fields=NCTId'`
 
@@ -381,7 +381,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 | Live pipeline | `tests/test_live_pipeline.py` (`-m live`, Compose Postgres): every plannable eval question end to end (real LLM, API and cache) against its expected status, analysis, viz type, not-found names and cap |
 | Live LLM | `tests/test_live_llm.py` (`-m live`): OpenAI accepts the strict schema `llm.strict_json_schema` generates and the reply validates. `tests/test_live_planner.py`: the real planner against every eval expectation, one test per question. `tests/test_live_prose.py`: an LLM title without fallback for every `ok` eval question |
 | Live core | `tests/test_live_core.py` (`-m live`): every registered aggregator plus citations on real records; checks provenance, retrieved IDs, excerpts, §8.5 reconciliation and network edges. Extended by each later step |
-| Eval | `eval/questions.json` (30 questions, loaded by `tests/eval_questions.py`, coherence-tested by `tests/test_eval_questions.py`): every §1 class plus ambiguous input, a zero-result combination, a nonexistent entity, a contradictory date range, multi-phase or missing-field records, and a very broad condition. For each question, record the intent, viz type, record count, check pass/fail, latency and failure mode |
+| Eval | `eval/questions.json` (30 questions, loaded by `eval/questions.py`, coherence-tested by `tests/test_eval_questions.py`): every §1 class plus ambiguous input, a zero-result combination, a nonexistent entity, a contradictory date range, multi-phase or missing-field records, and a very broad condition. For each question, record the intent, viz type, record count, check pass/fail, latency and failure mode |
 
 **Eval protocol:** run the baseline, fix the largest failure class, rerun, and keep both result sets in `eval/`.
 
@@ -497,7 +497,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4, done) makes results visible for the demo.
 
-**Next move:** Phase 5 step 2 (eval runner), on branch `phase-5-eval`.
+**Next move:** Phase 5 step 3 (baseline run), on branch `phase-5-eval`.
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
@@ -508,7 +508,6 @@ The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4, d
 ### Phase 5: Eval and iteration
 Goal: measured evidence of iteration, including evidence for the bonuses.
 1. **Question set.** Written in Phase 3 step 0; add any question a Phase 3 bug exposed, never edit an expectation to match output.
-2. **Runner.** Calls the pipeline directly and records per question: intent, viz type, status, record count, check pass/fail, latency, failure mode, plus citation metrics (share of rows fully cited, excerpt-check pass rate) and network metrics (nodes and edges after pruning, whether the fallback fired, placebo and non-drug exclusions).
 3. **Baseline, fix, rerun.** Baseline on `gpt-5.4-mini`; fix the largest failure class; rerun. Keep both result sets.
 4. The frontend is used to eyeball each chart the runner flags.
 

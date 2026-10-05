@@ -25,7 +25,7 @@ from app.planner import (
 )
 from app.schemas import LLMPlan, RetrievalFilters, VisualizeRequest
 from app.vocab import Phase, Status
-from tests.eval_questions import EvalQuestion, load_questions
+from eval.questions import EvalQuestion, load_questions
 from tests.llm_fakes import fake_llm, json_reply, replies, text_reply
 
 TODAY = date(2026, 10, 4)

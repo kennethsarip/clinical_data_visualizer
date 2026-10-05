@@ -21,7 +21,7 @@ from app.schemas import (
     OkResponse,
     VisualizeRequest,
 )
-from tests.eval_questions import EvalQuestion, load_questions
+from eval.questions import EvalQuestion, load_questions
 
 pytestmark = pytest.mark.live
 

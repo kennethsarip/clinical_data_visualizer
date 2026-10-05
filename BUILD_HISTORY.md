@@ -4,6 +4,16 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ## Shipped
 
+### Phase 5: Eval and iteration (in progress)
+
+- **5.2 Runner** (2026-10-05): `eval/runner.py` scores each question in `eval/questions.json` against its pre-written expectation through the real `Pipeline`; `python -m eval.run <out.json>` wires it to the live LLM, API and cache and saves a `RunResult` (run meta, summary, per-question results). The question loader moved from `tests/` to `eval/questions.py` so the runner does not import the test package.
+  - Per question: pass/fail with named failure modes (`wrong_status`, `wrong_analysis`, `wrong_viz_type`, `wrong_stated`, `wrong_inferred`, `wrong_cohorts`, `wrong_missing`, `wrong_not_found`, `cap_mismatch`, override-note mismatches, `dependency_error`, `crash`), HTTP code, status, analysis, viz type, records fetched/total, latency, check attempts, repair, first-attempt failing checks, prose fallback, error text. The comparisons are the live tests' (stated names case-insensitive, inferred values from the accepted list).
+  - The pipeline's injectable checker is wrapped to record every attempt, so a repair is visible even though a repaired answer is still `ok`, and the excerpt pass rate is recomputed with `checks.excerpt_matches` against the exact records the answer was built from.
+  - Citation metrics: items (rows, nodes, edges with at least one trial), fully cited (citing `min(trial_count, citation_cap)` distinct trials), excerpts passed. Network metrics: nodes and edges after pruning, fallback, removed counts, and the placebo, non-drug and no-drug exclusions.
+  - Run meta records the commit (`-dirty` when uncommitted), model, reasoning effort, fetch cap and the pipeline's `today`, pinned to the date the expectations were written, as the live tests do. Latency depends on cache warmth, so runs compare fairly only with the same cache state.
+  - A crash or 502 becomes a result, never an aborted run. 19 red-first offline tests. Live smoke on five questions (network, not found, 422, broad capped, phase distribution): all passed; the melanoma network had 224/224 items fully cited and 2,192/2,192 excerpts holding.
+  - Found while testing: `tests/test_contract.py` deleted keys from the shared SCHEMAS.md example dicts in place, so later parametrized cases were missing several keys and would have failed validation whatever key was under test. The helpers now return copies.
+
 ### Phase 4: Frontend (done 2026-10-05; merged in PR #5 and tagged `phase-4`)
 
 - **Done when, checked** (2026-10-05): every SCHEMAS.md visualization example renders in Vitest (4.6); every status view plus 422 and 502 was reached from the running backend (4.5); lint, typecheck, tests and the type-drift check run in CI (4.2, 4.3). Datum -> card -> Viewer, live in headless Chrome with real mouse events on the largest datum: time series (2023 point), bar (Not Applicable), grouped bar (Phase 2 · pembrolizumab), histogram (100-249 · Actual), scatter (an adalimumab point), network node (Pembrolizumab) and network edge (Ipilimumab – Nivolumab) each opened the first trial with its excerpt marked at the cited path and no change warning.

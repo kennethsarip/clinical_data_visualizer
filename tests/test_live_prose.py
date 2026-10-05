@@ -14,7 +14,7 @@ from app.normalize import NormalizedBatch
 from app.planner import QueryPlan, plan_request
 from app.schemas import Filters, VisualizeRequest
 from app.viz import PROSE_FALLBACK_NOTE, write_prose
-from tests.eval_questions import EvalQuestion, load_questions
+from eval.questions import EvalQuestion, load_questions
 
 pytestmark = pytest.mark.live
 
