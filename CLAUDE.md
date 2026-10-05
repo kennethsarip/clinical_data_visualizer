@@ -483,7 +483,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 - Synonym resolution of inputs. Trigger: an eval run logs a zero-result query that a synonym would have fixed. The API already expands drug synonyms (§7.3).
 - Retrying timeouts. Trigger: a logged timeout in an eval or example run. (The 429 half of this item shipped in Phase 5.3: rate limiting, the 8 s recovery and `Retry-After`, §7.3.)
 - Multi-value phase and status filters (e.g. "Phase 2 or 3"). Trigger: an eval question that needs one; the API syntax is unverified.
-- Brand <-> generic and code-name merging of network nodes (Keytruda, MK-3475 -> pembrolizumab). Trigger: an eval network splits one drug across nodes in a way the §6 name rules miss.
+- Brand <-> generic and code-name merging of network nodes (Keytruda, MK-3475 -> pembrolizumab). Trigger: an eval network splits one drug across nodes in a way the §6 name rules miss. **Trigger met 2026-10-05** (Phase 5.4): the Novartis condition-drug network shows RAD001 and everolimus, one drug, as two nodes.
 - Investigator and site networks (the assignment lists both entities). Trigger: every Phase 2-6 "Done when" passes with time left. First verify `overallOfficials[].name` and `locations[].facility` on the live API; site names are messy free text.
 - A record with no `nctId`: `normalize` sets it aside as unreadable (up to 5%), but `TrialCache._write` raises `UpstreamError` first (a Phase 1 test pins this), so one such record fails the request with 502. Never seen in 6,000 live records. Trigger: a logged occurrence; then decide which rule wins.
 - Deployed endpoint (optional bonus, not chosen 2026-10-04; the demo video covers it). Monitoring, backups and a runbook wait until a deploy exists; the secret rules in §11 apply now.
@@ -499,7 +499,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4, done) makes results visible for the demo.
 
-**Next move:** Phase 5 step 4 (eyeball the charts the runner flags), on branch `phase-5-eval`; then Phase 5 "Done when".
+**Next move:** Phase 5 "Done when" (README citations wait for Phase 6/9), then merge PR #6 and tag `phase-5`.
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
@@ -510,7 +510,6 @@ The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4, d
 ### Phase 5: Eval and iteration
 Goal: measured evidence of iteration, including evidence for the bonuses.
 1. **Question set.** Written in Phase 3 step 0; add any question a Phase 3 bug exposed, never edit an expectation to match output.
-4. The frontend is used to eyeball each chart the runner flags.
 
 Done when: the baseline and after results are saved in `eval/` with per-question metrics, and the README cites only comparisons that were actually run.
 

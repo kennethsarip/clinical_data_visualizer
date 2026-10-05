@@ -6,6 +6,10 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ### Phase 5: Eval and iteration (in progress)
 
+- **5.4 Eyeballing** (2026-10-05): every charted eval answer (23) rendered through the frontend at commit `5354715` and screenshotted. Bars, grouped bars, time series, the histogram and the scatter read correctly; the 4 capped answers, and only they, show the caption, the "(capped sample)" axis title and the badge; titles at `none` effort are plain, number-free and specific. Findings, not yet fixed:
+  - Network labels collide in 3 of 4 networks (melanoma drug-drug, myeloma sponsor-drug, pembrolizumab star): labels overprint each other and sit under nodes. The fourth (Novartis condition-drug) is laid out apart but fit-to-view shrinks its labels to ~5 px. A renderer problem, not a data one; the networks' data and checks pass.
+  - The Novartis network shows RAD001 and everolimus (the same drug) as two nodes, which meets the §13.4 trigger for code-name merging.
+  - One label keeps its registered lowercase spelling ("aldesleukin"), as the §6 label rule (most common original spelling) intends.
 - **5.3 Latency** (2026-10-05): the 10,000 cap made answers feel slow, so each stage was timed before changing anything. Warm, the two LLM calls were 80-99% of a request (~2 s plan, ~2 s title). Cold, pages added ~0.67 s each; they cannot be fetched in parallel within one search, since each page's token comes from the previous page.
   - The cap stays 10,000 for every question (user decision): how many pages a question fetches already depends on how many trials match it, not on its wording, and a lower cap brings back understated counts. Letting the LLM choose the depth would let it change the counts (§7.2).
   - The title call runs while the trials are fetched (it needs only the plan), at `none` reasoning effort (1.06 s median vs 2.0 s, titles equivalent). Only an `ok` answer waits for it, so clarifications, no-results answers and 502s gain no latency; a no-results answer wastes one cheap background call. Cohorts download concurrently, while Postgres stays on the request thread.
