@@ -2,9 +2,9 @@
 
 > **What it does:** a Python/FastAPI backend, with a React frontend that renders its output. It takes a natural-language clinical-trials question plus optional structured filters and returns a visualization spec (`type`, `title`, `encoding`, `data`, `meta`) that a frontend can render. The spec is computed from ClinicalTrials.gov Data API records, and every row cites the trials that produced it. This is a take-home for the PhnyX Lab (Cheiron) agent-engineering internship, with a ~24 h time box, delivered as a zip (§2).
 >
-> **The one thing to understand first:** the LLM never produces a number, count, date, NCT ID, excerpt or data row. It does exactly three things: plan the query, choose the visualization, and write prose. Retrieval, aggregation, citations and checks are deterministic Python, so every row traces back to cached API records by NCT ID (§7.2).
+> **The one thing to understand first:** the LLM never produces a number, count, date, NCT ID, excerpt or data row. It does exactly two things: plan the query and write prose (title, notes). Retrieval, aggregation, viz type selection, citations and checks are deterministic Python, so every row traces back to cached API records by NCT ID (§7.2).
 >
-> **Status:** Phase 1 (Foundation) is done locally; Phase 2 is next (§14). The repo is `github.com/kennethsarip/cheiron_task` (private, §12). Runs locally only; no deploy is planned (§13.4).
+> **Status:** Phase 1 (Foundation) is merged and tagged `phase-1`; Phase 2 is in progress on `phase-2-core` (§14). The repo is `github.com/kennethsarip/cheiron_task` (private, §12). Runs locally only; no deploy is planned (§13.4).
 >
 > **Definition of done:** `uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest`, all green. CI (`.github/workflows/ci.yml`) runs exactly these, so local green means CI green. `main` stays runnable.
 >
@@ -24,7 +24,7 @@ Taken from the assignment document. Where a later section conflicts with this on
 
 **Design goal (the build priority):** cover as many query types as possible with a **single coherent approach**, and support **multiple visualization types**. Richer visualizations (meaningful network graphs) and broader query coverage score higher than a single chart type, and coverage must come without one-off hacks.
 - The coherent approach: every question goes through one pipeline, plan (intent, dimension, filters) -> registered aggregator -> row shape -> compatible viz type. New coverage means registering an aggregator, never adding a code path (§1 coverage matrix, §7.4).
-- Target viz types: bar, grouped bar, time series, scatter, histogram, and network graph (entities: drugs, sponsors, conditions, investigators, sites).
+- Target viz types: bar, grouped bar, time series, scatter, histogram, and network graph (entities: drugs, sponsors, conditions; investigators and sites are deferred, §13.4).
 - **Breadth first.** Get every §1 question class and every viz type working end to end through that one pipeline before trying alternative approaches or refinements. Anything in §13.3 or §13.4 waits until coverage exists and an eval failure justifies it.
 
 **Interfaces the reviewer reads** (both documented in `SCHEMAS.md`, §8.3):
@@ -64,27 +64,25 @@ Taken from the assignment document. Where a later section conflicts with this on
 - **In:** `POST` with a required `query` and optional filter fields (§8.3). **Out:** `{status, visualization, meta}` (§8.3).
 - **Entity flow:** request -> plan -> API params -> records (cached) -> rows with citations -> spec -> checks -> response.
 
-**Coverage matrix** (the target, one row per question class). Examples come from the assignment appendix, except condition-drug, which comes from the project brief. Intent and dimension names stay descriptive until the plan schema is fixed (§13.1). The LLM picks the viz type from the types compatible with the row shape (§7.2), so the last column is the expected pick, not a hardcoded branch.
+**Coverage matrix** (the target, one row per question class). Examples come from the assignment appendix, except condition-drug, which comes from the project brief. Intent and dimension names stay descriptive until the plan schema is fixed (§13.1). The viz type is not a per-class branch: Python reads it off the aggregator's declared row shape (§7.4).
 
-| Class | Example question | Dimension | Row shape | Expected viz |
+| Class | Example question | Dimension | Row shape | Viz |
 |---|---|---|---|---|
 | Time trend | Trials per year for [drug] since 2015; trials started each year for [condition] | start year | temporal | `time_series` |
-| Distribution | [condition] trials across phases; most common intervention types | phase; intervention type | categorical | `bar_chart` |
-| Comparison | Phases for drug A vs drug B; sponsor classes across two conditions | phase or sponsor class, per cohort | two-categorical | grouped bar |
+| Distribution | [condition] trials across phases; most common intervention types; top drugs, sponsors or conditions | phase, status, intervention type, sponsor class; top-N drug, sponsor, condition | categorical | `bar_chart` |
+| Comparison | Phases for drug A vs drug B; sponsor classes across two conditions | any categorical dimension, per cohort | two-categorical | `grouped_bar_chart` |
 | Geographic | Countries with the most recruiting trials for [condition] | country | categorical | `bar_chart` |
 | Network | Sponsor-drug for [condition]; drug-drug in combination studies; condition-drug | entity pairs | graph | `network_graph` |
-| Numeric | None in the appendix | OPEN; enrollment is the only numeric field (§6) | numeric | scatter, histogram |
-
-The type strings for grouped bar, scatter and histogram are OPEN (§8.3).
+| Numeric | Enrollment over time; enrollment sizes for [drug] (not in the appendix) | enrollment vs start date; enrollment bins | per-trial numeric; binned numeric | `scatter_plot`; `histogram` |
 
 Happy path (LLM steps marked):
 1. Validate the request. Reject contradictory inputs such as `end_year < start_year` (§7.6).
 2. **LLM:** map the request to a plan, then validate it against the plan schema and vocabularies (§7.2).
-3. If the plan lacks an anchor (drug, condition or time period), return `clarification_needed` (§7.8).
+3. If the plan lacks an anchor (drug, condition or sponsor), return `clarification_needed` (§7.8).
 4. Build API params deterministically from the plan, fetch pages up to the cap, and cache the records (§7.3).
-5. If zero records come back, return `no_results` with the filters that were applied (§7.8).
-6. Dispatch to the aggregator registered for (intent, dimension). It emits rows, each carrying its contributing NCT IDs (§7.4).
-7. **LLM:** choose `type` and `encoding` from the types compatible with the row shape, and write the `title` and notes (§7.2).
+5. If zero records come back, return `no_results` with the filters that were applied, or report the entity as not found (§7.8).
+6. Dispatch to the aggregator registered for (intent, dimension). It emits rows, each carrying its contributing NCT IDs (§7.4). Python sets `type` and `encoding` from the aggregator's row shape and columns (§7.4).
+7. **LLM:** write the `title` and notes from the plan, row shape and columns, never from row values (§7.2).
 8. Attach citations (§7.5) and run all checks (§7.6). If a check fails, repair once; if it still fails, return `degraded` (§7.7).
 9. Return `ok` with the spec and `meta`: filters, assumptions, cap and prune disclosures, and source.
 
@@ -115,7 +113,8 @@ Happy path (LLM steps marked):
 - Deep citations on every row, including network edges.
 - Explicit statuses and handling of the edge cases in §7.8.
 - A Vite + React + TypeScript frontend with citation and `meta` panels (§14 Phase 4).
-- An eval set of ~20-25 questions with a baseline run and an after run, both kept (§9).
+- An eval set of ~20-25 questions with a baseline run and an after run, both kept (§9), plus a run of the same set on a second model (§14 Phase 5).
+- Bonuses, shown off in the README (§14 Phase 6): deep citations, condition-anchored networks, a 2-3 min demo video.
 - The submission zip: code; the README (how to run, schemas, design decisions and tradeoffs, limitations and what more time would improve, AI tools used, how correctness was validated, and what was designed deliberately versus generated and adapted); and 3-5 example runs with the actual JSON outputs.
 
 **Out of scope**
@@ -133,17 +132,17 @@ Happy path (LLM steps marked):
 | API framework | FastAPI | Request and response models use Pydantic, FastAPI's model layer |
 | Database | Postgres, run with Docker Compose | Response cache only (§6) |
 | Data source | ClinicalTrials.gov Data API v2 | The authoritative source. No API key needed (verified 2026-10-04). Facts in §8.4 |
-| LLM | OpenAI | The company supplied the key. Model is OPEN (§13.1). Used only for planning, viz selection and prose (§7.2) |
+| LLM | OpenAI `gpt-5.4-mini`, low reasoning effort | The company supplied the key and an allowed-model list. Planning is enum classification, so a current mini model gives accuracy at low latency; `gpt-4.1` is the eval comparison (§14 Phase 5). Set in `OPENAI_MODEL`. Used only for planning and prose (§7.2) |
 | Orchestration | Hand-rolled Python | No agent framework (§13.3) |
 | Vector DB | None | Rejected (§13.3) |
 | HTTP client | httpx (sync) | FastAPI runs sync routes in a threadpool and requests are sequential, so async adds complexity without need; `MockTransport` serves test fixtures without a mocking dependency |
 | DB driver, migrations | psycopg3; numbered SQL files in `migrations/` applied by `app/migrate.py` | Two tables do not justify an ORM |
-| Frontend | Vite + React + TypeScript; Vega-Lite (`react-vega`) for charts, Cytoscape.js for networks | `frontend/`; types generated from the OpenAPI schema (§14 Phase 4) |
+| Frontend | Vite + React + TypeScript (npm); Vega-Lite (`react-vega`) for charts, Cytoscape.js for networks | `frontend/`; types generated from FastAPI's `/openapi.json` with `openapi-typescript`, so `schemas.py` stays the single source (§14 Phase 4) |
 | Package manager | uv | `uv.lock` is committed; reviewers run `uv sync` |
 | Lint / format / typecheck / test | ruff / ruff format / mypy (strict, pydantic plugin) / pytest | All configured in `pyproject.toml` |
 | CI | GitHub Actions | Runs the Definition of done on every push to `main` and every PR, with a Postgres service container |
 
-**Architecture:** browser (React app, Vite proxy in dev) -> FastAPI app -> {LLM API (plan, viz choice, prose); ClinicalTrials.gov API through the Postgres cache}. Secrets (`OPENAI_API_KEY`, `DATABASE_URL`) live only in `.env` and are read through `app/config.py`. Every LLM output is parsed and schema-validated before any code uses it. Auth model: TBD (§13.1).
+**Architecture:** browser (React app, Vite proxy in dev) -> FastAPI app -> {LLM API (plan, prose); ClinicalTrials.gov API through the Postgres cache}. Secrets (`OPENAI_API_KEY`, `DATABASE_URL`) live only in `.env` and are read through `app/config.py`. Every LLM output is parsed and schema-validated before any code uses it. Auth model: TBD (§13.1).
 
 ## 4. Repository structure
 
@@ -168,7 +167,8 @@ app/
   migrate.py         # applies unapplied migrations in order; idempotent
   llm.py             # the only module that calls the LLM; returns validated models
   planner.py         # request -> plan (prompt + validation)
-  viz.py             # row shape -> allowed viz types; LLM viz choice + prose; spec assembly
+  viz.py             # row shape -> viz type table; spec + meta assembly; LLM title + notes
+  entities.py        # drug rule (§6) + entity name normalization for network nodes and top-N bars
   ctgov.py           # API client: params from plan, pagination, cap
   cache.py           # Postgres read/write of API responses
   normalize.py       # record -> normalized fields; applies counting rules (§6)
@@ -242,6 +242,9 @@ API probe: `curl -s 'https://clinicaltrials.gov/api/v2/studies?query.intr=pembro
 - Countries are deduped per trial (multi-valued, §8.5).
 - No locations -> excluded from geographic charts and counted. No interventions, or an unnamed intervention -> excluded from intervention-type and drug charts and networks, and counted (user approval, 2026-10-04).
 - "Not specified" phase is mostly observational studies; `assumptions` says so wherever it appears.
+- **Drug** (decided 2026-10-04): an intervention typed `DRUG`, `BIOLOGICAL` or `COMBINATION_PRODUCT`, because type alone splits one drug (pembrolizumab: 617 DRUG, 243 BIOLOGICAL). Names matching `placebo`, `sham`, `vehicle` or `saline` as whole words, case-insensitive, are not drugs. Both exclusions are counted (`placebo`, `non-drug intervention`).
+- **Entity names** (decided 2026-10-04), for network nodes and top-N bars. Drugs: case-fold, collapse whitespace, then strip a trailing dose (`200 mg`, `10 mg/kg`), a trailing bracketed alias (`(MK-3475)`) and salt words (`hydrochloride`, `sodium`, `mesylate`, ...). Sponsors and conditions: case-fold and trim. The label is the most common original spelling; excerpts stay the raw registered name. Brand <-> generic merging is deferred (§13.4) and disclosed.
+- **Enrollment** (decided 2026-10-04): numeric charts split by `enrollment_type` as a series (Actual, Estimated, "Type not reported"), so estimated and actual counts are never mixed unseen. Enrollment 0 is kept; on a log axis it is pinned to the axis floor and `meta.notes` says so.
 - An unreadable record (a missing always-present field, a value outside `vocab.py`, an unexpected date format) is set aside and counted as "unreadable record". Over 5% of a batch -> the batch fails, because the API format has probably changed.
 
 **Timestamps:** OPEN. **Numeric precision:** every value is an integer count or integer enrollment, so floats never appear. Specify rounding in §8.5 before adding any ratio. **JSON shapes:** §8.3.
@@ -256,33 +259,40 @@ The steps are in §1. Only steps 2 and 7 touch the LLM; everything else is deter
 |---|---|
 | Plan fields restricted to enums and `vocab.py` values | Counts, sums or any number in `data` |
 | Entity strings and filter values taken from the request | Dates or years as data values |
-| A viz type from the set allowed for the row shape | NCT IDs or excerpts |
-| Encoding field names from the aggregator's declared columns | Rows |
-| Title, notes and assumption wording | Anything a check cannot validate |
+| Title, notes and assumption wording | NCT IDs, excerpts or rows |
+| | The viz `type` or `encoding` (Python reads them off the row shape, §7.4) |
+| | Anything a check cannot validate |
 
-Why: in a visualization agent, the hallucination-prone step is letting the model emit data. Keeping the model in a schema-validated planning role makes numeric hallucination structurally impossible, rather than something to detect afterwards. Two things are OPEN (§13.1): whether planning and viz selection are one LLM call or two, and what happens when planner output fails validation.
+Why: in a visualization agent, the hallucination-prone step is letting the model emit data. Keeping the model in a schema-validated planning role makes numeric hallucination structurally impossible, rather than something to detect afterwards. The viz type is Python too (decided 2026-10-04): each row shape maps to exactly one type, so an LLM pick would add a failure mode and no choice.
+
+**Calls** (decided 2026-10-04): two per request. (1) The plan, via OpenAI structured outputs with a JSON schema generated from the registry, so only registered (intent, dimension) pairs can be chosen. (2) Title and notes, after aggregation; the model sees the plan, row shape, columns and filters, never row values. A title containing a number that is not in the filters fails a check. If the plan fails validation, retry once with the validation error; if it fails again, return `degraded`.
 
 ### 7.3 Retrieval
 - API params come only from the validated plan, never from raw LLM text.
-- `query.*` params are searches, not exact filters, and the API expands drug synonyms. `query.intr` returns 2,968 trials for pembrolizumab, Keytruda and MK-3475 alike. Consequences: a matched record may not contain the user's wording, so excerpts quote the record's own values (§7.5); network nodes need name normalization (§13.1); and synonym resolution has a lower priority (§13.4).
-- Unambiguous filters (dates, status, phase, country) are applied hard. A filter inferred from ambiguous wording is disclosed as an assumption, because a wrong silent filter removes the correct answer. The rule for classifying a filter as stated or inferred is OPEN (§13.1).
+- `query.*` params are searches, not exact filters, and the API expands drug synonyms. `query.intr` returns 2,968 trials for pembrolizumab, Keytruda and MK-3475 alike. Consequences: a matched record may not contain the user's wording, so excerpts quote the record's own values (§7.5); network nodes need name normalization (§6); and synonym resolution has a lower priority (§13.4).
+- Unambiguous filters (dates, status, phase, country) are applied hard. A filter inferred from ambiguous wording is disclosed as an assumption, because a wrong silent filter removes the correct answer. A filter is **stated** if and only if its value comes from a request field or appears verbatim in `query`; otherwise it is **inferred** (decided 2026-10-04).
 - Paginate with `nextPageToken` at `pageSize` 1000 (the API clamps larger values to 1000) and stop at `FETCH_CAP` (default 2000, two pages). Send `countTotal=true` so `meta` can report "fetched N of total M" when capped.
 - Cache by API params (§6).
 - Upstream errors: 30 s timeout; retry twice with backoff on 5xx and 429, then raise a typed `UpstreamError` (its status mapping is decided in Phase 3).
 
 ### 7.4 Aggregation
 - A registry maps (intent, dimension) to an aggregator. Route handlers never branch on question type, so a new question class means a new registered aggregator plus its tests.
-- Each aggregator declares its output columns and row shape (categorical, two-categorical, temporal, numeric or graph). Viz selection and checks read that declaration.
-- Every row carries the set of contributing NCT IDs, by construction. A count is the size of that set (§8.5).
+- Each aggregator declares its output columns, row shape and excerpt source. Viz selection and checks read that declaration.
+- **Viz type is a fixed table in `viz.py`** (decided 2026-10-04): categorical -> `bar_chart`; two-categorical -> `grouped_bar_chart`; temporal -> `time_series`; per-trial numeric -> `scatter_plot`; binned numeric -> `histogram`; graph -> `network_graph`. Python reads rows only for edge cases (zero rows, a network emptied by pruning).
+- Every row carries the set of contributing NCT IDs, by construction, as `nct_ids`. A count is the size of that set (§8.5).
 - Time series zero-fill gap years, because a missing year is information, not missing data. Granularity is OPEN.
-- Networks are co-occurrence aggregations over records, not graph retrieval. A node is an entity; an edge's weight is the number of trials in which both endpoints appear, and the edge carries those NCT IDs. Dense graphs are pruned by minimum edge weight and top-N degree (thresholds OPEN), and `meta` records what was pruned.
-- A network is meaningful only if each node is one real entity and each edge stands for shared trials. That depends on two OPEN items (§13.1). Without node name normalization, synonyms split one drug into several nodes. Without a `drug` definition, placebo and non-drug items such as lab tests become nodes (§6 evidence).
+- Networks are co-occurrence aggregations over records, not graph retrieval: one generic co-occurrence aggregator, registered per entity pair (sponsor-drug, drug-drug, condition-drug). A node is an entity; an edge's weight is the number of trials in which both endpoints appear, and the edge carries those NCT IDs.
+- **Pruning** (decided 2026-10-04): drop edges with weight < 2; keep the top 50 nodes by weighted degree (alphabetical tie-break); drop edges touching removed nodes, then orphan nodes. If that empties the graph, rerun at weight 1. `meta.pruning` records the thresholds used, the fallback and what was removed.
+- **Anchor hub:** a queried entity appears in every trial, so a drug-drug network for one drug is a star. Its node gets `is_anchor: true` so a renderer can de-emphasize it, and `meta.notes` says so. Condition-anchored networks are the showcase case.
+- A network is meaningful only if each node is one real entity and each edge stands for shared trials. The §6 drug rule keeps placebo and lab tests out; the §6 name rules keep dose and alias variants from splitting one drug into several nodes.
 - Messy values are data, not errors. Each one follows a counting rule (§6), and records excluded by a rule are counted in `meta`.
 
 ### 7.5 Citations
-- Every row gets `citations: [{nct_id, excerpt}]`, built from cached records and never from LLM output.
-- `excerpt` is the verbatim record value that placed the trial in this row, such as `"PHASE3"` or an intervention name. Which field supplies the excerpt per dimension, and the citation cap per row, are OPEN.
-- Network edges carry citations as well as nodes.
+- Every row gets `citations: [{nct_id, excerpt, field}]`, built from cached records and never from LLM output.
+- `excerpt` is the verbatim record value that placed the trial in this row, such as `"PHASE3"` or an intervention name, and `field` is its record path. The excerpt check compares against the value at `field`, not the whole record, so `"120"` cannot match by accident. Each dimension's field is in SCHEMAS.md §2.
+- **Absent values** (decided 2026-10-04): a trial in an "absent" bucket (e.g. "Not specified" phase) is cited as `{excerpt: null, field}`, and the check verifies the field really is absent.
+- **Cap** (decided 2026-10-04): every row keeps all its `nct_ids`; `citations` holds at most 25, chosen by `nct_id` descending (newest registrations first). `meta.citation_cap` discloses the cap.
+- Network edges carry citations as well as nodes: one per endpoint per trial.
 
 ### 7.6 Validation: BLOCK vs WARN
 **BLOCK, at the request** (before any LLM or API call): schema errors, and contradictory inputs such as `end_year < start_year`. Reject with a clear message; never return an empty chart.
@@ -294,10 +304,11 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 | schema | The response round-trips through the response model |
 | encoding | Every field named in `encoding` exists in every row |
 | shape | The viz type fits the row shape. A network needs nodes + edges, a time series needs an ordered temporal dimension, and a grouped bar needs two categorical dimensions |
-| citation ids | Every cited `nct_id` is in the retrieved record set |
-| excerpts | Every excerpt is a verbatim substring of its record |
-| reconciliation | Row counts reconcile with record counts per §8.5. No invented sums |
+| citation ids | Every cited `nct_id` is in the row's `nct_ids`, and every `nct_ids` entry is in the retrieved record set |
+| excerpts | Every excerpt is a verbatim substring of the value at its `field` in its record; a null excerpt means that field is absent |
+| reconciliation | `trial_count == len(nct_ids)` on every row, and row counts reconcile with record counts per §8.5. No invented sums |
 | assumptions | `assumptions` is non-empty whenever any filter was inferred |
+| title | The title contains no number that is not in the filters (§7.2) |
 
 **WARN** (disclosed in `meta`; the response stays `ok`): cap hit, records excluded by a counting rule, network pruned.
 
@@ -308,9 +319,9 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 ### 7.8 User-facing edge cases
 | Case | Behavior |
 |---|---|
-| Underspecified ("show me trials") | `clarification_needed`, naming the missing drug, condition or time period. Never guess. The anchor rule is OPEN |
+| Underspecified ("show me trials") | `clarification_needed`, naming the missing anchor. Never guess. **Anchor rule** (decided 2026-10-04): the request must name a drug, condition or sponsor, in a field or the query. A time period alone would chart a capped slice of the whole registry |
 | Zero results | `no_results`, listing the filters applied. Never silently widen the search |
-| Nonexistent drug or condition | Report it as not found. Never answer about a similar entity. The API returns HTTP 200 with `totalCount` 0 both for unknown terms and for over-filtered queries, so telling the two apart is OPEN |
+| Nonexistent drug or condition | Report it as not found. Never answer about a similar entity. The API returns `totalCount` 0 both for unknown terms and for over-filtered queries, so on zero results the pipeline probes each entity alone (decided 2026-10-04): 0 means not found, more than 0 means the filters together match nothing |
 | Very broad query ("cancer") | Paginate to the cap and disclose a capped sample with the total |
 | Messy values, dense network, contradictory inputs | Handled by §6 counting rules, §7.4 pruning and §7.6 request rejection |
 
@@ -319,16 +330,18 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 ### 8.1 Endpoints
 | Method | Path | Purpose | Status codes |
 |---|---|---|---|
-| POST | TBD | Natural-language query -> visualization spec | 422 for request validation (FastAPI default). The HTTP code for each `status` and for upstream or LLM failures is OPEN |
+| POST | `/api/visualize` | Natural-language query -> visualization spec | 200 for all four statuses (each is a valid answer the frontend renders); 422 for request validation; 502 for upstream or LLM failure (decided 2026-10-04) |
 
 ### 8.2 ID formats
 - `nct_id` matches `^NCT\d{8}$`, is the only trial ID, and is matched exactly. A missing ID is reported as not found, never replaced by the nearest match.
 - Internal IDs (request, eval run): OPEN (§13.1).
 
 ### 8.3 Request and response
-**`SCHEMAS.md` is the single source** for the request fields, the response envelope, the citation shape, one example per viz type, the `meta` keys and the non-`ok` responses. Read it before touching `schemas.py`, `viz.py` or `citations.py`. Items it tags PROPOSED are still OPEN here (§13.1). The invariants it must keep:
-- `type` values from the assignment: `bar_chart`, `time_series`, `network_graph`; other type strings are proposals.
-- `meta` carries filters (stated vs inferred), source, assumptions, units, sorting, time granularity, grouping, cap disclosure, excluded-record counts and pruning.
+**`SCHEMAS.md` is the single source** for the request fields, the response envelope, the citation shape, one example per viz type, the `meta` keys and the non-`ok` responses. Read it before touching `schemas.py`, `viz.py` or `citations.py`. It was locked on 2026-10-04; a change to it is a contract change and updates `schemas.py` in the same commit. The invariants it must keep:
+- `type` values: `bar_chart`, `time_series`, `network_graph` (from the assignment), plus `grouped_bar_chart`, `scatter_plot`, `histogram`.
+- `meta` carries filters (stated vs inferred), source, the query interpretation, assumptions, units, sorting, time granularity, grouping, cap disclosure, citation cap, excluded-record counts and pruning.
+- Every encoding channel names its field and a type (`quantitative`, `nominal`, `ordinal`, `temporal`), plus an optional `scale`, so a renderer never infers one.
+- A top-level `trials` map gives each cited NCT ID its title, status, phase and start date, so a sources panel needs no second request.
 - **Renderer contract bar:** a frontend engineer can implement a renderer without guessing (Objectives). For each viz type it states the `encoding` channels, every row field with its type and unit, the sort order, and how citations attach to rows, nodes and edges.
 - The frontend (§14 Phase 4) consumes only this contract, which makes it proof that the contract is renderable without guessing. The README links to `SCHEMAS.md` and shows real examples from `examples/`.
 
@@ -339,7 +352,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 - Rate limits: not verified.
 
 ### 8.5 Formulas
-- A row's `trial_count` is the number of distinct NCT IDs in its provenance set.
+- A row's `trial_count` is the number of distinct NCT IDs in its provenance set: `trial_count == len(nct_ids)`.
 - **Single-valued dimension** (e.g. status): the row counts sum to records retrieved minus records excluded, and every exclusion is disclosed.
 - **Multi-valued dimension** (countries, interventions, phases if split): sums may exceed the record count, but each row still equals its own distinct NCT ID count.
 - A network edge's weight is the number of distinct NCT IDs in which both endpoints appear.
@@ -424,7 +437,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 - Commits are small, present tense and scoped (`feat:`, `fix:`, `docs:`, `test:`, `chore:`), referencing the milestone.
 - PR descriptions cover what changed, why, and how it was tested.
 - Remote `origin` is `github.com/kennethsarip/cheiron_task`. It is private because this file holds interview and company notes (§2 Context); keep it private unless those notes move out.
-- The submission zip excludes `.env`, caches and dependencies. Whether it includes `.git` history is OPEN (§13.1).
+- The submission zip excludes `.env`, caches and dependencies. It includes `.git` history as evidence of iteration (decided 2026-10-04), but built from a copy whose history no longer holds the §2 Context notes; the real repo's history is never rewritten.
 
 ## 13. Open decisions / TODO
 
@@ -435,23 +448,13 @@ Items marked **ask first** are hard to reverse; ask the user before choosing the
 |---|---|
 | Internal ID scheme (**ask first**) | IDs for requests and eval runs (§8.2) |
 | Auth model (**ask first**) | Who may call the endpoint |
-| Hosting (**ask first**) | Whether to host at all (§13.4) |
-| LLM model (**ask first**) | The provider is OpenAI (§3); the model name goes in `OPENAI_MODEL` |
-| Response contract | Endpoint path, HTTP code per `status`, `visualization` when `status != ok`, `meta` keys, viz type strings, network node/edge shape (§8.3) |
 | Request fields | Final set; `query` max length (filter text fields are capped at 200, §8.3) |
 | Source documents | Save the assignment prompt and project brief in the repo; they are the source of truth for tests and README claims |
-| Plan schema | Intent and dimension enums; how a comparison (A vs B) encodes multiple cohorts, e.g. one API query per cohort |
-| LLM calls | One call or two (plan; viz + prose); policy when planner output fails validation |
-| Clarification rule | Which anchors a query must have (§7.8) |
-| Stated vs inferred filters | Proposal: stated if and only if the value comes from a request field or appears verbatim in `query` (§7.3) |
-| Not-found vs zero results | Proposal: probe the entity alone, without the other filters (§7.8) |
+| Plan schema | Intent and dimension enums; comparison cohorts as `cohorts: [{label, filters}]`, one API query per cohort (proposal, Phase 3) |
 | Date basis and granularity | Start date vs first-posted date for "trials per year"; year vs finer buckets |
-| `drug` definition | Type alone fails: pembrolizumab is registered as both DRUG and BIOLOGICAL. Also decide placebo and non-drug interventions (§6) |
-| Networks | Name normalization, since synonyms and code names (e.g. MK-3475) would split one drug into several nodes (§7.3); pruning thresholds (§7.4); whether to add investigator or site networks (the assignment lists both as entities; their source fields are not yet verified) |
-| Scatter and histogram | Which fields they use; enrollment is the only numeric field in §6 |
-| Citations | Excerpt field per dimension; citation cap per row (§7.5) |
 | Per-bucket totals | Alternative to the capped sample: exact per-bucket totals via `countTotal=true` queries, with citations from the sample (§13.5) |
-| Zip contents | Whether to include `.git` history as evidence of iteration (§12) |
+
+Decided 2026-10-04 and recorded where they govern: LLM model and calls (§3, §7.2), viz type by Python (§7.4), drug rule, name normalization and enrollment split (§6), pruning (§7.4), citations (§7.5), stated vs inferred (§7.3), anchor rule and not-found probe (§7.8), endpoint and HTTP codes (§8.1), response contract (SCHEMAS.md), zip contents (§12), hosting (not planned, §13.4).
 
 ### 13.2 Decided
 Each decision is recorded in the section it governs (§3, §6, §7), with its reasoning in `BUILD_HISTORY.md` under Decisions.
@@ -470,7 +473,9 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 - Synonym resolution of inputs. Trigger: an eval run logs a zero-result query that a synonym would have fixed. The API already expands drug synonyms (§7.3).
 - Upstream hardening: honoring `Retry-After` on 429 and retrying timeouts. Trigger: a logged 429 or timeout in an eval or example run (rate limits are unverified, §8.4).
 - Multi-value phase and status filters (e.g. "Phase 2 or 3"). Trigger: an eval question that needs one; the API syntax is unverified.
-- Deployed endpoint or demo video (optional bonus). Monitoring, backups and a runbook wait until a deploy exists; the secret rules in §11 apply now.
+- Brand <-> generic and code-name merging of network nodes (Keytruda, MK-3475 -> pembrolizumab). Trigger: an eval network splits one drug across nodes in a way the §6 name rules miss.
+- Investigator and site networks (the assignment lists both entities). Trigger: every Phase 2-6 "Done when" passes with time left. First verify `overallOfficials[].name` and `locations[].facility` on the live API; site names are messy free text.
+- Deployed endpoint (optional bonus, not chosen 2026-10-04; the demo video covers it). Monitoring, backups and a runbook wait until a deploy exists; the secret rules in §11 apply now.
 
 ### 13.5 Decided by assumption
 | Assumption | Falsified if |
@@ -483,7 +488,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) makes results visible for the demo.
 
-**Next move:** Phase 2, "Decide first". Phase 1 shipped (see `BUILD_HISTORY.md`); push `phase-1-foundation`, get CI green, merge, and tag `phase-1`.
+**Next move:** Phase 2 step 1 (response models + contract test) on `phase-2-core`. Phase 2 decisions are recorded (2026-10-04).
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
@@ -492,59 +497,48 @@ The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) m
 - **Ship-then-prune:** when a step is done, delete it from its phase here and add a few 1-2 line bullets for it under that phase's heading in `BUILD_HISTORY.md`, in the SAME commit. Remaining steps keep their numbers. When a phase's "Done when" passes, delete the whole phase.
 
 ### Phase 2: Aggregation, citations, checks (deterministic core)
-Goal: verified rows and complete specs for every question class and every viz type, with no LLM involved.
+Goal: verified rows and complete specs for every question class and every viz type, with no LLM involved. All decisions are made (§6, §7.4, §7.5, SCHEMAS.md).
 
-Decide first:
-- Enrollment basis for scatter and histogram: `enrollment_type` is now normalized (§6). Proposal: plot both, split by type as a series, and disclose the split, rather than silently mixing them.
-- The `drug` definition (types DRUG + BIOLOGICAL; drop placebo and non-drug items by a listed rule; disclose the count) and network node normalization (case-fold, strip dosage/salt suffixes; synonym merging stays deferred, §13.4).
-- Network pruning defaults: minimum edge weight 2, top 50 nodes by degree, disclosed in `meta.pruning`.
-- Scatter and histogram fields (proposal: enrollment vs start year; enrollment histogram with fixed bin edges).
-- Citation cap per row (proposal: 25, disclosed when `trial_count` exceeds it) and the excerpt field per dimension.
-- Lock the PROPOSED items in `SCHEMAS.md` (type strings, network shape, `meta` keys, non-`ok` bodies).
-
-Steps, in order:
-1. **Response models.** `schemas.py` response models matching `SCHEMAS.md`, plus the contract test that validates every JSON example in `SCHEMAS.md`.
-2. **Registry.** `aggregators/registry.py`: an `Aggregator` protocol declaring intent, dimension, output columns, row shape and excerpt source; registration by `(intent, dimension)`; lookup failure is a typed error.
-3. **Aggregators**, one module each, each emitting rows with NCT ID sets:
+Steps, in order (each red first, §9):
+1. **Response models.** `schemas.py` response models matching the locked `SCHEMAS.md`, plus the contract test that validates every JSON example in it.
+2. **Registry.** `aggregators/registry.py`: an `Aggregator` protocol declaring intent, dimension, output columns, row shape and excerpt source; registration by `(intent, dimension)`; a lookup miss raises a typed error.
+3. **Entities.** `entities.py`: the §6 drug rule (with its exclusion counts) and the §6 name normalization, each tested on names shaped like the §6 evidence.
+4. **Aggregators**, one module each, built on one shared count-by-key helper; each emits rows with `nct_ids`; expected rows computed by hand:
    - time trend by start year (zero-filled);
-   - distribution by phase, status, intervention type and sponsor class;
+   - distribution by phase, status, intervention type and sponsor class; top-N drugs, sponsors and conditions;
    - geographic by country;
-   - comparison: any categorical dimension across 2+ cohorts (one API query per cohort);
-   - numeric: enrollment scatter and histogram;
-   - networks: sponsor-drug, drug-drug and condition-drug.
-4. **Citations.** `citations.py`: `{nct_id, excerpt, field}` per row, node and edge, read from cached records only.
-5. **Checks.** `checks.py`: every §7.6 BLOCK check plus the WARN disclosures.
-6. **Spec assembly.** `viz.py` (deterministic half): row shape -> allowed viz types, a fixed default type per shape, and spec plus `meta` assembly.
+   - comparison: any categorical dimension across 2+ cohorts;
+   - numeric: enrollment scatter (start date vs log enrollment) and histogram (fixed bins), both split by `enrollment_type`;
+   - networks: one co-occurrence aggregator registered for sponsor-drug, drug-drug and condition-drug, with §7.4 pruning, fallback and `is_anchor`.
+5. **Citations.** `citations.py`: `nct_ids` + field path + cap -> `{nct_id, excerpt, field}` per row, node and edge, from cached records only; null excerpts for absent fields; the `trials` lookup.
+6. **Checks.** `checks.py`: every §7.6 BLOCK check plus the WARN disclosures.
+7. **Spec assembly.** `viz.py` (deterministic part): the §7.4 shape -> type table, encoding with channel types, and spec plus `meta` assembly.
 
 Done when: every §1 row has a registered aggregator; all six viz types assemble specs that pass every check; each aggregator test matches rows computed by hand; and each check has a passing and a failing fixture.
 
 ### Phase 3: LLM planning and the endpoint (end to end)
-Goal: a natural-language request returns the right status and a checked spec over HTTP.
-
-Decide first (ask the user): the OpenAI model; one LLM call or two; the endpoint path (proposal `POST /api/visualize`); the HTTP code per status (proposal: 200 for all four statuses, 422 for request validation, 502 for upstream or LLM failure); the clarification anchor rule; stated vs inferred filters; not-found vs zero results (§13.1).
+Goal: a natural-language request returns the right status and a checked spec over HTTP. Decided: §3 model, §7.2 calls and retry, §7.3 stated vs inferred, §7.8 anchor rule and not-found probe, §8.1 endpoint and HTTP codes. Decide first: the plan schema (§13.1).
 
 Steps, in order:
-1. **LLM client.** `llm.py`: an OpenAI structured-output call returning validated Pydantic models; malformed output raises a typed error; `uv add openai`.
-2. **Planner.** `planner.py`: the prompt lists the intent and dimension enums and the registered aggregators, so the planner can only choose what exists. Validate the plan, then apply the anchor rule.
-3. **Viz choice and prose.** The LLM half of `viz.py`: choose the type from the allowed set and write the title and notes; never data.
-4. **Pipeline.** `pipeline.py`: the §1 steps, repair-once, and typed error -> status mapping in one place.
-5. **Endpoint.** `main.py`: one route that calls the pipeline; no branching.
+1. **LLM client.** `llm.py`: an OpenAI structured-output call returning validated Pydantic models; malformed output raises a typed error; `uv add openai`. Verify the `gpt-5.4-mini` parameters (reasoning effort, structured outputs) against OpenAI's docs first.
+2. **Planner.** `planner.py`: the plan's JSON schema is generated from the registry, so the planner can only choose what exists. Validate, retry once with the error, then apply the anchor rule and classify filters as stated or inferred.
+3. **Title and notes.** The LLM part of `viz.py`: title and notes from plan, shape, columns and filters; never data. The `title` check guards it.
+4. **Pipeline.** `pipeline.py`: the §1 steps, per-cohort fetches, the not-found probe, repair-once, and typed error -> status mapping in one place.
+5. **Endpoint.** `main.py`: `POST /api/visualize`, one route that calls the pipeline; no branching.
 
-Done when: one query per §1 class returns `ok` with all checks passing; each §7.8 case returns its specified behavior; the planner and viz tests pass against a stubbed LLM, including malformed output.
+Done when: one query per §1 class returns `ok` with all checks passing; each §7.8 case returns its specified behavior; the planner tests pass against a stubbed LLM, including malformed output.
 
 ### Phase 4: Frontend (render every viz type)
-Goal: a single-page app where a user asks a question, sees the chart, and inspects the trials behind any datum.
-
-Decide first: npm as the package manager (PROPOSED); TypeScript types generated from FastAPI's OpenAPI schema with `openapi-typescript` (PROPOSED), so `schemas.py` stays the single source of truth.
+Goal: a search-first app where a user asks a question, sees the chart as the answer, and inspects the trials behind any datum. It follows the interaction pattern of a cited-answer search product (query -> answer -> sources) under its own branding: no Cheiron name, logo or copied styling (§2).
 
 Steps, in order:
-1. **Scaffold.** `frontend/` with Vite + React + TypeScript (strict). ESLint, `tsc --noEmit`, Vitest. The Vite dev server proxies `/api` to `127.0.0.1:8000`, so no CORS config is needed.
-2. **Types and client.** Generate `frontend/src/api/types.ts` from `/openapi.json`; a small `fetch` client.
-3. **Query form.** `query` plus the optional filter fields; client-side checks mirror the request validation, and the server stays authoritative.
-4. **Status views.** Distinct views for `clarification_needed` (names the missing anchor), `no_results` (lists the filters applied), `degraded` (shows the errors) and loading.
-5. **Renderer dispatch.** One map from `type` to renderer. Vega-Lite (`react-vega`) renders bar, grouped bar, time series, scatter and histogram by translating `encoding` + `data`; Cytoscape.js renders `network_graph`. Each renderer reads only `encoding` field names and never hardcodes a column.
-6. **Citations panel.** Clicking a bar, point, node or edge lists its citations, each with an excerpt and a link to `https://clinicaltrials.gov/study/<nct_id>`.
-7. **Meta panel.** Shows stated vs inferred filters, assumptions, the capped-sample disclosure ("fetched N of M"), exclusions and pruning.
+1. **Scaffold.** `frontend/` with Vite + React + TypeScript (strict), npm. ESLint, `tsc --noEmit`, Vitest. The Vite dev server proxies `/api` to `127.0.0.1:8000`, so no CORS config is needed.
+2. **Types and client.** Generate `frontend/src/api/types.ts` from `/openapi.json` with `openapi-typescript`; a small `fetch` client.
+3. **Search page.** One large query box, example-question chips (one per §1 class, which also shows coverage), and the optional filters in a collapsible row; client-side checks mirror request validation, and the server stays authoritative.
+4. **Status views.** `clarification_needed` (the missing anchor, with suggestion chips), `no_results` and not found (the filters applied), `degraded` (the errors) and loading.
+5. **Renderer dispatch.** One map from `type` to renderer. Vega-Lite renders the five chart types by translating `encoding` (fields, channel types, scale) + `data`; Cytoscape.js renders `network_graph`, de-emphasizing `is_anchor` nodes. Renderers read only `encoding` and never hardcode a column.
+6. **Sources panel.** Lists the cited trials from `trials` (NCT ID, title, status, link to `https://clinicaltrials.gov/study/<nct_id>`). Clicking a bar, point, node or edge filters it to that datum's trials and shows each excerpt with its field. This is where deep citations become visible.
+7. **"How this was answered" drawer.** Interpretation, stated vs inferred filters, assumptions, "fetched N of M", citation cap, exclusions, pruning, and the checks that passed.
 
 Done when:
 - A Vitest test renders every `SCHEMAS.md` example per viz type without error.
@@ -552,11 +546,24 @@ Done when:
 - `npm run lint && npm run typecheck && npm test` passes and is added to the Definition of done and CI.
 
 ### Phase 5: Eval and iteration
-Goal: measured evidence of iteration.
-- The 20-25 question set and runner (§9); a baseline run; a fix for the largest failure class; a rerun. The frontend is used to eyeball each chart the runner flags.
-- Done when: both result sets are saved in `eval/` with per-question metrics, and the README cites only comparisons that were actually run.
+Goal: measured evidence of iteration, including evidence for the bonuses.
+1. **Question set.** 20-25 questions (§9), each with its expected intent, viz type and status written before any run. Include condition-anchored network questions and a drug-anchored one (the star case).
+2. **Runner.** Calls the pipeline directly and records per question: intent, viz type, status, record count, check pass/fail, latency, failure mode, plus citation metrics (share of rows fully cited, excerpt-check pass rate) and network metrics (nodes and edges after pruning, whether the fallback fired, placebo and non-drug exclusions).
+3. **Baseline, fix, rerun.** Baseline on `gpt-5.4-mini`; fix the largest failure class; rerun. Keep both result sets.
+4. **Model comparison.** Run the same set on `gpt-4.1` and record accuracy and latency side by side.
+5. The frontend is used to eyeball each chart the runner flags.
 
-### Phase 6: Submission
-Goal: the zip.
-- README sections (§2 In scope) linking `SCHEMAS.md`; 3-5 example runs captured from the live system into `examples/`; frontend screenshots; a zip built from a clean checkout.
-- Done when: the zip, unpacked fresh, runs per the README (`docker compose up -d`, migrate, backend, frontend) and contains the code, README, SCHEMAS.md and examples.
+Done when: the baseline, after and comparison results are saved in `eval/` with per-question metrics, and the README cites only comparisons that were actually run.
+
+### Phase 6: Submission and bonuses
+Goal: the zip, with the bonuses made obvious to a reviewer.
+1. **README** (§2 In scope sections, linking `SCHEMAS.md`), with a "Bonuses" section that leads:
+   - **Deep citations:** how every bar, bucket, point, node and edge carries `nct_ids` and verbatim `{nct_id, excerpt, field}` citations; how the excerpt check proves them; the Phase 5 citation metrics; a screenshot of the sources panel filtering on a clicked edge.
+   - **Richer networks:** the drug rule, name normalization, pruning with fallback and the anchor hub, shown on a condition-anchored drug-drug network (screenshot + the example JSON); the Phase 5 network metrics; brand <-> generic merging listed as a limitation.
+   - **Model comparison:** the Phase 5 table, cited only as run.
+   - **Demo video** link.
+2. **Examples.** 3-5 runs captured from the live system into `examples/`, including one condition-anchored network and one non-`ok` status.
+3. **Demo video** (2-3 min): one question per class, click a datum to show its citations, open the drawer, and show a failure case (clarification or not found).
+4. **Zip.** Built from a clean copy whose history holds no §2 Context notes (§12); excludes `.env`, caches and dependencies.
+
+Done when: the zip, unpacked fresh, runs per the README (`docker compose up -d`, migrate, backend, frontend) and contains the code, README, SCHEMAS.md, examples and the video link.
