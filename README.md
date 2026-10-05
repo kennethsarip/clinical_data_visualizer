@@ -24,7 +24,8 @@ deterministic Python, so every datum traces back to a cached API record by NCT I
 5. [How correctness was validated](#how-correctness-was-validated)
 6. [AI tools used, and what was designed vs generated](#ai-tools-used-and-what-was-designed-vs-generated)
 7. [Example runs](#example-runs)
-8. [Limitations and what more time would improve](#limitations-and-what-more-time-would-improve)
+8. [Unmerged Phase 8 work](#unmerged-phase-8-work)
+9. [Limitations and what more time would improve](#limitations-and-what-more-time-would-improve)
 
 ## Run it
 
@@ -322,7 +323,8 @@ the objectives, the grading weights, the pipeline, the LLM boundary, the countin
 do" list and a phased build plan with a "Done when" per phase. Each phase began with the open
 decisions settled by me (recorded in `BUILD_HISTORY.md` → Decisions, with the date and who
 decided), then the code was written test-first, then the eval was rerun. Each phase was a branch,
-merged on green CI and tagged (`phase-0` … `phase-6`).
+merged on green CI and tagged (`phase-0` … `phase-7`). Phase 8 was built on its own branches but
+not merged in the time box (see [Unmerged Phase 8 work](#unmerged-phase-8-work)).
 
 **Designed by me (deliberate):**
 - The core split: LLM plans and writes prose only; all data is deterministic Python.
@@ -429,11 +431,26 @@ similar name is substituted, and the ledger stops at `retrieval` with "Stopped: 
 ClinicalTrials.gov lists Zorblaxumab. No similar name was substituted." The `not_found` list names
 it: `["Zorblaxumab"]`.
 
+## Unmerged Phase 8 work
+
+Phase 8 (richer, more trustworthy networks) was built and tested on two branches, but was **not
+merged into `main`** because of the time allotted: merging it means reconciling it with Phase 7's
+checks and rerunning the full eval, and that did not fit. The branches are kept on GitHub as proof
+of work; nothing on them is part of the submitted system, and the eval numbers above do not include
+them.
+
+| Branch | What it adds |
+|---|---|
+| [`phase-8-networks`](https://github.com/kennethsarip/cheiron_task/tree/phase-8-networks) (5 commits) | A `network` check (kept edges meet the pruning threshold, at most the top-N nodes, no orphans or dangling ends, `is_anchor` only on the searched entity) with an independent graph recount in `app/recount.py`; legible network labels (constant 12 px, placed on the first free side, hubs first; a live audit of the four eval networks found 0 overlapping labels, down from up to 10); entity keys that ignore punctuation, accents and word order (Nab-paclitaxel and Nab paclitaxel become one node; chosen from 85,208 cached records, every reordered merge read by hand); and synonym merging from the records' registered `otherNames` (RAD001 -> everolimus), each merge disclosed in `meta.name_merges` with citations and verified by a "name merges" check |
+| [`phase-8-names-labels`](https://github.com/kennethsarip/cheiron_task/tree/phase-8-names-labels) (1 commit) | A narrower cut onto Phase 7: only the name keys and the legible labels, without the network check and synonym merging, which conflict with Phase 7's checks and need an eval rerun |
+
 ## Limitations and what more time would improve
 
-- **Brand, generic and code names are not merged** in networks: the Novartis network shows RAD001
-  and everolimus as two nodes. A synonym table is the next step; the API already expands drug
-  synonyms at search time.
+- **Brand, generic and code names are not merged** in networks on `main`: the Novartis network
+  shows RAD001 and everolimus as two nodes, and spelling variants (Nab-paclitaxel / Nab paclitaxel)
+  can split a node. Both are fixed on the unmerged `phase-8-networks` branch (above).
+- **Network labels can overlap** on dense graphs on `main`; the placement fix is on the Phase 8
+  branches.
 - **Capped broad queries understate absolute counts** (e.g. "cancer": 10,000 of 123,793). Shapes
   hold, and the cap is disclosed. Exact per-bucket totals via `countTotal` queries would fix it,
   at the cost of one request per bucket against a ~1 request/s rate limit.

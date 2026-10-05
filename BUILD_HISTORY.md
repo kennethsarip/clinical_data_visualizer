@@ -4,6 +4,10 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ## Shipped
 
+### Phase 8: Richer networks (built, not merged)
+
+- **Not merged** (2026-10-05, user decision: time box). `phase-8-networks` holds five commits: the `network` check with an independent graph recount (8.1), legible labels (8.2: 0 overlapping labels across the four eval networks, from up to 10), entity keys free of punctuation, accents and word order, and `otherNames` synonym merging disclosed in `meta.name_merges` and checked. `phase-8-names-labels` cuts only the name keys and labels onto Phase 7. Both are on GitHub as proof of work; merging needs reconciling with Phase 7's `recount` and an eval rerun. The merged phase branches (4-7) were deleted; their tags remain.
+
 ### Phase 7: Deep citations and verification at every step (done 2026-10-05; merged in PR #8 and tagged `phase-7`)
 
 - **Examples re-captured** (2026-10-05, on `main`): all six `examples/` responses re-run through the live API on the Phase 7 code, so they carry `meta.verification`, excluded-trial IDs and official titles; the README excerpts were updated to match them.

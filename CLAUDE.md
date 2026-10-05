@@ -511,7 +511,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4, done) makes results visible for the demo.
 
-**Next move:** Phase 8 and 9 items as time allows, committed directly to `main` (no phase branch); keep the Definition of done green before every push.
+**Next move:** none planned in the time box. If time allows: merge `phase-8-networks` (reconcile its `network` check and `recount.py` with Phase 7's `recount`, then rerun the eval), then Phase 9's zip.
 
 Phases 6-9 were planned with the user on 2026-10-05 (reasons in `BUILD_HISTORY.md` → Decisions): fix query understanding and retrieval first, because a citation cannot rescue a trial that should never have been retrieved; then verify every step and show the result to the user; then the network showcase; then submission.
 
@@ -522,6 +522,7 @@ Phases 6-9 were planned with the user on 2026-10-05 (reasons in `BUILD_HISTORY.m
 - **Ship-then-prune:** when a step is done, delete it from its phase here and add a few 1-2 line bullets for it under that phase's heading in `BUILD_HISTORY.md`, in the SAME commit. Remaining steps keep their numbers. When a phase's "Done when" passes, delete the whole phase.
 
 ### Phase 8: Richer networks
+**Not merged (2026-10-05, time box):** built on `phase-8-networks` (steps 1-2 plus name keys and `otherNames` synonym merging) and `phase-8-names-labels` (name keys and labels only, cut onto Phase 7); both kept on GitHub as proof of work, described in the README "Unmerged Phase 8 work". Merging needs reconciling with Phase 7's checks and an eval rerun.
 Goal: networks a reviewer can trust and read, made obvious in the README. No new entity types or graph algorithms (§13.4).
 1. **Network checks.** Every kept edge meets `meta.pruning`'s weight threshold, at most the top-N nodes remain, no node is orphaned, removed counts reconcile with `meta.pruning`, and `is_anchor` matches the query's entity. Each gets a seeded fault (Phase 7 step 7).
 2. **Legible labels** (user decision, 2026-10-05). Phase 5.4 found labels overprinting each other and hidden under nodes in 3 of 4 eval networks, and ~5 px after fit-to-view in the fourth. Every shown label must be readable without overlap at the default zoom; test it on those four networks before the showcase.
