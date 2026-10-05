@@ -978,3 +978,14 @@ a {
   gap: 4px;
   border-color: var(--color-blue-border);
 }
+
+/* --- capped-sample caption (Phase 5 step 3) --- */
+
+.chart-caption {
+  margin: 0;
+  padding: 8px 20px;
+  background: var(--color-warning-tint);
+  border-bottom: 1px solid var(--color-blue-border);
+  color: var(--color-text-body);
+  font-size: 13px;
+}

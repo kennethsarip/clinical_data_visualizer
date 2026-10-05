@@ -28,6 +28,7 @@ const SERIES_COLORS = THEME.series
 export interface AxisMeta {
   units: Record<string, string>
   grouping: { dimension: string; series?: string | null }
+  sample?: readonly { capped: boolean }[]
 }
 
 export function toVegaLite(viz: ChartVisualization, meta?: AxisMeta): VegaLiteSpec {
@@ -165,6 +166,8 @@ export function axisTitle(field: string, meta?: AxisMeta): string {
   const name = humanize(source)
   const unit = meta.units[source]
   if (!unit) return name
+  // A count of trials from a capped fetch is a sample count, not the registry's total.
+  if (unit === 'trials' && meta.sample?.some((entry) => entry.capped)) return `${name} (capped sample)`
   const stem = unit.toLowerCase().replace(/s$/, '')
   return name.toLowerCase().includes(stem) ? name : `${name} (${unit})`
 }

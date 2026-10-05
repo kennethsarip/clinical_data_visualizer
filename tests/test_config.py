@@ -71,7 +71,7 @@ def test_optional_vars_fall_back_to_defaults_when_blank() -> None:
     # Defaults come from CLAUDE.md §3, §6, §7.3 and §8.4.
     assert settings.openai_reasoning_effort == "medium"
     assert settings.ctgov_base_url == "https://clinicaltrials.gov/api/v2"
-    assert settings.fetch_cap == 2000
+    assert settings.fetch_cap == 10000
     assert settings.cache_ttl_hours == 168
 
 

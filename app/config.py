@@ -27,7 +27,9 @@ class Settings(BaseModel):
     openai_reasoning_effort: ReasoningEffort = "medium"
     database_url: SecretStr  # may embed the DB password
     ctgov_base_url: str = "https://clinicaltrials.gov/api/v2"
-    fetch_cap: PositiveInt = 2000  # max records fetched per request (CLAUDE.md §7.3)
+    # Max records fetched per request (CLAUDE.md §7.3). 10,000, not 2,000: at 2,000, 19/23 charted
+    # eval answers were capped samples with counts well below the truth (Phase 5.3).
+    fetch_cap: PositiveInt = 10000
     cache_ttl_hours: PositiveInt = 168
 
 
