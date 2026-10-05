@@ -12,6 +12,7 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
   - Citation metrics: items (rows, nodes, edges with at least one trial), fully cited (citing `min(trial_count, citation_cap)` distinct trials), excerpts passed. Network metrics: nodes and edges after pruning, fallback, removed counts, and the placebo, non-drug and no-drug exclusions.
   - Run meta records the commit (`-dirty` when uncommitted), model, reasoning effort, fetch cap and the pipeline's `today`, pinned to the date the expectations were written, as the live tests do. Latency depends on cache warmth, so runs compare fairly only with the same cache state.
   - A crash or 502 becomes a result, never an aborted run. 19 red-first offline tests. Live smoke on five questions (network, not found, 422, broad capped, phase distribution): all passed; the melanoma network had 224/224 items fully cited and 2,192/2,192 excerpts holding.
+  - Review fixes before the baseline, red-first: an extra cohort passed (a non-strict `zip` dropped it); inferred values compared case-sensitively while stated ones did not; the latency median counted 422s (rejected at validation, ~0 s). Tests added for the crash and should-have-been-rejected paths.
   - Found while testing: `tests/test_contract.py` deleted keys from the shared SCHEMAS.md example dicts in place, so later parametrized cases were missing several keys and would have failed validation whatever key was under test. The helpers now return copies.
 
 ### Phase 4: Frontend (done 2026-10-05; merged in PR #5 and tagged `phase-4`)

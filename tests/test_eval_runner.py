@@ -29,7 +29,7 @@ from tests.factories import FIXTURE
 from tests.llm_fakes import fake_llm, json_reply, replies
 from tests.test_contract import _network_example, _ok_example
 from tests.test_pipeline import PROSE, FakeFetcher
-from tests.test_planner import reply
+from tests.test_planner import cohort, reply
 
 TODAY = date(2026, 10, 4)
 MELANOMA = RetrievalFilters(condition="melanoma")
@@ -406,3 +406,63 @@ def test_a_run_scores_every_question_in_order_and_summarizes() -> None:
     assert run.meta == meta
     assert run.summary.by_class == {"distribution": [1, 1], "network": [1, 1]}
     assert RunResult.model_validate_json(run.model_dump_json()) == run
+
+
+# --- found reviewing the runner (2026-10-05) ---
+
+
+def test_an_extra_cohort_is_a_mismatch() -> None:
+    drugs = ["pembrolizumab", "nivolumab", "ipilimumab"]
+    q = question(
+        {"query": "Compare phases for pembrolizumab vs nivolumab vs ipilimumab"},
+        "comparison",
+        status="ok",
+        analysis="comparison.phase",
+        viz_type="grouped_bar_chart",
+        cohorts=[cohort("pembrolizumab") | {"entity": "drug_name"}, cohort("nivolumab")],
+    )
+    plan = reply("comparison.phase", [cohort(d) for d in drugs])
+    fetcher = FakeFetcher({RetrievalFilters(drug_name=d): FIXTURE for d in drugs})
+    pipeline = factory([json_reply(plan), json_reply(PROSE)], fetcher)
+    assert "wrong_cohorts" in run_question(q, pipeline, clock=clock(0, 1)).failures
+
+
+def test_an_inferred_value_compares_case_insensitively_like_a_stated_one() -> None:
+    q = question(
+        {"query": "melanoma trials that are enrolling now"},
+        status="ok",
+        analysis="distribution.phase",
+        viz_type="bar_chart",
+        stated={"condition": "melanoma"},
+        inferred={"overall_status": ["recruiting"]},
+    )
+    plan = reply(condition="melanoma", overall_status="RECRUITING")
+    filters = RetrievalFilters(condition="melanoma", overall_status="RECRUITING")
+    pipeline = factory([json_reply(plan), json_reply(PROSE)], FakeFetcher({filters: FIXTURE}))
+    assert run_question(q, pipeline, clock=clock(0, 1)).failures == []
+
+
+def test_latency_summary_skips_requests_rejected_before_any_work() -> None:
+    results = [
+        _result("a", "numeric", True, 4.0, []),
+        _result("b", "numeric", True, 6.0, []),
+        _result("c", "edge_case", True, 0.0, [], http=422, status=None),
+    ]
+    s = summarize(results)
+    assert (s.latency_p50_s, s.latency_max_s) == (5.0, 6.0)
+
+
+def test_a_crash_is_recorded_and_the_run_goes_on() -> None:
+    fetcher = FakeFetcher(error=RuntimeError("bad row"))
+    pipeline = factory([json_reply(reply(condition="melanoma"))], fetcher)
+    result = run_question(PHASES, pipeline, clock=clock(0, 1))
+    assert (result.http, result.failures) == (500, ["crash"])
+    assert result.error == "RuntimeError('bad row')"
+
+
+def test_a_request_that_should_be_rejected_but_is_not() -> None:
+    q = PHASES.model_copy(
+        update={"expected": PHASES.expected.model_copy(update={"http": 422, "status": None})}
+    )
+    result = run_phases(q)
+    assert (result.http, result.failures) == (200, ["wrong_http"])

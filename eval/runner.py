@@ -202,11 +202,13 @@ def _ok_failures(e: Expected, response: OkResponse) -> list[str]:
     if response.visualization.type != e.viz_type:
         failures.append("wrong_viz_type")
     if e.cohorts is not None:
-        got = [
-            (c.label.casefold(), str(c.filters.get(x.entity, "")).casefold())
-            for c, x in zip(interpretation.cohorts or [], e.cohorts, strict=False)
-        ]
-        if got != [(x.label.casefold(), x.value.casefold()) for x in e.cohorts]:
+        cohorts = interpretation.cohorts or []
+        # Compared pairwise only once the counts agree: zip would hide an extra cohort.
+        if len(cohorts) != len(e.cohorts) or any(
+            c.label.casefold() != x.label.casefold()
+            or str(c.filters.get(x.entity, "")).casefold() != x.value.casefold()
+            for c, x in zip(cohorts, e.cohorts, strict=True)
+        ):
             failures.append("wrong_cohorts")
     return failures
 
@@ -216,10 +218,12 @@ def _filter_failures(e: Expected, response: OkResponse | NoResultsResponse) -> l
     filters = response.meta.filters
     if _fold(filters.stated) != _fold(e.stated):
         failures.append("wrong_stated")
-    inferred = filters.inferred
-    if inferred.keys() != e.inferred.keys() or any(
-        v not in e.inferred[k] for k, v in inferred.items()
-    ):
+    # Inferred values fold like stated ones: an enum may come back as RECRUITING or recruiting.
+    inferred = _fold(filters.inferred)
+    accepted: dict[str, set[str]] = {
+        k: {str(v).casefold() for v in values} for k, values in e.inferred.items()
+    }
+    if inferred.keys() != accepted.keys() or any(v not in accepted[k] for k, v in inferred.items()):
         failures.append("wrong_inferred")
     if e.status == "no_results":
         return failures  # overrides are asserted on charted answers only
@@ -294,7 +298,8 @@ def summarize(results: list[QuestionResult]) -> Summary:
         tally[0] += r.passed
         tally[1] += 1
     cited = [r.citations for r in results if r.citations]
-    latencies = [r.latency_s for r in results]
+    # A request rejected at validation (422) does no work; its ~0 s would drag the median down.
+    latencies = [r.latency_s for r in results if r.http != 422]
     return Summary(
         questions=len(results),
         passed=sum(r.passed for r in results),
