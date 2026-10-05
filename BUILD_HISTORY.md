@@ -4,6 +4,12 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ## Shipped
 
+### Phase 3: LLM planning and the endpoint (in progress)
+
+- **3.0 Eval questions first** (2026-10-04): `eval/questions.json` holds 30 questions with the expected status, `analysis` key, viz type, stated and inferred filters, cohorts, missing anchors and not-found entities, each with a written `why`. All 9 appendix examples are included (the unanchored drug-drug one expects `clarification_needed`), plus every question class, every viz type and each §7.8 edge case.
+  - `tests/test_eval_questions.py` checks every expectation against the registry, the request model and the §7.2/§7.3/§7.8 rules, so a wrong expectation cannot certify a wrong planner. Breaking four expectations (viz type, stated vs inferred, cohort count, anchor) failed 6 tests for those reasons.
+  - Inferred filters list every acceptable value ("last five years" -> 2021 or 2022), since inference is ambiguous by definition. An enum filter counts as stated when its display label appears ("recruiting" -> `RECRUITING`), which the planner's stated test must match.
+
 ### Phase 2: Aggregation, citations, checks (done 2026-10-04; merged and tagged `phase-2`)
 
 - **Done when, met:** every §1 row has a registered aggregator (22); all six viz types assemble specs that pass every check, offline on the fixture and live on real records; each aggregator test matches hand-computed rows; each check has a passing and a failing fixture.

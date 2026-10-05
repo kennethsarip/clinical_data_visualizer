@@ -1,0 +1,280 @@
+{
+  "written": "2026-10-04",
+  "questions": [
+    {
+      "id": "tt_drug_since_2015",
+      "question_class": "time_trend",
+      "source": "appendix",
+      "request": {"query": "How has the number of trials for pembrolizumab changed per year since 2015?"},
+      "expected": {"status": "ok", "analysis": "time_trend.start_year", "viz_type": "time_series",
+                   "stated": {"drug_name": "pembrolizumab", "start_year": 2015}},
+      "why": "Appendix time trend; 'since 2015' is a lower bound only, so end_year stays unset."
+    },
+    {
+      "id": "tt_condition_each_year",
+      "question_class": "time_trend",
+      "source": "appendix",
+      "request": {"query": "How many trials started each year for multiple sclerosis?"},
+      "expected": {"status": "ok", "analysis": "time_trend.start_year", "viz_type": "time_series",
+                   "stated": {"condition": "multiple sclerosis"}},
+      "why": "Appendix time trend over a condition, with no year bounds."
+    },
+    {
+      "id": "tt_assignment_example_request",
+      "question_class": "time_trend",
+      "source": "appendix",
+      "request": {"query": "How has the number of trials for this drug changed over time?",
+                  "drug_name": "Pembrolizumab"},
+      "expected": {"status": "ok", "analysis": "time_trend.start_year", "viz_type": "time_series",
+                   "stated": {"drug_name": "Pembrolizumab"}},
+      "why": "The assignment's own example request; the anchor comes only from a field."
+    },
+    {
+      "id": "dist_phase_condition",
+      "question_class": "distribution",
+      "source": "appendix",
+      "request": {"query": "How are breast cancer trials distributed across phases?"},
+      "expected": {"status": "ok", "analysis": "distribution.phase", "viz_type": "bar_chart",
+                   "stated": {"condition": "breast cancer"}},
+      "why": "Appendix distribution; multi-phase records become their own bars (§6)."
+    },
+    {
+      "id": "dist_intervention_type",
+      "question_class": "distribution",
+      "source": "appendix",
+      "request": {"query": "What are the most common intervention types for type 2 diabetes trials?"},
+      "expected": {"status": "ok", "analysis": "distribution.intervention_type", "viz_type": "bar_chart",
+                   "stated": {"condition": "type 2 diabetes"}},
+      "why": "Appendix distribution over a multi-valued dimension (§8.5)."
+    },
+    {
+      "id": "dist_status_sponsor",
+      "question_class": "distribution",
+      "source": "extension",
+      "request": {"query": "What is the status breakdown of Pfizer's trials?"},
+      "expected": {"status": "ok", "analysis": "distribution.overall_status", "viz_type": "bar_chart",
+                   "stated": {"sponsor": "Pfizer"}},
+      "why": "Sponsor-anchored distribution over a single-valued dimension, so bar sums reconcile."
+    },
+    {
+      "id": "dist_top_sponsors",
+      "question_class": "distribution",
+      "source": "extension",
+      "request": {"query": "Who are the top sponsors of melanoma trials?"},
+      "expected": {"status": "ok", "analysis": "distribution.sponsor", "viz_type": "bar_chart",
+                   "stated": {"condition": "melanoma"}},
+      "why": "Top-N bar chart (20 categories, disclosed in meta.top_n)."
+    },
+    {
+      "id": "dist_top_drugs",
+      "question_class": "distribution",
+      "source": "extension",
+      "request": {"query": "Which drugs are tested most often in rheumatoid arthritis trials?"},
+      "expected": {"status": "ok", "analysis": "distribution.drug", "viz_type": "bar_chart",
+                   "stated": {"condition": "rheumatoid arthritis"}},
+      "why": "Top-N drugs; placebo and non-drug interventions are excluded and counted (§6)."
+    },
+    {
+      "id": "dist_sponsor_class_fields",
+      "question_class": "distribution",
+      "source": "extension",
+      "request": {"query": "Who funds these trials: industry, NIH or universities?",
+                  "condition": "asthma", "trial_phase": "PHASE3"},
+      "expected": {"status": "ok", "analysis": "distribution.sponsor_class", "viz_type": "bar_chart",
+                   "stated": {"condition": "asthma", "trial_phase": "PHASE3"}},
+      "why": "Anchor and phase come only from fields; the query names the dimension in lay terms."
+    },
+    {
+      "id": "dist_conditions_for_drug",
+      "question_class": "distribution",
+      "source": "extension",
+      "request": {"query": "What conditions is metformin being studied for?"},
+      "expected": {"status": "ok", "analysis": "distribution.condition", "viz_type": "bar_chart",
+                   "stated": {"drug_name": "metformin"}},
+      "why": "Top-N conditions for a drug; condition names are case-folded and trimmed (§6)."
+    },
+    {
+      "id": "cmp_phase_two_drugs",
+      "question_class": "comparison",
+      "source": "appendix",
+      "request": {"query": "Compare phases for trials involving pembrolizumab vs nivolumab."},
+      "expected": {"status": "ok", "analysis": "comparison.phase", "viz_type": "grouped_bar_chart",
+                   "cohorts": [{"label": "pembrolizumab", "entity": "drug_name", "value": "pembrolizumab"},
+                               {"label": "nivolumab", "entity": "drug_name", "value": "nivolumab"}]},
+      "why": "Appendix comparison: one fetch per cohort, bars aligned and zero-filled."
+    },
+    {
+      "id": "cmp_sponsor_class_two_conditions",
+      "question_class": "comparison",
+      "source": "appendix",
+      "request": {"query": "Compare sponsor categories across lung cancer and colorectal cancer trials."},
+      "expected": {"status": "ok", "analysis": "comparison.sponsor_class", "viz_type": "grouped_bar_chart",
+                   "cohorts": [{"label": "lung cancer", "entity": "condition", "value": "lung cancer"},
+                               {"label": "colorectal cancer", "entity": "condition", "value": "colorectal cancer"}]},
+      "why": "Appendix comparison with condition cohorts; 'sponsor categories' maps to sponsor class."
+    },
+    {
+      "id": "cmp_status_three_drugs",
+      "question_class": "comparison",
+      "source": "extension",
+      "request": {"query": "Compare trial statuses for semaglutide, liraglutide and tirzepatide."},
+      "expected": {"status": "ok", "analysis": "comparison.overall_status", "viz_type": "grouped_bar_chart",
+                   "cohorts": [{"label": "semaglutide", "entity": "drug_name", "value": "semaglutide"},
+                               {"label": "liraglutide", "entity": "drug_name", "value": "liraglutide"},
+                               {"label": "tirzepatide", "entity": "drug_name", "value": "tirzepatide"}]},
+      "why": "Three cohorts, inside the decided 2-4 range."
+    },
+    {
+      "id": "cmp_five_drugs_too_many",
+      "question_class": "edge_case",
+      "source": "edge_case",
+      "request": {"query": "Compare phases for aspirin, ibuprofen, naproxen, celecoxib and diclofenac trials."},
+      "expected": {"status": "clarification_needed", "analysis": null, "viz_type": null},
+      "why": "Five cohorts exceed the 2-4 rule (§7.2); ask the user to narrow rather than drop one silently."
+    },
+    {
+      "id": "geo_recruiting_condition",
+      "question_class": "geographic",
+      "source": "appendix",
+      "request": {"query": "Which countries have the most recruiting trials for cystic fibrosis?"},
+      "expected": {"status": "ok", "analysis": "geographic.country", "viz_type": "bar_chart",
+                   "stated": {"condition": "cystic fibrosis", "overall_status": "RECRUITING"}},
+      "why": "Appendix geographic; 'recruiting' is the status label verbatim, so the filter is stated."
+    },
+    {
+      "id": "net_sponsor_drug_condition",
+      "question_class": "network",
+      "source": "appendix",
+      "request": {"query": "Show a network of sponsors and drugs for multiple myeloma trials."},
+      "expected": {"status": "ok", "analysis": "network.sponsor_drug", "viz_type": "network_graph",
+                   "stated": {"condition": "multiple myeloma"}},
+      "why": "Appendix network, condition-anchored (the showcase case)."
+    },
+    {
+      "id": "net_drug_drug_condition",
+      "question_class": "network",
+      "source": "extension",
+      "request": {"query": "Which drugs frequently co-occur in combination studies for melanoma?"},
+      "expected": {"status": "ok", "analysis": "network.drug_drug", "viz_type": "network_graph",
+                   "stated": {"condition": "melanoma"}},
+      "why": "The anchored form of the appendix drug-drug question: no hub, a real co-occurrence graph."
+    },
+    {
+      "id": "net_drug_drug_unanchored",
+      "question_class": "edge_case",
+      "source": "appendix",
+      "request": {"query": "Which drugs frequently co-occur in combination studies (drug ↔ drug network)?"},
+      "expected": {"status": "clarification_needed", "analysis": null, "viz_type": null,
+                   "missing": ["drug_name", "condition", "sponsor"]},
+      "why": "Appendix verbatim; no anchor, so the anchor rule asks which condition, drug or sponsor (user decision 2026-10-04)."
+    },
+    {
+      "id": "net_drug_drug_star",
+      "question_class": "network",
+      "source": "extension",
+      "request": {"query": "Which drugs are combined with pembrolizumab in trials?"},
+      "expected": {"status": "ok", "analysis": "network.drug_drug", "viz_type": "network_graph",
+                   "stated": {"drug_name": "pembrolizumab"}},
+      "why": "Drug-anchored network: a star around pembrolizumab, flagged is_anchor (§7.4)."
+    },
+    {
+      "id": "net_condition_drug_sponsor",
+      "question_class": "network",
+      "source": "extension",
+      "request": {"query": "Map which drugs are tested for which conditions in Novartis trials."},
+      "expected": {"status": "ok", "analysis": "network.condition_drug", "viz_type": "network_graph",
+                   "stated": {"sponsor": "Novartis"}},
+      "why": "Condition-drug network (our extension), sponsor-anchored."
+    },
+    {
+      "id": "num_enrollment_histogram",
+      "question_class": "numeric",
+      "source": "extension",
+      "request": {"query": "What is the distribution of enrollment sizes for adalimumab trials?"},
+      "expected": {"status": "ok", "analysis": "numeric.enrollment", "viz_type": "histogram",
+                   "stated": {"drug_name": "adalimumab"}},
+      "why": "Binned enrollment, split Actual vs Estimated (§6)."
+    },
+    {
+      "id": "num_enrollment_over_time",
+      "question_class": "numeric",
+      "source": "extension",
+      "request": {"query": "How has trial enrollment changed over time for hepatitis C trials?"},
+      "expected": {"status": "ok", "analysis": "numeric.enrollment_by_start_date", "viz_type": "scatter_plot",
+                   "stated": {"condition": "hepatitis C"}},
+      "why": "'Enrollment over time' is per-trial numeric, not a trial count per year."
+    },
+    {
+      "id": "edge_underspecified",
+      "question_class": "edge_case",
+      "source": "edge_case",
+      "request": {"query": "Show me trials"},
+      "expected": {"status": "clarification_needed", "analysis": null, "viz_type": null,
+                   "missing": ["drug_name", "condition", "sponsor"]},
+      "why": "No anchor and no dimension (§7.8)."
+    },
+    {
+      "id": "edge_time_period_only",
+      "question_class": "edge_case",
+      "source": "edge_case",
+      "request": {"query": "How many trials started each year since 2020?"},
+      "expected": {"status": "clarification_needed", "analysis": null, "viz_type": null,
+                   "missing": ["drug_name", "condition", "sponsor"]},
+      "why": "A time period alone is not an anchor: it would chart a capped slice of the registry (§7.8)."
+    },
+    {
+      "id": "edge_zero_results",
+      "question_class": "edge_case",
+      "source": "edge_case",
+      "request": {"query": "How are these trials distributed by status?",
+                  "condition": "Erdheim-Chester disease", "trial_phase": "PHASE4", "country": "Iceland"},
+      "expected": {"status": "no_results", "analysis": "distribution.overall_status", "viz_type": "bar_chart",
+                   "stated": {"condition": "Erdheim-Chester disease", "trial_phase": "PHASE4", "country": "Iceland"}},
+      "why": "A rare disease (26 trials live) under a phase and country that together match nothing; the condition alone exists, so not_found stays empty."
+    },
+    {
+      "id": "edge_nonexistent_drug",
+      "question_class": "edge_case",
+      "source": "edge_case",
+      "request": {"query": "How many trials per year have tested Zorblaxumab?"},
+      "expected": {"status": "no_results", "analysis": "time_trend.start_year", "viz_type": "time_series",
+                   "stated": {"drug_name": "Zorblaxumab"}, "not_found": ["Zorblaxumab"]},
+      "why": "An invented drug: the probe finds it alone matches 0, so it is reported not found and nothing similar is substituted."
+    },
+    {
+      "id": "edge_contradictory_years",
+      "question_class": "edge_case",
+      "source": "edge_case",
+      "request": {"query": "How many melanoma trials started each year?", "start_year": 2022, "end_year": 2018},
+      "expected": {"http": 422, "status": null, "analysis": null, "viz_type": null},
+      "why": "Rejected at the request, before any LLM or API call (§7.6)."
+    },
+    {
+      "id": "edge_broad_capped",
+      "question_class": "edge_case",
+      "source": "edge_case",
+      "request": {"query": "How are cancer trials distributed across phases?"},
+      "expected": {"status": "ok", "analysis": "distribution.phase", "viz_type": "bar_chart",
+                   "stated": {"condition": "cancer"}, "capped": true},
+      "why": "Very broad (~124k trials live): fetch to the cap and disclose 'fetched N of M'."
+    },
+    {
+      "id": "edge_field_overrides_query",
+      "question_class": "edge_case",
+      "source": "edge_case",
+      "request": {"query": "Show the phase breakdown for pembrolizumab trials.", "drug_name": "nivolumab"},
+      "expected": {"status": "ok", "analysis": "distribution.phase", "viz_type": "bar_chart",
+                   "stated": {"drug_name": "nivolumab"}, "field_override": true},
+      "why": "The field wins over the query and meta.notes says so (§7.3, decided 2026-10-04)."
+    },
+    {
+      "id": "edge_inferred_year",
+      "question_class": "edge_case",
+      "source": "edge_case",
+      "request": {"query": "How many lung cancer trials started each year over the last five years?"},
+      "expected": {"status": "ok", "analysis": "time_trend.start_year", "viz_type": "time_series",
+                   "stated": {"condition": "lung cancer"}, "inferred": {"start_year": [2021, 2022]}},
+      "why": "'Last five years' has no verbatim year, so start_year is inferred and must appear in assumptions; 2021 or 2022 depending on whether the current year counts."
+    }
+  ]
+}

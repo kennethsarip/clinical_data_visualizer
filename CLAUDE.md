@@ -64,7 +64,7 @@ Taken from the assignment document. Where a later section conflicts with this on
 - **In:** `POST` with a required `query` and optional filter fields (§8.3). **Out:** `{status, visualization, meta}` (§8.3).
 - **Entity flow:** request -> plan -> API params -> records (cached) -> rows with citations -> spec -> checks -> response.
 
-**Coverage matrix** (the target, one row per question class). Examples come from the assignment appendix, except condition-drug, which comes from the project brief. Intent and dimension names stay descriptive until the plan schema is fixed (§13.1). The viz type is not a per-class branch: Python reads it off the aggregator's declared row shape (§7.4).
+**Coverage matrix** (the target, one row per question class). Examples come from the assignment appendix (`docs/assignment.md`), except condition-drug and the numeric class, which are our extensions (the assignment lists conditions as network entities and scatter plots and histograms as viz types). Intent and dimension names are the `Intent` and `Dimension` enums in `aggregators/registry.py`. The viz type is not a per-class branch: Python reads it off the aggregator's declared row shape (§7.4).
 
 | Class | Example question | Dimension | Row shape | Viz |
 |---|---|---|---|---|
@@ -324,7 +324,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 ### 7.8 User-facing edge cases
 | Case | Behavior |
 |---|---|
-| Underspecified ("show me trials") | `clarification_needed`, naming the missing anchor. Never guess. **Anchor rule** (decided 2026-10-04): the request must name a drug, condition or sponsor, in a field or the query. A time period alone would chart a capped slice of the whole registry |
+| Underspecified ("show me trials") | `clarification_needed`, naming the missing anchor. Never guess. **Anchor rule** (decided 2026-10-04): the request must name a drug, condition or sponsor, in a field or the query. A time period alone would chart a capped slice of the whole registry. This applies to the appendix's unanchored "Which drugs frequently co-occur in combination studies?" too: it gets `clarification_needed`, and the README explains why (user decision, 2026-10-04) |
 | Zero results | `no_results`, listing the filters applied. Never silently widen the search |
 | Nonexistent drug or condition | Report it as not found. Never answer about a similar entity. The API returns `totalCount` 0 both for unknown terms and for over-filtered queries, so on zero results the pipeline probes each entity alone (decided 2026-10-04): 0 means not found, more than 0 means the filters together match nothing |
 | Very broad query ("cancer") | Paginate to the cap and disclose a capped sample with the total |
@@ -376,7 +376,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 | Planner / viz | Parsing and validation of LLM output with a stubbed LLM, including malformed output |
 | Frontend | Each viz renderer against the `SCHEMAS.md` examples; status views (Vitest; Phase 4) |
 | Live core | `tests/test_live_core.py` (`-m live`): every registered aggregator plus citations on real records; checks provenance, retrieved IDs, excerpts, §8.5 reconciliation and network edges. Extended by each later step |
-| Eval | 20-25 questions: every §1 class plus ambiguous input, a zero-result combination, a nonexistent entity, a contradictory date range, multi-phase or missing-field records, and a very broad condition. For each question, record the intent, viz type, record count, check pass/fail, latency and failure mode |
+| Eval | `eval/questions.json` (30 questions, loaded by `tests/eval_questions.py`, coherence-tested by `tests/test_eval_questions.py`): every §1 class plus ambiguous input, a zero-result combination, a nonexistent entity, a contradictory date range, multi-phase or missing-field records, and a very broad condition. For each question, record the intent, viz type, record count, check pass/fail, latency and failure mode |
 
 **Eval protocol:** run the baseline, fix the largest failure class, rerun, and keep both result sets in `eval/`.
 
@@ -454,7 +454,7 @@ Items marked **ask first** are hard to reverse; ask the user before choosing the
 |---|---|
 | Internal ID scheme (**ask first**) | IDs for requests and eval runs (§8.2) |
 | Auth model (**ask first**) | Who may call the endpoint |
-| Source documents | The assignment is saved in `docs/` (screenshots + `assignment.md` transcription), gitignored at the user's request so it never reaches GitHub (2026-10-04). The project brief is not saved yet |
+| Source documents | The assignment is saved in `docs/` (screenshots + `assignment.md` transcription), gitignored at the user's request so it never reaches GitHub (2026-10-04). There is no separate project brief (user, 2026-10-04) |
 | Per-bucket totals | Alternative to the capped sample: exact per-bucket totals via `countTotal=true` queries, with citations from the sample (§13.5) |
 
 Decided 2026-10-04 and recorded where they govern: LLM model and calls (§3, §7.2), viz type by Python (§7.4), drug rule, name normalization and enrollment split (§6), pruning (§7.4), citations (§7.5), stated vs inferred and field-vs-query conflicts (§7.3), plan shape, cohorts and title fallback (§7.2), error mapping (§7.7), date basis (§7.4), request fields and `query` cap of 1,000 (SCHEMAS.md §1), anchor rule and not-found probe (§7.8), endpoint and HTTP codes (§8.1), response contract (SCHEMAS.md), zip contents (§12), hosting (not planned, §13.4).
@@ -491,7 +491,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) makes results visible for the demo.
 
-**Next move:** Phase 3 step 0 (the eval question set).
+**Next move:** Phase 3 step 1 (the LLM client).
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
@@ -503,7 +503,6 @@ The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) m
 Goal: a natural-language request returns the right status and a checked spec over HTTP. Decided: §3 model, §7.2 calls and retry, §7.3 stated vs inferred, §7.8 anchor rule and not-found probe, §8.1 endpoint and HTTP codes, §7.2 plan shape, cohorts and title fallback, §7.7 error mapping.
 
 Steps, in order:
-0. **Eval questions first** (moved from Phase 5, decided 2026-10-04). `eval/questions.*`: 20-25 questions (§9), each with its expected `analysis` key, filters (stated vs inferred), status and viz type, written before the planner prompt so the prompt cannot be tuned to them. Include condition-anchored networks, a drug-anchored one (the star case), a 3-cohort comparison and a field-vs-query conflict. They are the planner's acceptance tests: stubbed offline, and live under `-m live`.
 1. **LLM client.** `llm.py`: an OpenAI structured-output call returning validated Pydantic models; malformed output raises a typed error; `uv add openai`. Verify the `gpt-5.4-mini` parameters (reasoning effort, structured outputs) against OpenAI's docs first.
 2. **Planner.** `planner.py`: the plan's JSON schema is generated from the registry, so the planner can only choose what exists. Validate, retry once with the error, then apply the anchor rule and classify filters as stated or inferred.
 3. **Title and notes.** The LLM part of `viz.py`: title and notes from plan, shape, columns and filters; never data. The `title` check guards it.
