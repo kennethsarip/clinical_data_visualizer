@@ -8,7 +8,6 @@ import {
   type Ref,
 } from 'react'
 import type { VisualizeRequest } from '../api/client'
-import { EXAMPLES } from './examples'
 import { PHASE_OPTIONS } from '../vocab'
 import {
   EMPTY_FORM,
@@ -82,31 +81,50 @@ export function SearchForm({ busy, onSubmit, ref }: Props) {
     }
   }
 
-  function runExample(query: string) {
-    // Run the example exactly as it was verified: stale filters would change its answer.
-    const next = { ...EMPTY_FORM, query }
-    setValues(next)
-    if (!busy) submit(next)
-  }
-
   const errorId = (field: keyof SearchFormValues) => `${id}-${field}-error`
   const describedBy = (field: keyof SearchFormValues) => (errors[field] ? errorId(field) : undefined)
 
   return (
     <div className="search">
       <form className="card search-card" onSubmit={handleSubmit} noValidate>
-        <div className="card-header">Ask about clinical trials</div>
         <div className="card-body">
-          <textarea
-            className="query-box"
-            aria-label="Ask about clinical trials"
-            aria-invalid={Boolean(errors.query)}
-            aria-describedby={describedBy('query')}
-            placeholder="e.g. How has the number of pembrolizumab trials changed since 2015?"
-            value={values.query}
-            onChange={(event) => set('query', event.target.value)}
-            onKeyDown={handleKeyDown}
-          />
+          <div className="query-row">
+            <textarea
+              className="query-box"
+              rows={2}
+              aria-label="Ask about clinical trials"
+              aria-invalid={Boolean(errors.query)}
+              aria-describedby={describedBy('query')}
+              placeholder="e.g. How has the number of pembrolizumab trials changed since 2015?"
+              value={values.query}
+              onChange={(event) => set('query', event.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+            <div className="search-actions">
+              <button
+                type="button"
+                className="button-ghost"
+                aria-expanded={filtersOpen}
+                aria-controls={`${id}-filters`}
+                onClick={() => setFiltersOpen((open) => !open)}
+              >
+                Filters
+                {filterCount > 0 && <span className="count-badge">{filterCount}</span>}
+              </button>
+              <button type="submit" className="button-send" aria-label="Visualize" disabled={busy}>
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                  <path
+                    d="M5 12h14M13 6l6 6-6 6"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.25"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
           {errors.query && (
             <p className="field-error" id={errorId('query')}>
               {errors.query}
@@ -158,38 +176,8 @@ export function SearchForm({ busy, onSubmit, ref }: Props) {
             </div>
           )}
 
-          <div className="search-actions">
-            <button
-              type="button"
-              className="button-ghost"
-              aria-expanded={filtersOpen}
-              aria-controls={`${id}-filters`}
-              onClick={() => setFiltersOpen((open) => !open)}
-            >
-              Filters
-              {filterCount > 0 && <span className="count-badge">{filterCount}</span>}
-            </button>
-            <button type="submit" className="button-primary" disabled={busy}>
-              Visualize
-            </button>
-          </div>
         </div>
       </form>
-
-      <div className="examples" role="group" aria-label="Example questions">
-        {EXAMPLES.map((example) => (
-          <button
-            key={example.evalId}
-            type="button"
-            className="example-chip"
-            disabled={busy}
-            onClick={() => runExample(example.query)}
-          >
-            <span className="chip-tag">{example.label}</span>
-            {example.query}
-          </button>
-        ))}
-      </div>
     </div>
   )
 }

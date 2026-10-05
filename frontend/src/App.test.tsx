@@ -32,8 +32,16 @@ async function ask(user: ReturnType<typeof userEvent.setup>, question: string) {
 describe('App', () => {
   it('renders the product name and the query box', () => {
     render(<App />)
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Trials Explorer')
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Clinical Data Visualizer')
     expect(screen.getByRole('textbox', { name: /ask about clinical trials/i })).toBeInTheDocument()
+  })
+
+  it('explains each chart type before the first question', () => {
+    render(<App />)
+    const guide = screen.getByRole('list', { name: 'Chart types' })
+    for (const name of ['Time series', 'Bar chart', 'Grouped bar', 'Network', 'Scatter plot', 'Histogram']) {
+      expect(guide).toHaveTextContent(name)
+    }
   })
 
   it('shows loading, then the clarification; adding an anchor opens and focuses that filter', async () => {

@@ -1,18 +1,12 @@
 import { useEffect, useImperativeHandle, useLayoutEffect, useRef } from 'react'
 import cytoscape, { type Core, type EdgeSingular, type NodeSingular, type StylesheetJson } from 'cytoscape'
 import { highlightedIndexes } from './highlight'
-import { labelledNodes, toCytoscapeElements } from './networkElements'
+import { entityColor, labelledNodes, legendGroups, toCytoscapeElements } from './networkElements'
 import type { RendererProps } from './rendererProps'
 import { THEME } from './theme'
 import type { NetworkVisualization } from './types'
 
 const PERMANENT_LABELS = 12
-
-const ENTITY_COLORS: Record<string, string> = {
-  drug: THEME.series[0],
-  sponsor: THEME.series[1],
-  condition: THEME.series[2],
-}
 
 export function NetworkGraph({ visualization, highlighted, onSelect, ref }: RendererProps<NetworkVisualization>) {
   const container = useRef<HTMLDivElement>(null)
@@ -63,8 +57,19 @@ export function NetworkGraph({ visualization, highlighted, onSelect, ref }: Rend
         numIter: 2500,
       })
       .run()
-    graph.on('mouseover', 'node', (event) => void event.target.addClass('hovered'))
-    graph.on('mouseout', 'node', (event) => void event.target.removeClass('hovered'))
+    // Hover focuses a node's neighbourhood: everything else fades and its neighbours show labels.
+    graph.on('mouseover', 'node', (event) => {
+      const node: NodeSingular = event.target
+      const near = node.closedNeighborhood()
+      graph.batch(() => {
+        node.addClass('hovered')
+        near.nodes().not(node).addClass('neighbour')
+        graph.elements().not(near).addClass('faded')
+      })
+    })
+    graph.on('mouseout', 'node', () => {
+      graph.batch(() => void graph.elements().removeClass('hovered neighbour faded'))
+    })
     graph.on('tap', 'node', (event) => select.current({ kind: 'node', index: event.target.data('index') }))
     graph.on('tap', 'edge', (event) => select.current({ kind: 'edge', index: event.target.data('index') }))
     graph.on('tap', (event) => {
@@ -82,7 +87,31 @@ export function NetworkGraph({ visualization, highlighted, onSelect, ref }: Rend
     if (cy.current) applyHighlight(cy.current, visualization, highlighted)
   }, [visualization, highlighted])
 
-  return <div ref={container} className="network-graph" />
+  const groups = legendGroups(toCytoscapeElements(visualization).nodes.map((n) => n.data))
+  const hasAnchor = visualization.data.nodes.some((node) => node.is_anchor)
+  return (
+    <div className="network">
+      <div ref={container} className="network-graph" />
+      <ul className="network-legend" aria-label="Legend">
+        {groups.map((group) => (
+          <li key={group}>
+            <span className="legend-mark" style={{ background: entityColor(group) }} />
+            {group.charAt(0).toUpperCase() + group.slice(1)}
+          </li>
+        ))}
+        {hasAnchor && (
+          <li>
+            <span className="legend-mark legend-anchor" />
+            Faded: the entity you asked about (in every trial)
+          </li>
+        )}
+        <li>
+          <span className="legend-line" />
+          Line thickness = shared trials
+        </li>
+      </ul>
+    </div>
+  )
 }
 
 function applyHighlight(graph: Core, viz: NetworkVisualization, highlighted: ReadonlySet<string>) {
@@ -105,18 +134,20 @@ function scaler(values: number[], low: number, high: number) {
 
 function stylesheet(sizes: number[], weights: number[]): StylesheetJson {
   const nodeSize = scaler(sizes, 18, 56)
-  const edgeWidth = scaler(weights, 1.5, 8)
+  const edgeWidth = scaler(weights, 1, 7)
+  const edgeOpacity = scaler(weights, 0.35, 0.9)
   return [
     {
       selector: 'node',
       style: {
-        'background-color': (n: NodeSingular) => ENTITY_COLORS[n.data('group') as string] ?? THEME.accent,
+        'background-color': (n: NodeSingular) => entityColor(n.data('group') as string),
         width: (n: NodeSingular) => nodeSize(n.data('size') as number),
         height: (n: NodeSingular) => nodeSize(n.data('size') as number),
         label: '',
         color: THEME.textStrong,
         'font-family': THEME.font,
-        'font-size': 13,
+        'font-size': 12,
+        'font-weight': 500,
         'text-valign': 'bottom',
         'text-margin-y': 4,
         'text-wrap': 'ellipsis',
@@ -126,13 +157,13 @@ function stylesheet(sizes: number[], weights: number[]): StylesheetJson {
       },
     },
     {
-      selector: 'node.labelled, node.hovered, node:selected',
+      selector: 'node.labelled, node.hovered, node.neighbour, node:selected',
       style: {
         label: 'data(label)',
-        'text-background-color': '#ffffff',
-        'text-background-opacity': 0.85,
-        'text-background-padding': '2px',
-        'text-background-shape': 'roundrectangle',
+        // A white halo keeps labels legible where they cross edges, without a boxy background.
+        'text-outline-color': '#ffffff',
+        'text-outline-width': 2,
+        'text-outline-opacity': 1,
       },
     },
     { selector: 'node.hovered, node:selected', style: { 'z-index': 10 } },
@@ -141,12 +172,16 @@ function stylesheet(sizes: number[], weights: number[]): StylesheetJson {
       selector: 'edge',
       style: {
         width: (e: EdgeSingular) => edgeWidth(e.data('weight') as number),
-        'line-color': THEME.blueBorder,
-        'curve-style': 'haystack',
-        opacity: 0.85,
+        // Heavier edges are also more opaque, so strong ties read first in a dense graph.
+        opacity: (e: EdgeSingular) => edgeOpacity(e.data('weight') as number),
+        'line-color': THEME.edge,
+        'curve-style': 'unbundled-bezier',
+        'control-point-distances': [12],
+        'control-point-weights': [0.5],
       },
     },
-    { selector: '.dim', style: { opacity: 0.12 } },
+    { selector: 'node.hovered, node.neighbour', style: { opacity: 1 } },
+    { selector: '.dim, .faded', style: { opacity: 0.08 } },
     { selector: 'node:selected', style: { 'border-color': THEME.bubbleActive, 'border-width': 3 } },
     { selector: 'edge:selected', style: { 'line-color': THEME.bubbleActive } },
   ]

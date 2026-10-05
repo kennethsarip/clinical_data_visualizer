@@ -140,11 +140,9 @@ function Notes({ notes }: { notes: string[] }) {
 
 function Panel({ title, tone, onRetry, children }: { title: string; tone?: 'error'; onRetry?: () => void; children: ReactNode }) {
   return (
-    <section className={`card status-card${tone ? ` status-${tone}` : ''}`} aria-labelledby="status-title">
-      <div className="card-header">
-        <h2 id="status-title">{title}</h2>
-      </div>
-      <div className="card-body">
+    <section className={`status${tone ? ` status-${tone}` : ''}`} aria-labelledby="status-title">
+      <h2 id="status-title">{title}</h2>
+      <div className="status-body">
         {children}
         {onRetry && (
           <button type="button" className="button-primary retry" onClick={onRetry}>

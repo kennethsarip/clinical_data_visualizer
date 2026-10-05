@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { labelledNodes, toCytoscapeElements } from './networkElements'
+import { ENTITY_COLORS, entityColor, labelledNodes, legendGroups, toCytoscapeElements } from './networkElements'
 import type { NetworkVisualization } from './types'
 
 const ENCODING = {
@@ -70,5 +70,26 @@ describe('labelledNodes', () => {
 
   it('labels every node in a small graph', () => {
     expect(labelledNodes([{ size: 1 }, { size: 2 }], 12)).toEqual(new Set([0, 1]))
+  })
+})
+
+describe('legendGroups', () => {
+  it('lists each entity type present once, drugs before sponsors before conditions', () => {
+    const groups = [{ group: 'condition' }, { group: 'drug' }, { group: 'condition' }, { group: 'sponsor' }]
+    expect(legendGroups(groups)).toEqual(['drug', 'sponsor', 'condition'])
+  })
+
+  it('keeps an unknown entity type, after the known ones', () => {
+    expect(legendGroups([{ group: 'site' }, { group: 'drug' }])).toEqual(['drug', 'site'])
+  })
+})
+
+describe('entityColor', () => {
+  it('gives drugs, sponsors and conditions each a different colour', () => {
+    expect(new Set(['drug', 'sponsor', 'condition'].map(entityColor)).size).toBe(3)
+  })
+
+  it('falls back to the drug colour for an unknown type', () => {
+    expect(entityColor('site')).toBe(ENTITY_COLORS.drug)
   })
 })

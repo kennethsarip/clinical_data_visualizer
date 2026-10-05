@@ -38,6 +38,13 @@ describe('ChartView', () => {
     expect(await ref.current!.toPNG()).toMatch(/^data:image\/png/)
   })
 
+  it('gives a network a legend for its entity colours and edge thickness', () => {
+    render(<ChartView visualization={example('network_graph')} highlighted={NONE} onSelect={() => {}} />)
+    const legend = screen.getByRole('list', { name: 'Legend' })
+    expect(legend).toHaveTextContent('Drug')
+    expect(legend).toHaveTextContent('Line thickness = shared trials')
+  })
+
   it('exports a network as PNG only', async () => {
     const ref = createRef<ChartHandle>()
     render(<ChartView ref={ref} visualization={example('network_graph')} highlighted={NONE} onSelect={() => {}} />)
