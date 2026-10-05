@@ -11,6 +11,7 @@ from app.ctgov import BURST, RATE_PER_SECOND, TIMEOUT_SECONDS, CtgovClient, Rate
 from app.migrate import apply_migrations
 from app.normalize import normalize_records
 from app.schemas import RetrievalFilters
+from app.vocab import COUNTRIES
 
 pytestmark = pytest.mark.live
 
@@ -49,3 +50,17 @@ def test_pembrolizumab_is_fetched_once_then_served_from_the_cache(db: psycopg.Co
     # Every live record must parse: a shape error here means the API changed (§6).
     batch = normalize_records(second.records)
     assert len(batch.trials) == second.fetched
+
+
+def test_countries_match_the_registry_country_list() -> None:
+    """vocab.COUNTRIES mirrors the API's LocationCountry values (§8.4); a new name fails here."""
+    response = httpx.get(
+        "https://clinicaltrials.gov/api/v2/stats/field/values",
+        params={"fields": "LocationCountry"},
+        timeout=TIMEOUT_SECONDS,
+    )
+    response.raise_for_status()
+    [field] = response.json()
+    names = {value["value"] for value in field["topValues"]}
+    assert field["uniqueValuesCount"] == len(names)  # the listing is complete, not a top slice
+    assert names == set(COUNTRIES)

@@ -3,9 +3,18 @@
 from datetime import datetime
 from typing import Annotated, Any, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, TypeAdapter, model_validator
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    TypeAdapter,
+    WithJsonSchema,
+    model_validator,
+)
 
-from app.vocab import Phase, Status
+from app.vocab import COUNTRIES, Phase, Status, canonical_country
 
 # Blank strings are rejected rather than read as "no filter": a client omits a field it doesn't use.
 # The cap keeps an arbitrary string out of the API URL; real drug, condition, sponsor and country
@@ -14,6 +23,13 @@ FILTER_TEXT_MAX_LENGTH = 200
 QUERY_MAX_LENGTH = 1000
 FilterText = Annotated[
     str, StringConstraints(strip_whitespace=True, min_length=1, max_length=FILTER_TEXT_MAX_LENGTH)
+]
+# A registry country name (vocab.COUNTRIES), matched ignoring case. The schema is the enum, so the
+# planner's strict schema cannot emit a variant and the OpenAPI types list every name.
+Country = Annotated[
+    str,
+    AfterValidator(canonical_country),
+    WithJsonSchema({"type": "string", "enum": list(COUNTRIES)}),
 ]
 
 
@@ -26,7 +42,7 @@ class _FilterFields(BaseModel):
     drug_name: FilterText | None = None
     condition: FilterText | None = None
     sponsor: FilterText | None = None
-    country: FilterText | None = None
+    country: Country | None = None
     trial_phase: Phase | None = None
     start_year: int | None = None
     end_year: int | None = None

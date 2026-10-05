@@ -358,7 +358,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 ### 8.4 ClinicalTrials.gov API facts (verified 2026-10-04, apiVersion 2.0.5)
 - Base URL `https://clinicaltrials.gov/api/v2`. `GET /studies` returns `{totalCount, studies, nextPageToken}`; `fields=` trims the payload.
 - Verified params: `query.intr`, `query.cond`, `query.spons`, `query.locn`, `filter.overallStatus`, and `filter.advanced` with `AREA[Phase]PHASE3` and `AREA[StartDate]RANGE[2015-01-01,MAX]`.
-- Country (verified 2026-10-05): `query.locn` is a text search over location fields, so "Japan" matches *China-Japan Friendship Hospital* in Beijing (breast cancer: 9 of 336 trials with no site in Japan) and "France" matches a Beirut hospital (diabetes: 4 of 1,062). `filter.advanced=AREA[LocationCountry]<name>` matches the country field: 327 and 1,058 trials, none off-country. It accepts variants ("Korea", "USA" and "Czech Republic" return the same counts as "South Korea", "United States" and "Czechia") and `(France OR Germany)`. `GET /stats/field/values?fields=LocationCountry` lists the 226 country names. Phase, status and start-date filters returned no off-filter trials.
+- Country (verified 2026-10-05): `query.locn` is a text search over location fields, so "Japan" matches *China-Japan Friendship Hospital* in Beijing (breast cancer: 9 of 336 trials with no site in Japan) and "France" matches a Beirut hospital (diabetes: 4 of 1,062). `filter.advanced=AREA[LocationCountry]<name>` matches the country field: 327 and 1,058 trials, none off-country. It accepts variants ("Korea", "USA" and "Czech Republic" return the same counts as "South Korea", "United States" and "Czechia") and `(France OR Germany)`. `GET /stats/field/values?fields=LocationCountry` lists the 226 country names, which records use verbatim; `vocab.COUNTRIES` mirrors them (live parity test) and the request and plan schemas accept only these (decided 2026-10-05). Phase, status and start-date filters returned no off-filter trials.
 - Enums (`GET /studies/enums`): Phase, Status, InterventionType, AgencyClass (sponsor class) and StudyType. `app/vocab.py` mirrors them and is the only place their values and display labels (e.g. `PHASE1` -> "Phase 1") are defined.
 - Rate limits (measured 2026-10-05; none published, no rate-limit headers): ~10 requests in a burst, then 429 (an HTML page, no `Retry-After`); 1.0 request/s for 50 requests drew no 429, 1.5/s drew 3 in 40; a 429 cleared after ~8 s. A 1,000-trial page takes ~0.67 s (100-trial pages cost ~1.8 s per 1,000 trials).
 
@@ -503,7 +503,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4, done) makes results visible for the demo.
 
-**Next move:** Phase 6 step 2 (canonical countries).
+**Next move:** Phase 6 step 3 (constraint accounting; contract change, decide first).
 
 Phases 6-9 were planned with the user on 2026-10-05 (reasons in `BUILD_HISTORY.md` → Decisions): fix query understanding and retrieval first, because a citation cannot rescue a trial that should never have been retrieved; then verify every step and show the result to the user; then the network showcase; then submission.
 
@@ -515,7 +515,6 @@ Phases 6-9 were planned with the user on 2026-10-05 (reasons in `BUILD_HISTORY.m
 
 ### Phase 6: Query understanding and retrieval
 Goal: every constraint in the question is either applied exactly or disclosed as not applied, and every charted trial meets the filters applied. Evidence: the country filter is a text search (§8.4), so "breast cancer trials in Japan" charts 9 trials sited only in China, and every §7.6 check passes.
-2. **Canonical countries.** `country` becomes one of ClinicalTrials.gov's 226 country names (§8.4), mirrored in `vocab.py` with a live parity test and enforced by the plan schema, so "Korea", "USA" or "한국" map to one name and the §7.3 verbatim test discloses the mapping as inferred.
 3. **Constraint accounting.** The plan lists every constraint in the question, quoted verbatim, as applied or not applied; Python checks that each quote is a substring of `query`. Two values for one filter -> `clarification_needed` naming both; a constraint no filter expresses (a city, an age group) -> `clarification_needed` with a suggested rephrase, written by the same plan call, that the frontend offers as one click. Contract change (SCHEMAS.md §4-5). The LLM can still leave a constraint out; the step-0 questions measure that.
 4. **Retrieval conformance, then the fix.** A check that every record meets each filter sent (phase, status, start-year range, country) and that every filter in `meta` traces to a sent param. Write it red-first against the Japan question, then send country as `filter.advanced=AREA[LocationCountry]<name>`. Off-filter trials are dropped and counted in `meta.excluded`; over 5% of a batch -> `degraded`, since the param mapping is probably wrong. Remove the §7.3 known-gap note.
 5. **Rerun** the eval and save it next to the pre-fix run.

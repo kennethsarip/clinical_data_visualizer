@@ -15,7 +15,7 @@ The renderer contract: a frontend engineer should be able to implement a rendere
 | condition | string | no | 1-200 chars after trimming whitespace | `query.cond` |
 | trial_phase | Phase enum | no | One of NA, EARLY_PHASE1, PHASE1, PHASE2, PHASE3, PHASE4 | `filter.advanced=AREA[Phase]...` |
 | sponsor | string | no | 1-200 chars after trimming whitespace | `query.spons` |
-| country | string | no | 1-200 chars after trimming whitespace | `query.locn` |
+| country | string | no | One of the registry's 226 country names (`app/vocab.py` `COUNTRIES`, the OpenAPI enum), matched ignoring case and stored in the registry spelling; a variant such as `Korea` or `USA` is rejected | `query.locn` |
 | start_year | int | no | `start_year <= end_year` | `filter.advanced=AREA[StartDate]RANGE[...]` |
 | end_year | int | no | `start_year <= end_year` | same |
 

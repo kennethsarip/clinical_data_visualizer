@@ -10,6 +10,7 @@ from typing import Any
 
 import httpx2
 import pytest
+from pydantic import ValidationError
 
 import app.aggregators  # noqa: F401  (registers every aggregator)
 from app.aggregators.registry import REGISTRY, Dimension, Intent
@@ -24,7 +25,7 @@ from app.planner import (
     plan_schema,
 )
 from app.schemas import LLMPlan, RetrievalFilters, VisualizeRequest
-from app.vocab import Phase, Status
+from app.vocab import COUNTRIES, Phase, Status
 from eval.questions import EvalQuestion, load_questions
 from tests.llm_fakes import fake_llm, json_reply, replies, text_reply
 
@@ -79,6 +80,11 @@ def test_plan_schema_is_strict() -> None:
     schema = plan_schema()
     assert schema["additionalProperties"] is False
     assert set(schema["required"]) == {"analysis", "filters", "cohorts", "unsupported_reason"}
+
+
+def test_plan_schema_offers_only_registry_country_names() -> None:
+    country = plan_schema()["$defs"]["RetrievalFilters"]["properties"]["country"]
+    assert {"type": "string", "enum": list(COUNTRIES)} in country["anyOf"]
 
 
 def test_prompt_describes_every_registered_key_and_gives_today() -> None:
@@ -175,6 +181,23 @@ def test_non_verbatim_value_is_inferred_and_disclosed() -> None:
     assert plan.stated == {"condition": "lung cancer"}
     assert plan.inferred == {"start_year": 2021}
     assert len(plan.assumptions) == 1 and "2021" in plan.assumptions[0]
+
+
+def test_a_country_variant_mapped_to_its_registry_name_is_inferred() -> None:
+    plan = ok(
+        build(
+            "Lung cancer trials in Korea per year",
+            reply("time_trend.start_year", condition="lung cancer", country="South Korea"),
+        )
+    )
+    assert plan.stated == {"condition": "lung cancer"}
+    assert plan.inferred == {"country": "South Korea"}
+    assert "South Korea" in plan.assumptions[0]
+
+
+def test_a_country_outside_the_registry_is_an_output_error() -> None:
+    with pytest.raises(ValidationError, match="not a ClinicalTrials.gov country name"):
+        build("Lung cancer trials in Korea", reply(condition="lung cancer", country="Korea"))
 
 
 def test_stated_match_ignores_case() -> None:

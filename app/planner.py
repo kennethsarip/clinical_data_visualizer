@@ -145,7 +145,10 @@ expand or translate a name, and never add a value the question does not imply. L
 when the question does not mention it. Always copy values written in the question, even when a
 structured field listed with it sets the same filter (Python resolves conflicts); never copy a value
 that appears only in the structured fields.
-- drug_name, condition, sponsor, country: the names as written.
+- drug_name, condition, sponsor: the names as written.
+- country: the one exception to copying. Choose the registry's name for the country the question
+  names (Korea -> South Korea, USA -> United States, Turkey -> Turkey (Türkiye)); Python discloses
+  the mapping. Null when the question names no country; a city or region is not a country.
 - trial_phase: one phase when the question names exactly one (Phase 3 -> PHASE3).
 - overall_status: one status when the question names exactly one (recruiting -> RECRUITING).
 - start_year, end_year: trial start years. "Since 2015" or "the last five years" sets only

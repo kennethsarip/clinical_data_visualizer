@@ -1,10 +1,10 @@
 from typing import Any
 
 import pytest
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
-from app.schemas import FILTER_TEXT_MAX_LENGTH, RetrievalFilters
-from app.vocab import Phase, Status
+from app.schemas import FILTER_TEXT_MAX_LENGTH, RetrievalFilters, VisualizeRequest
+from app.vocab import COUNTRIES, Phase, Status
 
 # --- year range (CLAUDE.md §7.6: contradictory inputs are rejected) ---
 
@@ -62,7 +62,8 @@ def test_blank_text_filters_are_rejected(field: str, value: str) -> None:
         RetrievalFilters.model_validate({field: value})
 
 
-@pytest.mark.parametrize("field", ["drug_name", "condition", "sponsor", "country"])
+# country is a registry name instead (below), so no length cap applies to it.
+@pytest.mark.parametrize("field", ["drug_name", "condition", "sponsor"])
 def test_text_filters_are_capped_at_200_characters(field: str) -> None:
     assert FILTER_TEXT_MAX_LENGTH == 200
     RetrievalFilters.model_validate({field: "x" * 200})
@@ -87,3 +88,35 @@ def test_filters_are_immutable() -> None:
     filters = RetrievalFilters(drug_name="Pembrolizumab")
     with pytest.raises(ValidationError):
         filters.drug_name = "Nivolumab"  # type: ignore[misc]
+
+
+# --- country is a registry name (CLAUDE.md §14 Phase 6 step 2) ---
+
+
+# A request also needs its query; the plan's filters do not.
+COUNTRY_MODELS: list[tuple[type[BaseModel], dict[str, str]]] = [
+    (RetrievalFilters, {}),
+    (VisualizeRequest, {"query": "q"}),
+]
+
+
+@pytest.mark.parametrize("model,extra", COUNTRY_MODELS)
+def test_country_is_stored_as_its_registry_name(
+    model: type[BaseModel], extra: dict[str, str]
+) -> None:
+    parsed = model.model_validate({"country": "south korea", **extra})
+    assert parsed.model_dump()["country"] == "South Korea"
+
+
+@pytest.mark.parametrize("model,extra", COUNTRY_MODELS)
+def test_a_country_outside_the_registry_is_rejected(
+    model: type[BaseModel], extra: dict[str, str]
+) -> None:
+    with pytest.raises(ValidationError, match="not a ClinicalTrials.gov country name"):
+        model.model_validate({"country": "Korea", **extra})
+
+
+def test_country_schema_lists_every_registry_name() -> None:
+    schema = VisualizeRequest.model_json_schema()["properties"]["country"]
+    enums = [option["enum"] for option in schema["anyOf"] if "enum" in option]
+    assert enums == [list(COUNTRIES)]
