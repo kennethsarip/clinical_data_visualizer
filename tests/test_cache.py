@@ -1,11 +1,14 @@
-from collections.abc import Iterator
+import threading
+import time
+from collections.abc import Callable, Iterator
 from typing import Any
 
+import httpx
 import psycopg
 import pytest
 
 from app.cache import TrialCache
-from app.ctgov import UpstreamError, params_key
+from app.ctgov import FetchResult, Page, UpstreamError, params_key
 from app.migrate import apply_migrations
 from app.schemas import RetrievalFilters
 from tests.ctgov_fakes import fake_client, page, paged, record
@@ -179,3 +182,116 @@ def test_count_goes_to_the_api_and_writes_nothing(conn: psycopg.Connection) -> N
     assert cache.count(PEMBRO) == 57
     assert len(requests) == 1
     assert _count(conn, "api_pages") == 0 and _count(conn, "trials") == 0
+
+
+# --- several cohorts at once (CLAUDE.md §7.3; Phase 5.3 latency) ---
+
+NIVO = RetrievalFilters(drug_name="nivolumab")
+WAIT = 5.0  # seconds; a test that would hang fails with an assertion instead
+
+
+def _by_drug(
+    pages: dict[str, dict[str, Any]], gates: dict[str, threading.Event]
+) -> Callable[[httpx.Request], httpx.Response]:
+    """Serves one page per drug; a drug's request first waits for its gate, if it has one."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        drug = request.url.params["query.intr"]
+        if drug in gates and not gates[drug].wait(WAIT):
+            raise AssertionError(f"{drug} was never released")
+        return httpx.Response(200, json=pages[drug])
+
+    return handler
+
+
+class ThreadRecordingCache(TrialCache):
+    """Records which thread touches Postgres: a psycopg connection must stay on one thread."""
+
+    def __init__(self, *args: Any) -> None:
+        super().__init__(*args)
+        self.db_threads: set[int] = set()
+
+    def _read_pages(self, key: str) -> list[Page]:
+        self.db_threads.add(threading.get_ident())
+        return super()._read_pages(key)
+
+    def _write(self, result: FetchResult) -> None:
+        self.db_threads.add(threading.get_ident())
+        super()._write(result)
+
+
+def test_cohorts_download_concurrently_and_return_in_cohort_order(
+    conn: psycopg.Connection,
+) -> None:
+    # Pembrolizumab's page is held until nivolumab's is served: one at a time, this deadlocks.
+    nivo_served = threading.Event()
+    pages = {"pembrolizumab": page([1], None, total=1), "nivolumab": page([2], None, total=1)}
+    handler = _by_drug(pages, {"pembrolizumab": nivo_served})
+
+    def signalling(request: httpx.Request) -> httpx.Response:
+        response = handler(request)
+        if request.url.params["query.intr"] == "nivolumab":
+            nivo_served.set()
+        return response
+
+    api, _, _ = fake_client(signalling)
+    cache = ThreadRecordingCache(conn, api, 168)
+    pembro, nivo = cache.fetch_many([PEMBRO, NIVO])
+    assert [r.records for r in (pembro, nivo)] == [[record(1)], [record(2)]]
+    assert cache.db_threads == {threading.get_ident()}
+    assert _count(conn, "trials") == 2
+
+
+def test_only_the_cohorts_not_cached_are_downloaded(conn: psycopg.Connection) -> None:
+    pages = {"pembrolizumab": page([1], None, total=1), "nivolumab": page([2], None, total=1)}
+    api, requests, _ = fake_client(_by_drug(pages, {}))
+    cache = TrialCache(conn, api, 168)
+    cache.fetch(PEMBRO)
+    results = cache.fetch_many([PEMBRO, NIVO])
+    assert [r.records for r in results] == [[record(1)], [record(2)]]
+    assert [r.url.params["query.intr"] for r in requests] == ["pembrolizumab", "nivolumab"]
+
+
+@pytest.mark.parametrize("failing", ["pembrolizumab", "nivolumab"])
+def test_one_cohort_failing_fails_at_once_without_waiting_for_the_others(
+    conn: psycopg.Connection, failing: str
+) -> None:
+    release = threading.Event()
+    before = set(threading.enumerate())
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.params["query.intr"] != failing:
+            release.wait(WAIT)
+            return httpx.Response(200, json=page([2], None, total=1))
+        return httpx.Response(400, text="bad param")
+
+    api, _, _ = fake_client(handler)
+    cache = TrialCache(conn, api, 168)
+    start = time.monotonic()
+    with pytest.raises(UpstreamError, match="HTTP 400"):
+        cache.fetch_many([PEMBRO, NIVO])
+    assert time.monotonic() - start < WAIT / 2  # did not wait on the stalled cohort
+    release.set()
+    _assert_threads_return_to(before)
+    assert _count(conn, "api_pages") == 0  # the stalled cohort's late result is not written
+
+
+def test_one_cohort_uses_no_extra_thread(conn: psycopg.Connection) -> None:
+    threads: list[int] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        threads.append(threading.get_ident())
+        return httpx.Response(200, json=page([1], None, total=1))
+
+    api, _, _ = fake_client(handler)
+    TrialCache(conn, api, 168).fetch_many([PEMBRO])
+    assert threads == [threading.get_ident()]
+
+
+def _assert_threads_return_to(before: set[threading.Thread]) -> None:
+    """Waits for the threads started since `before`: a global count would also see threads
+    another test left finishing in the background, and flake."""
+    deadline = time.monotonic() + WAIT
+    while (started := set(threading.enumerate()) - before) and time.monotonic() < deadline:
+        time.sleep(0.01)
+    assert not started, "a worker thread outlived its request"

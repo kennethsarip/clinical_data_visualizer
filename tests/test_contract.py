@@ -80,11 +80,17 @@ def test_every_status_has_an_example() -> None:
 
 
 def _ok_example() -> dict[str, Any]:
-    return next(e for e in EXAMPLES if e.get("status") == "ok")
+    """A fresh copy each call: tests edit it, and EXAMPLES is shared across tests."""
+    return _copy(next(e for e in EXAMPLES if e.get("status") == "ok"))
 
 
 def _network_example() -> dict[str, Any]:
-    return next(e for e in EXAMPLES if e.get("type") == "network_graph")
+    return _copy(next(e for e in EXAMPLES if e.get("type") == "network_graph"))
+
+
+def _copy(example: dict[str, Any]) -> dict[str, Any]:
+    copied: dict[str, Any] = json.loads(json.dumps(example))
+    return copied
 
 
 def test_examples_round_trip_unchanged() -> None:

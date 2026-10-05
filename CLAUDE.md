@@ -4,9 +4,9 @@
 >
 > **The one thing to understand first:** the LLM never produces a number, count, date, NCT ID, excerpt or data row. It does exactly two things: plan the query and write prose (title, notes). Retrieval, aggregation, viz type selection, citations and checks are deterministic Python, so every row traces back to cached API records by NCT ID (§7.2).
 >
-> **Status:** Phases 1-4 are done (Phase 3 tagged `phase-3`; Phase 4 on PR #5, awaiting merge): `POST /api/visualize` answers end to end, live 29/29 on the eval questions, and the frontend renders every viz type with clickable citations. Phase 5 (eval) is next (§14). The repo is `github.com/kennethsarip/cheiron_task` (private, §12). Runs locally only; no deploy is planned (§13.4).
+> **Status:** Phases 1-4 are done (each merged and tagged `phase-N`; Phase 4 on 2026-10-05): `POST /api/visualize` answers end to end, live 29/29 on the eval questions, and the frontend renders every viz type with clickable citations. Phase 5 (eval) is next (§14). The repo is `github.com/kennethsarip/cheiron_task` (private, §12). Runs locally only; no deploy is planned (§13.4).
 >
-> **Definition of done:** `uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest`, plus `cd frontend && npm run lint && npm run typecheck && npm test`, all green. CI (`.github/workflows/ci.yml`) runs exactly these, so local green means CI green. `main` stays runnable.
+> **Definition of done:** `uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest`, plus `cd frontend && npm run lint && npm run typecheck && npm test && npm run check:types`, all green (`check:types` diffs against git, so commit regenerated types first). CI (`.github/workflows/ci.yml`) runs exactly these, so local green means CI green. `main` stays runnable.
 >
 > **Read before coding:** Objectives, §6 Data model, §7 How things work, §11 Don't do, §14 Build plan.
 
@@ -114,7 +114,7 @@ Happy path (LLM steps marked):
 - Explicit statuses and handling of the edge cases in §7.8.
 - A Vite + React + TypeScript frontend with citation and `meta` panels (`BUILD_HISTORY.md` Phase 4).
 - An eval set of ~20-25 questions with a baseline run and an after run, both kept (§9).
-- Bonuses, shown off in the README (§14 Phase 6): deep citations, condition-anchored networks, a 2-3 min demo video.
+- Bonuses, built and shown off in the README (§14 Phases 7-9): deep citations with verification at every step, condition-anchored networks, a 2-3 min demo video.
 - The submission zip: code; the README (how to run, schemas, design decisions and tradeoffs, limitations and what more time would improve, AI tools used, how correctness was validated, and what was designed deliberately versus generated and adapted); and 3-5 example runs with the actual JSON outputs.
 
 **Out of scope**
@@ -132,7 +132,7 @@ Happy path (LLM steps marked):
 | API framework | FastAPI | Request and response models use Pydantic, FastAPI's model layer |
 | Database | Postgres, run with Docker Compose | Response cache only (§6) |
 | Data source | ClinicalTrials.gov Data API v2 | The authoritative source. No API key needed (verified 2026-10-04). Facts in §8.4 |
-| LLM | OpenAI `gpt-5.4-mini`, medium reasoning effort | The company supplied the key and an allowed-model list. Planning is enum classification, so a current mini model gives accuracy at low latency. Effort raised from `low` to `medium` after live eval runs: low misrouted 3/15 enrollment questions, medium 0/15 and 87/87 on the full set, for ~0.2-0.6 s more (user decision, 2026-10-04; `OPENAI_REASONING_EFFORT`). No model benchmarking (user decision, 2026-10-04). Set in `OPENAI_MODEL`. Used only for planning and prose (§7.2) |
+| LLM | OpenAI `gpt-5.4-mini`, medium reasoning effort | The company supplied the key and an allowed-model list. Planning is enum classification, so a current mini model gives accuracy at low latency. Effort raised from `low` to `medium` after live eval runs: low misrouted 3/15 enrollment questions, medium 0/15 and 87/87 on the full set, for ~0.2-0.6 s more (user decision, 2026-10-04; `OPENAI_REASONING_EFFORT`). No model benchmarking (user decision, 2026-10-04). The title call runs at `none` (`OPENAI_PROSE_REASONING_EFFORT`): 1.06 s median vs 2.0 s at medium, titles equivalent (six eval questions, 2026-10-05). Set in `OPENAI_MODEL`. Used only for planning and prose (§7.2) |
 | Orchestration | Hand-rolled Python | No agent framework (§13.3) |
 | Vector DB | None | Rejected (§13.3) |
 | HTTP client | httpx (sync) | FastAPI runs sync routes in a threadpool and requests are sequential, so async adds complexity without need; `MockTransport` serves test fixtures without a mocking dependency. The OpenAI SDK (3.x) brings its own fork, `httpx2`, so the LLM fakes use `httpx2.MockTransport` (a declared dev dependency) |
@@ -179,7 +179,7 @@ app/
   pipeline.py        # §1 steps, repair-once, status selection, error -> status mapping
 migrations/          # SINGLE SOURCE of DB schema truth
 tests/               # unit + contract tests; small synthetic fixtures (§9)
-eval/                # eval questions, runner, baseline + after results (§9)
+eval/                # questions.json + questions.py (typed loader); runner.py (scoring, metrics); run.py (CLI); results/ (baseline + after, §9)
 examples/            # 3-5 real request/response JSON pairs from the running system
 docker-compose.yml   # local Postgres
 frontend/            # Vite + React + TS app; renders specs from SCHEMAS.md. src/api/: generated types.ts + client.ts (the only backend caller)
@@ -201,7 +201,7 @@ docs/                # GITIGNORED, local only: project_details/ (assignment scre
 | Migrate | `uv run --env-file .env python -m app.migrate` (idempotent; needs only `DATABASE_URL`) |
 | Frontend types | `cd frontend && npm run gen:types` after any `schemas.py` or route change (rewrites `frontend/openapi.json` and `src/api/types.ts`); `npm run check:types` fails on drift (CI) |
 | Frontend | `cd frontend && npm install && npm run dev` (http://localhost:5173; proxies `/api` to port 8000). Checks: `npm run lint && npm run typecheck && npm test` |
-| Eval run | TBD (Phase 5) |
+| Eval run | `uv run --env-file .env python -m eval.run eval/results/<name>.json [--only ID ...]` (live; needs the migrated Compose Postgres; prints a summary) |
 
 API probe: `curl -s 'https://clinicaltrials.gov/api/v2/studies?query.intr=pembrolizumab&pageSize=1&countTotal=true&fields=NCTId'`
 
@@ -268,17 +268,19 @@ The steps are in §1. Only steps 2 and 7 touch the LLM; everything else is deter
 
 Why: in a visualization agent, the hallucination-prone step is letting the model emit data. Keeping the model in a schema-validated planning role makes numeric hallucination structurally impossible, rather than something to detect afterwards. The viz type is Python too (decided 2026-10-04): each row shape maps to exactly one type, so an LLM pick would add a failure mode and no choice.
 
-**Calls** (decided 2026-10-04): two per request. (1) The plan, via OpenAI structured outputs with a JSON schema generated from the registry, so only registered (intent, dimension) pairs can be chosen. (2) Title and notes, after aggregation; the model sees the plan, row shape, columns and filters, never row values. A title containing a number that is not in the filters fails a check. If the plan fails validation, retry once with the validation error; if it fails again, return `degraded` (`errors[].check = "plan"`). If the title call fails or its title fails the `title` check, the response stays `ok` with `viz.default_title`, no LLM notes and a note saying so: the data is already verified, so prose never costs the user the chart.
+**Calls** (decided 2026-10-04): two per request. (1) The plan, via OpenAI structured outputs with a JSON schema generated from the registry, so only registered (intent, dimension) pairs can be chosen. (2) Title and notes; the model sees the plan, row shape, columns and filters, never row values. Since that input is all in the plan, the call runs while the trials are fetched (decided 2026-10-05): only an `ok` answer waits for it, and every other outcome returns at once while the unread call finishes in the background. A title containing a number that is not in the filters fails a check. If the plan fails validation, retry once with the validation error; if it fails again, return `degraded` (`errors[].check = "plan"`). If the title call fails or its title fails the `title` check, the response stays `ok` with `viz.default_title`, no LLM notes and a note saying so: the data is already verified, so prose never costs the user the chart.
 
 **Plan shape** (decided 2026-10-04): `analysis`, a single enum of registered keys (`"distribution.phase"`, `"network.drug_drug"`, ...) generated from `REGISTRY.registered()`, so an unregistered pair is unrepresentable rather than retried; `filters` (the `RetrievalFilters` fields, values only); `cohorts` (comparison only, else null): 2-4 entries, each a `label` plus exactly one entity override (drug, condition or sponsor) on the shared filters, one fetch per cohort, anything else -> `clarification_needed` (named cohorts count as anchors, so too many cohorts gives `missing: []`); `unsupported_reason`, set when no analysis fits (-> `clarification_needed` with the reason). The anchor rule itself is Python, so the LLM reports no missing anchor (changed from `missing_anchor` in Phase 3.2). The LLM copies filter values from the query text only; request fields are merged in by Python. The LLM never labels a filter stated or inferred (§7.3). Code: `LLMPlan` in `schemas.py`; `planner.build_plan` holds every rule and needs no LLM.
 
 ### 7.3 Retrieval
 - API params come only from the validated plan, never from raw LLM text.
 - `query.*` params are searches, not exact filters, and the API expands drug synonyms. `query.intr` returns 2,968 trials for pembrolizumab, Keytruda and MK-3475 alike. Consequences: a matched record may not contain the user's wording, so excerpts quote the record's own values (§7.5); network nodes need name normalization (§6); and synonym resolution has a lower priority (§13.4).
-- Unambiguous filters (dates, status, phase, country) are applied hard. A filter inferred from ambiguous wording is disclosed as an assumption, because a wrong silent filter removes the correct answer. A filter is **stated** if and only if its value comes from a request field or appears verbatim in `query`; otherwise it is **inferred** (decided 2026-10-04). Python applies this test to the plan's filter values, case-insensitively, and writes the assumption for each inferred filter. When a request field and the query name different values for one filter, Python overwrites the plan's value with the field's and `meta.notes` says so (decided 2026-10-04).
-- Paginate with `nextPageToken` at `pageSize` 1000 (the API clamps larger values to 1000) and stop at `FETCH_CAP` (default 2000, two pages). Send `countTotal=true` so `meta` can report "fetched N of total M" when capped.
+- Unambiguous filters (dates, status, phase, country) are applied hard. **Known gap (found 2026-10-05):** country is still sent as `query.locn`, a text search over location fields, so it is not yet exact (§8.4); Phase 6 step 4 fixes it behind a conformance check. A filter inferred from ambiguous wording is disclosed as an assumption, because a wrong silent filter removes the correct answer. A filter is **stated** if and only if its value comes from a request field or appears verbatim in `query`; otherwise it is **inferred** (decided 2026-10-04). Python applies this test to the plan's filter values, case-insensitively, and writes the assumption for each inferred filter. When a request field and the query name different values for one filter, Python overwrites the plan's value with the field's and `meta.notes` says so (decided 2026-10-04).
+- Paginate with `nextPageToken` at `pageSize` 1000 (the API clamps larger values to 1000) and stop at `FETCH_CAP` (default 10000, ten pages; raised from 2000 because at 2000, 19/23 charted eval answers were capped samples with understated counts, `BUILD_HISTORY.md` 5.3). A capped chart says so on its count axis and in a caption. Send `countTotal=true` so `meta` can report "fetched N of total M" when capped.
 - Cache by API params (§6).
-- Upstream errors: 30 s timeout; retry twice with backoff on 5xx and 429, then raise a typed `UpstreamError` (mapped to 502, §7.7).
+- Cohorts download concurrently (pages within one search cannot: each follows the previous page's token); Postgres stays on the request thread.
+- Rate limit (§8.4): every request takes a slot from one token bucket per process (burst 8, then 1 request/s), so concurrent searches queue instead of tripping the limit.
+- Upstream errors: 30 s timeout; retry twice on 5xx (1 s, 2 s) and 429 (8 s, the measured recovery), honouring a readable `Retry-After` and failing at once if it asks for over 10 s; then raise a typed `UpstreamError` (mapped to 502, §7.7).
 
 ### 7.4 Aggregation
 - A registry maps (intent, dimension) to an aggregator. Route handlers never branch on question type, so a new question class means a new registered aggregator plus its tests.
@@ -356,8 +358,9 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 ### 8.4 ClinicalTrials.gov API facts (verified 2026-10-04, apiVersion 2.0.5)
 - Base URL `https://clinicaltrials.gov/api/v2`. `GET /studies` returns `{totalCount, studies, nextPageToken}`; `fields=` trims the payload.
 - Verified params: `query.intr`, `query.cond`, `query.spons`, `query.locn`, `filter.overallStatus`, and `filter.advanced` with `AREA[Phase]PHASE3` and `AREA[StartDate]RANGE[2015-01-01,MAX]`.
+- Country (verified 2026-10-05): `query.locn` is a text search over location fields, so "Japan" matches *China-Japan Friendship Hospital* in Beijing (breast cancer: 9 of 336 trials with no site in Japan) and "France" matches a Beirut hospital (diabetes: 4 of 1,062). `filter.advanced=AREA[LocationCountry]<name>` matches the country field: 327 and 1,058 trials, none off-country. It accepts variants ("Korea", "USA" and "Czech Republic" return the same counts as "South Korea", "United States" and "Czechia") and `(France OR Germany)`. `GET /stats/field/values?fields=LocationCountry` lists the 226 country names. Phase, status and start-date filters returned no off-filter trials.
 - Enums (`GET /studies/enums`): Phase, Status, InterventionType, AgencyClass (sponsor class) and StudyType. `app/vocab.py` mirrors them and is the only place their values and display labels (e.g. `PHASE1` -> "Phase 1") are defined.
-- Rate limits: not verified.
+- Rate limits (measured 2026-10-05; none published, no rate-limit headers): ~10 requests in a burst, then 429 (an HTML page, no `Retry-After`); 1.0 request/s for 50 requests drew no 429, 1.5/s drew 3 in 40; a 429 cleared after ~8 s. A 1,000-trial page takes ~0.67 s (100-trial pages cost ~1.8 s per 1,000 trials).
 
 ### 8.5 Formulas
 - A row's `trial_count` is the number of distinct NCT IDs in its provenance set: `trial_count == len(nct_ids)`.
@@ -381,7 +384,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 | Live pipeline | `tests/test_live_pipeline.py` (`-m live`, Compose Postgres): every plannable eval question end to end (real LLM, API and cache) against its expected status, analysis, viz type, not-found names and cap |
 | Live LLM | `tests/test_live_llm.py` (`-m live`): OpenAI accepts the strict schema `llm.strict_json_schema` generates and the reply validates. `tests/test_live_planner.py`: the real planner against every eval expectation, one test per question. `tests/test_live_prose.py`: an LLM title without fallback for every `ok` eval question |
 | Live core | `tests/test_live_core.py` (`-m live`): every registered aggregator plus citations on real records; checks provenance, retrieved IDs, excerpts, §8.5 reconciliation and network edges. Extended by each later step |
-| Eval | `eval/questions.json` (30 questions, loaded by `tests/eval_questions.py`, coherence-tested by `tests/test_eval_questions.py`): every §1 class plus ambiguous input, a zero-result combination, a nonexistent entity, a contradictory date range, multi-phase or missing-field records, and a very broad condition. For each question, record the intent, viz type, record count, check pass/fail, latency and failure mode |
+| Eval | `eval/questions.json` (30 questions, loaded by `eval/questions.py`, coherence-tested by `tests/test_eval_questions.py`): every §1 class plus ambiguous input, a zero-result combination, a nonexistent entity, a contradictory date range, multi-phase or missing-field records, and a very broad condition. For each question, record the intent, viz type, record count, check pass/fail, latency and failure mode |
 
 **Eval protocol:** run the baseline, fix the largest failure class, rerun, and keep both result sets in `eval/`.
 
@@ -434,7 +437,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 - Don't add an agent framework, embeddings, vector search or rerankers (§13.3).
 - Don't branch on question type in route handlers; register an aggregator (§7.4).
 - Don't substitute a similar entity or NCT ID for one that wasn't found (§7.8, §8.2).
-- Don't silently widen a search, apply an inferred filter or truncate results (§7.3, §7.8).
+- Don't silently widen a search, apply an inferred filter or truncate results (§7.3, §7.8). A capped chart says so on its count axis and in a caption.
 - Don't drop records with missing or multi-valued fields without a documented rule and a count in `meta` (§6, §7.4).
 - Don't re-query the API to repair a spec; a repair reuses the same rows (§7.7).
 - Don't build synonym resolution, multi-agent or iterative retrieval without a logged eval failure that justifies it (§13.4).
@@ -479,25 +482,30 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 ### 13.4 Deferred
 - Synonym resolution of inputs. Trigger: an eval run logs a zero-result query that a synonym would have fixed. The API already expands drug synonyms (§7.3).
-- Upstream hardening: honoring `Retry-After` on 429 and retrying timeouts. Trigger: a logged 429 or timeout in an eval or example run (rate limits are unverified, §8.4). Observed 2026-10-04: two 429s in a Phase 2 live sweep (~22 requests in ~20 s), both absorbed by the existing retries.
+- Retrying timeouts. Trigger: a logged timeout in an eval or example run. (The 429 half of this item shipped in Phase 5.3: rate limiting, the 8 s recovery and `Retry-After`, §7.3.)
 - Multi-value phase and status filters (e.g. "Phase 2 or 3"). Trigger: an eval question that needs one; the API syntax is unverified.
-- Brand <-> generic and code-name merging of network nodes (Keytruda, MK-3475 -> pembrolizumab). Trigger: an eval network splits one drug across nodes in a way the §6 name rules miss.
-- Investigator and site networks (the assignment lists both entities). Trigger: every Phase 2-6 "Done when" passes with time left. First verify `overallOfficials[].name` and `locations[].facility` on the live API; site names are messy free text.
+- Brand <-> generic and code-name merging of network nodes (Keytruda, MK-3475 -> pembrolizumab). Trigger: an eval network splits one drug across nodes in a way the §6 name rules miss. **Trigger met 2026-10-05** (Phase 5.4): the Novartis condition-drug network shows RAD001 and everolimus, one drug, as two nodes.
+- Investigator and site networks (the assignment lists both entities). Trigger: every Phase 2-8 "Done when" passes with time left. First verify `overallOfficials[].name` and `locations[].facility` on the live API; site names are messy free text.
 - A record with no `nctId`: `normalize` sets it aside as unreadable (up to 5%), but `TrialCache._write` raises `UpstreamError` first (a Phase 1 test pins this), so one such record fails the request with 502. Never seen in 6,000 live records. Trigger: a logged occurrence; then decide which rule wins.
+- Region filters ("Europe", "EU5", "APAC") as one multi-country filter through a Python region table (not chosen 2026-10-05). Trigger: an eval question or user request names a region. `AREA[LocationCountry](A OR B)` is verified (§8.4).
+- Non-English questions (not chosen 2026-10-05): entity names translated to English for the API and disclosed as inferred, prose in the question's language, excerpts kept verbatim. Trigger: an eval question or user request in another language.
+- Community detection for network node colour (not chosen 2026-10-05). Trigger: the Phase 8 showcase network renders as an undifferentiated hairball. Path algorithms (Dijkstra) stay out: no question asks for a path, and co-occurrence weights measure closeness, not distance.
 - Deployed endpoint (optional bonus, not chosen 2026-10-04; the demo video covers it). Monitoring, backups and a runbook wait until a deploy exists; the secret rules in §11 apply now.
 
 ### 13.5 Decided by assumption
 | Assumption | Falsified if |
 |---|---|
-| The API needs no key and tolerates our request rate | Responses come back 401, 403 or 429 |
+| The API needs no key and tolerates our paced request rate (§7.3) | Responses come back 401 or 403, or 429s fail eval runs despite the pacing. Checked 2026-10-05: unpaced, two concurrent cohorts failed a run with three 429s; paced, 30/30 cold with one 429 absorbed |
 | Listing "vector databases" in the stack does not require using one; a documented rejection shows judgment | The assignment or interviewer says one is required |
-| A capped sample with a disclosed total is useful for broad queries | Eval shows the sample's distribution differs materially from per-bucket totals |
+| A capped sample with a disclosed total is useful for broad queries | Eval shows the sample's distribution differs materially from per-bucket totals. Checked 2026-10-05 on two capped time trends: shares within 0.9 pp (holds); absolute counts understated (`BUILD_HISTORY.md` 5.3) |
 
 ## 14. Build plan (what is left to build)
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4, done) makes results visible for the demo.
 
-**Next move:** merge PR #5 and tag `phase-4`, then Phase 5 step 2 (eval runner).
+**Next move:** Phase 5 "Done when" (README citations wait for Phase 6/9), then merge PR #6 and tag `phase-5`, then Phase 6 step 0 before any Phase 6 code.
+
+Phases 6-9 were planned with the user on 2026-10-05 (reasons in `BUILD_HISTORY.md` → Decisions): fix query understanding and retrieval first, because a citation cannot rescue a trial that should never have been retrieved; then verify every step and show the result to the user; then the network showcase; then submission.
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
@@ -508,20 +516,47 @@ The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4, d
 ### Phase 5: Eval and iteration
 Goal: measured evidence of iteration, including evidence for the bonuses.
 1. **Question set.** Written in Phase 3 step 0; add any question a Phase 3 bug exposed, never edit an expectation to match output.
-2. **Runner.** Calls the pipeline directly and records per question: intent, viz type, status, record count, check pass/fail, latency, failure mode, plus citation metrics (share of rows fully cited, excerpt-check pass rate) and network metrics (nodes and edges after pruning, whether the fallback fired, placebo and non-drug exclusions).
-3. **Baseline, fix, rerun.** Baseline on `gpt-5.4-mini`; fix the largest failure class; rerun. Keep both result sets.
-4. The frontend is used to eyeball each chart the runner flags.
 
 Done when: the baseline and after results are saved in `eval/` with per-question metrics, and the README cites only comparisons that were actually run.
 
-### Phase 6: Submission and bonuses
+### Phase 6: Query understanding and retrieval
+Goal: every constraint in the question is either applied exactly or disclosed as not applied, and every charted trial meets the filters applied. Evidence: the country filter is a text search (§8.4), so "breast cancer trials in Japan" charts 9 trials sited only in China, and every §7.6 check passes.
+0. **Questions and a pre-fix run.** Add eval questions: breast cancer phases in Japan; a "Korea" country variant; two values for one filter ("trials in Beijing, Japan"); a constraint no filter expresses ("pediatric asthma trials by phase"). Write the expectations from the behavior decided here, never from output. Add an off-filter metric to the runner, computed from the fetched records independently of `checks.py`. Save a run on the current code (`eval/results/pre_phase6.json`) before any other Phase 6 code; this stands in for "before the baseline", which had already run.
+1. **Filter UI.** Remove the Filters panel; the question box is the only input, and filtering comes from the question alone. Read-only chips above the chart show the applied filters, inferred ones marked, so hidden filtering stays visible. The optional request fields stay in the API (the request schema is graded; tests and the eval use them).
+2. **Canonical countries.** `country` becomes one of ClinicalTrials.gov's 226 country names (§8.4), mirrored in `vocab.py` with a live parity test and enforced by the plan schema, so "Korea", "USA" or "한국" map to one name and the §7.3 verbatim test discloses the mapping as inferred.
+3. **Constraint accounting.** The plan lists every constraint in the question, quoted verbatim, as applied or not applied; Python checks that each quote is a substring of `query`. Two values for one filter -> `clarification_needed` naming both; a constraint no filter expresses (a city, an age group) -> `clarification_needed` with a suggested rephrase, written by the same plan call, that the frontend offers as one click. Contract change (SCHEMAS.md §4-5). The LLM can still leave a constraint out; the step-0 questions measure that.
+4. **Retrieval conformance, then the fix.** A check that every record meets each filter sent (phase, status, start-year range, country) and that every filter in `meta` traces to a sent param. Write it red-first against the Japan question, then send country as `filter.advanced=AREA[LocationCountry]<name>`. Off-filter trials are dropped and counted in `meta.excluded`; over 5% of a batch -> `degraded`, since the param mapping is probably wrong. Remove the §7.3 known-gap note.
+5. **Rerun** the eval and save it next to the pre-fix run.
+
+Done when: the step-0 questions pass, the off-filter metric is 0 across the eval set, and the pre-fix run and rerun are saved in `eval/results/`.
+
+### Phase 7: Deep citations and verification at every step
+Goal: every displayed fact is checked against the cached record it came from, at each pipeline step, and the user can see each step's result. No LLM call is added: card text and citations are verbatim record values.
+1. **Citation support and coverage.** Each excerpt maps to its own datum through the aggregator's categorizer: a start date's year equals its bucket, a phase excerpt yields its bar's label, a drug name normalizes to its node, and each edge cites both ends for every cited trial. Today a Phase 2 trial wrongly placed on the Phase 3 bar and cited as `PHASE2` passes the excerpt check. Coverage: every row, node and edge cites `min(trial_count, citation_cap)` distinct trials (the eval measures this; no check enforces it yet).
+2. **Full recount.** Re-derive every row's, node's and edge's membership from the raw records for all its `nct_ids`, not only the 25 cited, plus each `meta.excluded` count. One code path for every row shape, graphs included.
+3. **Accounting by ID.** `meta.excluded[]` entries gain `nct_ids`, and a check confirms every retrieved trial is in some datum or listed under a reason (counting rule, off-filter, top-N cutoff, network pruning). Contract change.
+4. **Card description.** Fetch `officialTitle` and add it to the trial summary verbatim (the reference product's ClinicalTrials.gov card shows the same field); a check that every summary field equals its raw record value. Decide first: response size, since the `trials` map holds every charted trial (median 132 characters, ~1.3 MB raw at the 10,000 cap), versus loading descriptions per page of 25 from the cache.
+5. **Verification ledger.** `meta.verification` on every status: for each step (request, plan, retrieval, records, aggregation, citations, prose, response), the checks run, items verified of total, and a one-line result written by Python; steps not reached are marked, so a non-`ok` answer shows where it stopped. The "How this was answered" drawer renders it, and a badge under the chart ("1,994 trials accounted for · 412 citations verified") opens it. Contract change.
+6. **Frontend.** The description line on each source card; a selected-datum header with numbered markers (`Phase 3 · 412 trials [1][2][3] … +387`) that jump to their cards; excluded trials listed by reason.
+7. **Fault injection.** One seeded fault per check (an invented NCT ID, a wrong-bucket citation, an uncited datum, an off-filter trial, a miscounted row, an unaccounted trial, a stray title number), each caught by its named check.
+8. **Rerun and README.** Save an eval rerun. Write the README "Deep citations" section: how every bar, bucket, point, node and edge carries `nct_ids` and verbatim `{nct_id, excerpt, field}` citations; the per-step ledger; a fault -> check table; the eval citation metrics; a screenshot of the sources panel filtering on a clicked edge.
+
+Done when: every check catches its seeded fault, the ledger renders for every status, the rerun is saved, and the README section is written.
+
+### Phase 8: Richer networks
+Goal: networks a reviewer can trust and read, made obvious in the README. No new entity types or graph algorithms (§13.4).
+1. **Network checks.** Every kept edge meets `meta.pruning`'s weight threshold, at most the top-N nodes remain, no node is orphaned, removed counts reconcile with `meta.pruning`, and `is_anchor` matches the query's entity. Each gets a seeded fault (Phase 7 step 7).
+2. **Legible labels** (user decision, 2026-10-05). Phase 5.4 found labels overprinting each other and hidden under nodes in 3 of 4 eval networks, and ~5 px after fit-to-view in the fourth. Every shown label must be readable without overlap at the default zoom; test it on those four networks before the showcase.
+3. **Showcase.** A condition-anchored drug-drug network captured from the live system into `examples/`, with a screenshot.
+4. **README "Richer networks".** The drug rule, name normalization, co-occurrence counting, pruning by weighted degree with the fallback, the anchor hub, the deterministic layout (concentric seed, then force-directed CoSE), and why no path algorithm; the eval network metrics; brand <-> generic merging as a limitation.
+
+Done when: the network checks catch their seeded faults, the four eval networks render with legible labels, and the example, screenshot and README section exist.
+
+### Phase 9: Submission
 Goal: the zip, with the bonuses made obvious to a reviewer.
-1. **README** (§2 In scope sections, linking `SCHEMAS.md`), with a "Bonuses" section that leads:
-   - **Deep citations:** how every bar, bucket, point, node and edge carries `nct_ids` and verbatim `{nct_id, excerpt, field}` citations; how the excerpt check proves them; the Phase 5 citation metrics; a screenshot of the sources panel filtering on a clicked edge.
-   - **Richer networks:** the drug rule, name normalization, pruning with fallback and the anchor hub, shown on a condition-anchored drug-drug network (screenshot + the example JSON); the Phase 5 network metrics; brand <-> generic merging listed as a limitation.
-   - **Demo video** link.
+1. **README** (§2 In scope sections, linking `SCHEMAS.md`), led by a "Bonuses" section that links the Phase 7 and 8 sections and the demo video.
 2. **Examples.** 3-5 runs captured from the live system into `examples/`, including one condition-anchored network and one non-`ok` status.
-3. **Demo video** (2-3 min): one question per class, click a datum to show its citations, open the drawer, and show a failure case (clarification or not found).
+3. **Demo video** (2-3 min): one question per class, click a datum to show its citations, open the verification badge and drawer, and show a failure case (clarification or not found).
 4. **Zip.** Built from a clean copy whose history holds no §2 Context notes (§12); excludes `.env`, caches and dependencies.
 
 Done when: the zip, unpacked fresh, runs per the README (`docker compose up -d`, migrate, backend, frontend) and contains the code, README, SCHEMAS.md, examples and the video link.

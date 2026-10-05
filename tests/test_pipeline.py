@@ -4,7 +4,10 @@ Expected statuses come from §1 (steps 3, 5, 9), §7.7 (repair once, error mappi
 rule, zero results, not-found probe) and SCHEMAS.md §5 (non-`ok` shapes and notes).
 """
 
-from collections.abc import Callable
+import json
+import threading
+import time
+from collections.abc import Callable, Sequence
 from datetime import date
 from typing import Any
 
@@ -16,7 +19,7 @@ from app.checks import CheckContext, run_checks
 from app.ctgov import FetchResult, UpstreamError
 from app.normalize import NormalizedTrial
 from app.pipeline import DependencyError, Pipeline
-from app.planner import ANCHOR_NOTE
+from app.planner import ANCHOR_NOTE, PLAN_SCHEMA_NAME
 from app.schemas import (
     CheckError,
     ClarificationResponse,
@@ -26,9 +29,9 @@ from app.schemas import (
     RetrievalFilters,
     VisualizeRequest,
 )
-from app.viz import PROSE_FALLBACK_NOTE
+from app.viz import PROSE_FALLBACK_NOTE, PROSE_SCHEMA_NAME
 from tests.factories import FIXTURE, T3, make_trial, raw_record
-from tests.llm_fakes import fake_llm, json_reply, replies
+from tests.llm_fakes import fake_llm, json_reply
 from tests.test_planner import reply
 
 TODAY = date(2026, 10, 4)
@@ -57,6 +60,9 @@ class FakeFetcher:
         records = [raw_record(t) for t in self.data.get(filters, [])]
         return FetchResult("key", [], records, len(records))
 
+    def fetch_many(self, filters: Sequence[RetrievalFilters]) -> list[FetchResult]:
+        return [self.fetch(f) for f in filters]
+
     def count(self, filters: RetrievalFilters) -> int:
         self.counted.append(filters)
         return self.counts.get(filters, len(self.data.get(filters, [])))
@@ -69,7 +75,10 @@ def run(
     checker: Callable[[OkResponse, CheckContext], list[CheckError]] = run_checks,
     **fields: Any,
 ) -> tuple[Any, list[dict[str, Any]]]:
-    llm, bodies = fake_llm(replies(*llm_replies))
+    queue = iter(llm_replies)
+    # Past the scripted replies, answer like an LLM outage: a non-ok answer's title call still
+    # runs in the background, and it must not fail the test from there.
+    llm, bodies = fake_llm(lambda request: next(queue, httpx2.Response(503)))
     pipeline = Pipeline(llm, fetcher, checker=checker, today=lambda: TODAY)
     return pipeline.run(VisualizeRequest.model_validate({"query": query, **fields})), bodies
 
@@ -342,3 +351,146 @@ def test_one_record_without_an_id_is_set_aside_not_fatal() -> None:
     )
     assert isinstance(response, OkResponse)
     assert {e.rule: e.count for e in response.meta.excluded}.get("unreadable record") == 1
+
+
+# --- the title call runs alongside retrieval (Phase 5.3 latency) ---
+
+WAIT = 5.0  # seconds; a test that would hang fails with an assertion instead
+
+
+def _is_title_call(request: httpx2.Request) -> bool:
+    return bool(json.loads(request.content)["text"]["format"]["name"] == PROSE_SCHEMA_NAME)
+
+
+def _scripted_llm(plan: dict[str, Any], on_title: Callable[[], httpx2.Response]) -> Any:
+    """The plan reply, then `on_title()` for the title call, which may block to stall it."""
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        return on_title() if _is_title_call(request) else json_reply(plan)
+
+    return fake_llm(handler)
+
+
+def _assert_threads_return_to(before: set[threading.Thread]) -> None:
+    """Waits for the threads started since `before`: a global count would also see threads
+    another test left finishing in the background, and flake."""
+    deadline = time.monotonic() + WAIT
+    while (started := set(threading.enumerate()) - before) and time.monotonic() < deadline:
+        time.sleep(0.01)
+    assert not started, "a title thread outlived its request"
+
+
+def test_title_call_overlaps_the_fetch() -> None:
+    # The fetch waits until the title call has started: run one after the other, this stalls.
+    title_started = threading.Event()
+
+    def title() -> httpx2.Response:
+        title_started.set()
+        return json_reply(PROSE)
+
+    class AfterTitle(FakeFetcher):
+        def fetch(self, filters: RetrievalFilters) -> FetchResult:
+            assert title_started.wait(WAIT), "the title call did not start before the fetch"
+            return super().fetch(filters)
+
+    llm, _ = _scripted_llm(reply(condition="melanoma"), title)
+    pipeline = Pipeline(llm, AfterTitle({MELANOMA: FIXTURE}), today=lambda: TODAY)
+    response = pipeline.run(VisualizeRequest(query="Phases of melanoma trials"))
+    assert isinstance(response, OkResponse)
+    assert response.visualization.title == PROSE["title"]
+
+
+NOT_OK = {
+    "not found": (reply("time_trend.start_year", drug_name="Zorblaxumab"), FakeFetcher()),
+    "nothing charted": (
+        reply("geographic.country", condition="melanoma"),
+        FakeFetcher({MELANOMA: [T3, make_trial("NCT00000099", conditions=["Melanoma"])]}),
+    ),
+    "upstream error": (
+        reply(condition="melanoma"),
+        FakeFetcher(error=UpstreamError("ClinicalTrials.gov HTTP 503")),
+    ),
+}
+
+
+@pytest.mark.parametrize("case", NOT_OK)
+def test_non_ok_answers_return_without_waiting_for_a_stalled_title_call(case: str) -> None:
+    plan, fetcher = NOT_OK[case]
+    release = threading.Event()
+    before = set(threading.enumerate())
+
+    def stalled() -> httpx2.Response:
+        release.wait(WAIT)
+        return json_reply(PROSE)
+
+    llm, _ = _scripted_llm(plan, stalled)
+    pipeline = Pipeline(llm, fetcher, today=lambda: TODAY)
+    start = time.monotonic()
+    try:
+        response = pipeline.run(VisualizeRequest(query="q"))
+    except DependencyError:
+        response = None
+    assert time.monotonic() - start < WAIT / 2, "a non-ok answer waited for the title"
+    assert response is None or isinstance(response, NoResultsResponse)
+    release.set()
+    _assert_threads_return_to(before)
+
+
+def test_ok_answer_waits_for_the_title_it_shows() -> None:
+    def slow() -> httpx2.Response:
+        time.sleep(0.2)
+        return json_reply(PROSE)
+
+    llm, _ = _scripted_llm(reply(condition="melanoma"), slow)
+    response = Pipeline(llm, FakeFetcher({MELANOMA: FIXTURE}), today=lambda: TODAY).run(
+        VisualizeRequest(query="Phases of melanoma trials")
+    )
+    assert isinstance(response, OkResponse)
+    assert response.visualization.title == PROSE["title"]
+
+
+@pytest.mark.parametrize(
+    ("plan_replies", "fields"),
+    [([reply()], {}), ([reply("distribution.investigator")] * 2, {"condition": "melanoma"})],
+    ids=["clarification", "plan invalid twice"],
+)
+def test_no_title_call_starts_before_the_plan_is_valid(
+    plan_replies: list[Any], fields: dict[str, Any]
+) -> None:
+    response, bodies = run("trials", [json_reply(p) for p in plan_replies], FakeFetcher(), **fields)
+    assert isinstance(response, ClarificationResponse | DegradedResponse)
+    assert [b["text"]["format"]["name"] for b in bodies] == [PLAN_SCHEMA_NAME] * len(plan_replies)
+
+
+def test_a_bug_in_the_title_thread_surfaces_on_an_ok_answer(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def broken(*args: Any, **kwargs: Any) -> None:
+        raise RuntimeError("title bug")
+
+    monkeypatch.setattr("app.pipeline.write_prose", broken)
+    with pytest.raises(RuntimeError, match="title bug"):
+        run(
+            "Phases of melanoma trials",
+            [json_reply(reply(condition="melanoma"))],
+            FakeFetcher({MELANOMA: FIXTURE}),
+        )
+
+
+def test_a_bug_in_an_abandoned_title_thread_is_logged_not_lost(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    def broken(*args: Any, **kwargs: Any) -> None:
+        raise RuntimeError("title bug")
+
+    monkeypatch.setattr("app.pipeline.write_prose", broken)
+    response, _ = run(
+        "Trials per year for Zorblaxumab",
+        [json_reply(reply("time_trend.start_year", drug_name="Zorblaxumab"))],
+        FakeFetcher(),
+    )
+    assert isinstance(response, NoResultsResponse)
+    deadline = time.monotonic() + WAIT
+    while "title bug" not in caplog.text and time.monotonic() < deadline:
+        time.sleep(0.01)
+    assert "title bug" in caplog.text

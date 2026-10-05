@@ -64,7 +64,9 @@ def fake_llm(handler: Handler) -> tuple[LLMClient, list[dict[str, Any]]]:
         http_client=httpx2.Client(transport=httpx2.MockTransport(recording)),
         max_retries=0,
     )
-    return LLMClient(sdk, model=MODEL, reasoning_effort="low"), bodies
+    return LLMClient(
+        sdk, model=MODEL, reasoning_effort="low", prose_reasoning_effort="none"
+    ), bodies
 
 
 def replies(*responses: httpx2.Response) -> Handler:

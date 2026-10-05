@@ -70,6 +70,17 @@ def test_ok_response_is_returned_whole(serve: Any) -> None:
     assert fake.requests == [VisualizeRequest(query="phases", condition="melanoma")]
 
 
+def test_a_large_response_is_gzipped(serve: Any) -> None:
+    # At the 10,000-trial cap a comparison answer is ~7 MB of JSON, ~1.4 MB gzipped (Phase 5.3).
+    big = OK.model_copy(update={"meta": OK.meta.model_copy(update={"notes": ["x" * 5000]})})
+    client, _ = serve(big)
+    reply = client.post(
+        "/api/visualize", json={"query": "phases"}, headers={"Accept-Encoding": "gzip"}
+    )
+    assert reply.headers["content-encoding"] == "gzip"
+    assert RESPONSE_ADAPTER.validate_python(reply.json()) == big
+
+
 def test_non_ok_status_is_still_200(serve: Any) -> None:
     client, _ = serve(CLARIFY)
     reply = client.post("/api/visualize", json={"query": "show me trials"})

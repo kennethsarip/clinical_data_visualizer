@@ -7,7 +7,7 @@ import psycopg
 import pytest
 
 from app.cache import TrialCache
-from app.ctgov import TIMEOUT_SECONDS, CtgovClient
+from app.ctgov import BURST, RATE_PER_SECOND, TIMEOUT_SECONDS, CtgovClient, RateLimiter
 from app.migrate import apply_migrations
 from app.normalize import normalize_records
 from app.schemas import RetrievalFilters
@@ -30,7 +30,9 @@ def test_pembrolizumab_is_fetched_once_then_served_from_the_cache(db: psycopg.Co
     transport = _CountingTransport()
     base_url = os.environ.get("CTGOV_BASE_URL") or "https://clinicaltrials.gov/api/v2"
     http = httpx.Client(base_url=base_url, timeout=TIMEOUT_SECONDS, transport=transport)
-    cache = TrialCache(db, CtgovClient(http, fetch_cap=2000), ttl_hours=168)
+    cache = TrialCache(
+        db, CtgovClient(http, 2000, RateLimiter(RATE_PER_SECOND, BURST)), ttl_hours=168
+    )
     filters = RetrievalFilters(drug_name="pembrolizumab")
 
     first = cache.fetch(filters)

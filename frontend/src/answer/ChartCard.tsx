@@ -3,6 +3,7 @@ import type { components } from '../api/types'
 import type { ChartHandle, Selection } from '../charts/rendererProps'
 import { downloadText, downloadUrl, fileName } from './download'
 import { ResponseJson } from './ResponseJson'
+import { cappedNotice } from './sample'
 
 // Vega and Cytoscape are most of the bundle; load them only once there is a chart to draw.
 const ChartView = lazy(() => import('../charts/ChartView').then((m) => ({ default: m.ChartView })))
@@ -22,6 +23,7 @@ export function ChartCard({ response, highlighted, onSelect }: Props) {
   const [view, setView] = useState<View>('chart')
   // State, not a ref, so the export buttons appear once the lazy renderer hands over its handle.
   const [chart, setChart] = useState<ChartHandle | null>(null)
+  const notice = cappedNotice(response.meta.sample)
 
   return (
     <section className="card chart-card" aria-labelledby="chart-title">
@@ -35,6 +37,11 @@ export function ChartCard({ response, highlighted, onSelect }: Props) {
           </div>
         </div>
       </div>
+      {notice && (
+        <p className="chart-caption" role="note">
+          {notice}
+        </p>
+      )}
       <div className="card-body" role="tabpanel">
         {view === 'chart' ? (
           <Suspense fallback={<p className="chart-loading">Drawing the chart…</p>}>

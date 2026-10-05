@@ -66,12 +66,14 @@ def test_optional_vars_fall_back_to_defaults_when_blank() -> None:
         "FETCH_CAP": "",
         "CACHE_TTL_HOURS": "",
         "OPENAI_REASONING_EFFORT": "",
+        "OPENAI_PROSE_REASONING_EFFORT": "",
     }
     settings = load_settings({**FULL_ENV, **blank})
     # Defaults come from CLAUDE.md §3, §6, §7.3 and §8.4.
     assert settings.openai_reasoning_effort == "medium"
+    assert settings.openai_prose_reasoning_effort == "none"
     assert settings.ctgov_base_url == "https://clinicaltrials.gov/api/v2"
-    assert settings.fetch_cap == 2000
+    assert settings.fetch_cap == 10000
     assert settings.cache_ttl_hours == 168
 
 
@@ -84,6 +86,11 @@ def test_optional_vars_override_defaults() -> None:
 def test_invalid_reasoning_effort_is_a_config_error() -> None:
     with pytest.raises(ConfigError, match="openai_reasoning_effort"):
         load_settings({**FULL_ENV, "OPENAI_REASONING_EFFORT": "extreme"})
+
+
+def test_invalid_prose_reasoning_effort_is_a_config_error() -> None:
+    with pytest.raises(ConfigError, match="openai_prose_reasoning_effort"):
+        load_settings({**FULL_ENV, "OPENAI_PROSE_REASONING_EFFORT": "extreme"})
 
 
 @pytest.mark.parametrize("value", ["0", "-5", "lots"])

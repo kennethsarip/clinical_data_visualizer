@@ -123,6 +123,13 @@ describe('axisTitle (from meta.units and meta.grouping, SCHEMAS.md §4)', () => 
     expect(axisTitle('bin_label', meta)).toBe('Enrollment (participants)')
   })
 
+  it('marks a trial count from a capped sample, and only a trial count', () => {
+    const capped = { ...meta, sample: [{ capped: false }, { capped: true }] }
+    expect(axisTitle('trial_count', capped)).toBe('Trial count (capped sample)')
+    expect(axisTitle('enrollment', capped)).toBe('Enrollment (participants)')
+    expect(axisTitle('trial_count', { ...meta, sample: [{ capped: false }] })).toBe('Trial count')
+  })
+
   it('falls back to the humanized field without meta', () => {
     expect(axisTitle('start_year')).toBe('Start year')
     expect(axisTitle('bin_label')).toBe('Bin label')

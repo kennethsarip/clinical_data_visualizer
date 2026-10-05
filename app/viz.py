@@ -11,6 +11,7 @@ import logging
 import re
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from typing import Protocol
 
 from app.aggregators.registry import (
     Aggregation,
@@ -185,7 +186,16 @@ def _check_filters(cohorts: Sequence[CohortTrials], filters: Filters) -> None:
         raise AssemblyError(f"filters applied {applied} but disclosed {disclosed}")
 
 
-def default_title(aggregator: Aggregator, cohorts: Sequence[CohortTrials]) -> str:
+class NamedCohort(Protocol):
+    """What titles read from a cohort: known from the plan, before any trial is fetched."""
+
+    @property
+    def label(self) -> str | None: ...
+    @property
+    def filters(self) -> RetrievalFilters: ...
+
+
+def default_title(aggregator: Aggregator, cohorts: Sequence[NamedCohort]) -> str:
     """A plain, number-free title from the plan, used until the LLM writes titles (Phase 3)."""
     name = DIMENSION_NAMES[aggregator.dimension]
     subjects = [_subject(c) for c in cohorts]
@@ -353,7 +363,7 @@ def _assumptions(
     return found
 
 
-def _subject(cohort: CohortTrials) -> str | None:
+def _subject(cohort: NamedCohort) -> str | None:
     """What the cohort's search named, for titles: the label, or the named entities."""
     if cohort.label:
         return cohort.label
@@ -401,7 +411,7 @@ def write_prose(
     *,
     query: str,
     aggregator: Aggregator,
-    cohorts: Sequence[CohortTrials],
+    cohorts: Sequence[NamedCohort],
     filters: Filters,
 ) -> Prose:
     """The LLM's title and notes, checked by the number rule. Any failure keeps the response
@@ -413,6 +423,7 @@ def write_prose(
             user_input=_prose_input(query, aggregator, cohorts, filters),
             name=PROSE_SCHEMA_NAME,
             output_type=LLMProse,
+            reasoning_effort=llm.prose_reasoning_effort,
         )
     except (LLMOutputError, LLMUpstreamError) as exc:
         logger.warning("title call failed, using the default title: %s", exc)
@@ -426,7 +437,7 @@ def write_prose(
 
 
 def _prose_input(
-    query: str, aggregator: Aggregator, cohorts: Sequence[CohortTrials], filters: Filters
+    query: str, aggregator: Aggregator, cohorts: Sequence[NamedCohort], filters: Filters
 ) -> str:
     """The plan, shape, columns and filters: everything but the rows (§7.2)."""
     plan = {
@@ -443,7 +454,7 @@ def _prose_input(
     return json.dumps(plan, indent=1)
 
 
-def _number_sources(cohorts: Sequence[CohortTrials], filters: Filters) -> list[object]:
+def _number_sources(cohorts: Sequence[NamedCohort], filters: Filters) -> list[object]:
     """What `checks._title` allows numbers from: filter values, cohort labels and filters."""
     sources: list[object] = [*filters.stated.values(), *filters.inferred.values()]
     for c in cohorts:

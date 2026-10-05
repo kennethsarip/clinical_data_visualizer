@@ -5,7 +5,7 @@ from typing import Any
 
 import httpx
 
-from app.ctgov import CtgovClient
+from app.ctgov import CtgovClient, RateLimiter
 
 BASE_URL = "https://ctgov.test/api/v2"
 Handler = Callable[[httpx.Request], httpx.Response]
@@ -25,7 +25,7 @@ def page(ids: list[int], token: str | None, total: int | None = None) -> dict[st
 
 
 def fake_client(
-    handler: Handler, cap: int = 2000
+    handler: Handler, cap: int = 2000, limiter: RateLimiter | None = None
 ) -> tuple[CtgovClient, list[httpx.Request], list[float]]:
     requests: list[httpx.Request] = []
     sleeps: list[float] = []
@@ -35,7 +35,10 @@ def fake_client(
         return handler(request)
 
     http = httpx.Client(base_url=BASE_URL, transport=httpx.MockTransport(recording))
-    return CtgovClient(http, fetch_cap=cap, sleep=sleeps.append), requests, sleeps
+    # By default no rate limit: these tests are about pages and retries, not pacing.
+    unlimited = RateLimiter(rate=1e9, burst=10**9)
+    client = CtgovClient(http, cap, limiter or unlimited, sleep=sleeps.append)
+    return client, requests, sleeps
 
 
 def paged(pages: dict[str | None, dict[str, Any]]) -> Handler:

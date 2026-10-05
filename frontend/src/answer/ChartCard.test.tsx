@@ -120,3 +120,17 @@ describe('ChartCard chart export', () => {
     expect(screen.queryByRole('button', { name: 'Download PNG' })).not.toBeInTheDocument()
   })
 })
+
+describe('ChartCard capped sample', () => {
+  it('says under the title when the counts come from a capped sample', async () => {
+    const capped = { ...BAR, meta: { ...BAR.meta, sample: [{ cohort: null, fetched: 10000, total: 123756, capped: true }] } } as OkResponse
+    renderCard(capped)
+    expect(screen.getByRole('note')).toHaveTextContent('Counts come from 10,000 of 123,756 matching trials')
+    expect(await screen.findByText('drawn chart')).toBeInTheDocument()
+  })
+
+  it('stays quiet when every matching trial was fetched', () => {
+    renderCard(BAR)
+    expect(screen.queryByRole('note')).not.toBeInTheDocument()
+  })
+})

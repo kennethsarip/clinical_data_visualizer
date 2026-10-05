@@ -1,7 +1,6 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { EXAMPLES } from './examples'
 import { SearchForm } from './SearchForm'
 
 function setup(busy = false) {
@@ -36,17 +35,9 @@ describe('SearchForm', () => {
     expect(screen.getByText('Enter a question.')).toBeInTheDocument()
   })
 
-  it('runs an example chip as-is, clearing filters', async () => {
-    const { onSubmit, user, query } = setup()
-    await user.click(screen.getByRole('button', { name: /filters/i }))
-    await user.type(screen.getByLabelText('Drug'), 'aspirin')
-    const network = EXAMPLES.find((e) => e.questionClass === 'network')!
-    const chips = screen.getByRole('group', { name: /example questions/i })
-    expect(within(chips).getAllByRole('button')).toHaveLength(6)
-    await user.click(within(chips).getByRole('button', { name: new RegExp(network.label) }))
-    expect(onSubmit).toHaveBeenCalledExactlyOnceWith({ query: network.query })
-    expect(query).toHaveValue(network.query)
-    expect(screen.getByLabelText('Drug')).toHaveValue('')
+  it('shows no example-question chips', () => {
+    setup()
+    expect(screen.queryByRole('group', { name: /example questions/i })).not.toBeInTheDocument()
   })
 
   it('keeps filters collapsed until opened, then sends them and counts them', async () => {

@@ -1,4 +1,4 @@
-"""Typed loader for `eval/questions.json`: expected plans written before the planner (Phase 3.0).
+"""Typed loader for `eval/questions.json`: expectations written before the planner (Phase 3.0).
 
 The planner acceptance tests (stubbed and `-m live`) and the Phase 5 runner both read questions
 through here, so the file has one schema.
@@ -61,5 +61,9 @@ class QuestionSet(_Strict):
     questions: list[EvalQuestion]
 
 
+def load_question_set(path: Path = QUESTIONS_PATH) -> QuestionSet:
+    return QuestionSet.model_validate_json(path.read_text())
+
+
 def load_questions(path: Path = QUESTIONS_PATH) -> list[EvalQuestion]:
-    return QuestionSet.model_validate_json(path.read_text()).questions
+    return load_question_set(path).questions
