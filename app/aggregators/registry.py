@@ -80,6 +80,7 @@ class CohortTrials:
     label: str | None
     batch: NormalizedBatch
     filters: RetrievalFilters
+    total: int  # trials matching `filters` per the API's totalCount; more than fetched if capped
 
 
 @dataclass(frozen=True)

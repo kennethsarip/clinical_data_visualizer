@@ -16,6 +16,15 @@ from typing import Any
 
 from pydantic import ValidationError
 
+from app.aggregators.common import (
+    F_ENROLLMENT,
+    F_ENROLLMENT_TYPE,
+    F_INTERVENTION_TYPE,
+    F_PHASES,
+    F_SPONSOR_CLASS,
+    F_START_DATE,
+    F_STATUS,
+)
 from app.aggregators.registry import RowShape
 from app.schemas import (
     RESPONSE_ADAPTER,
@@ -36,6 +45,20 @@ SINGLE_VALUED = frozenset({"phase", "overall_status", "sponsor_class", "start_ye
 MAX_MESSAGES = 5
 
 _NUMBER = re.compile(r"\d+")
+
+# Fields holding codes, numbers or dates: a substring would let "PHASE1" cite "EARLY_PHASE1" or
+# "120" cite 1200, so their excerpts must equal a value. Free-text fields keep substring matching.
+EXACT_FIELDS = frozenset(
+    {
+        F_PHASES,
+        F_STATUS,
+        F_START_DATE,
+        F_INTERVENTION_TYPE,
+        F_SPONSOR_CLASS,
+        F_ENROLLMENT,
+        F_ENROLLMENT_TYPE,
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -86,10 +109,13 @@ def _provenance(response: OkResponse) -> list[Provenance]:
 
 def excerpt_matches(record: Mapping[str, Any], citation: Citation) -> bool:
     """A citation holds against its raw record: a non-null excerpt is a verbatim substring of a
-    value at its `field`; a null excerpt means that field has no value."""
+    value at its `field` (equal to it, for code, number and date fields); a null excerpt means
+    that field has no value."""
     values = _values_at(record.get("protocolSection", {}), citation.field.split("."))
     if citation.excerpt is None:
         return not values
+    if citation.field in EXACT_FIELDS:
+        return citation.excerpt in values
     return any(citation.excerpt in value for value in values)
 
 
@@ -141,6 +167,9 @@ def _shape(response: OkResponse, context: CheckContext) -> list[str]:
         if not spec.data.nodes or not spec.data.edges:
             return ["a network needs at least one node and one edge"]
         return []
+    if not any(row.trial_count for row in spec.data):
+        # §7.6: never return an empty chart; zero-filled rows alone are still empty.
+        return ["the chart has no trials in any row"]
     return _chart_shape(spec)
 
 

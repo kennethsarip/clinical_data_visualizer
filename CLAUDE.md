@@ -4,7 +4,7 @@
 >
 > **The one thing to understand first:** the LLM never produces a number, count, date, NCT ID, excerpt or data row. It does exactly two things: plan the query and write prose (title, notes). Retrieval, aggregation, viz type selection, citations and checks are deterministic Python, so every row traces back to cached API records by NCT ID (§7.2).
 >
-> **Status:** Phase 1 (Foundation) is merged and tagged `phase-1`; Phase 2 is in progress on `phase-2-core` (§14). The repo is `github.com/kennethsarip/cheiron_task` (private, §12). Runs locally only; no deploy is planned (§13.4).
+> **Status:** Phases 1-2 are done (Phase 2 on `phase-2-core`, awaiting push, CI and merge); Phase 3 is next (§14). The repo is `github.com/kennethsarip/cheiron_task` (private, §12). Runs locally only; no deploy is planned (§13.4).
 >
 > **Definition of done:** `uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest`, all green. CI (`.github/workflows/ci.yml`) runs exactly these, so local green means CI green. `main` stays runnable.
 >
@@ -280,7 +280,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 - Each aggregator declares its output columns, row shape and excerpt source. Viz selection and checks read that declaration.
 - **Viz type is a fixed table in `viz.py`** (decided 2026-10-04): categorical -> `bar_chart`; two-categorical -> `grouped_bar_chart`; temporal -> `time_series`; per-trial numeric -> `scatter_plot`; binned numeric -> `histogram`; graph -> `network_graph`. Python reads rows only for edge cases (zero rows, a network emptied by pruning).
 - Every row carries the set of contributing NCT IDs, by construction, as `nct_ids`. A count is the size of that set (§8.5).
-- Time series zero-fill gap years, because a missing year is information, not missing data. Granularity is OPEN.
+- Time series zero-fill gap years, because a missing year is information, not missing data. The range spans the stated years and every trial's year, so it never drops a trial. Granularity is OPEN.
 - Networks are co-occurrence aggregations over records, not graph retrieval: one generic co-occurrence aggregator, registered per entity pair (sponsor-drug, drug-drug, condition-drug). A node is an entity; an edge's weight is the number of trials in which both endpoints appear, and the edge carries those NCT IDs.
 - **Pruning** (decided 2026-10-04): drop edges with weight < 2; keep the top 50 nodes by weighted degree (alphabetical tie-break); drop edges touching removed nodes, then orphan nodes. If that empties the graph, rerun at weight 1. `meta.pruning` records the thresholds used, the fallback and what was removed.
 - **Anchor hub:** a queried entity appears in every trial, so a drug-drug network for one drug is a star. Its node gets `is_anchor: true` so a renderer can de-emphasize it, and `meta.notes` says so. Condition-anchored networks are the showcase case.
@@ -303,9 +303,9 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 |---|---|
 | schema | The response round-trips through the response model |
 | encoding | Every field named in `encoding` exists in every row |
-| shape | The viz type fits the row shape. A network needs nodes + edges, a time series needs an ordered temporal dimension, and a grouped bar needs two categorical dimensions |
+| shape | The viz type fits the row shape. A chart needs at least one trial in some row, a network needs nodes + edges, a time series needs an ordered temporal dimension, and a grouped bar needs two categorical dimensions |
 | citation ids | Every cited `nct_id` is in the row's `nct_ids`, and every `nct_ids` entry is in the retrieved record set |
-| excerpts | Every excerpt is a verbatim substring of the value at its `field` in its record; a null excerpt means that field is absent |
+| excerpts | Every excerpt is a verbatim substring of the value at its `field` in its record (equal to it for code, number and date fields, so `PHASE1` cannot cite `EARLY_PHASE1`); a null excerpt means that field is absent |
 | reconciliation | `trial_count == len(nct_ids)` on every row, and row counts reconcile with record counts per §8.5. No invented sums |
 | assumptions | `assumptions` is non-empty whenever any filter was inferred |
 | title | The title contains no number that is not in the filters (§7.2) |
@@ -473,7 +473,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 ### 13.4 Deferred
 - Synonym resolution of inputs. Trigger: an eval run logs a zero-result query that a synonym would have fixed. The API already expands drug synonyms (§7.3).
-- Upstream hardening: honoring `Retry-After` on 429 and retrying timeouts. Trigger: a logged 429 or timeout in an eval or example run (rate limits are unverified, §8.4).
+- Upstream hardening: honoring `Retry-After` on 429 and retrying timeouts. Trigger: a logged 429 or timeout in an eval or example run (rate limits are unverified, §8.4). Observed 2026-10-04: two 429s in a Phase 2 live sweep (~22 requests in ~20 s), both absorbed by the existing retries.
 - Multi-value phase and status filters (e.g. "Phase 2 or 3"). Trigger: an eval question that needs one; the API syntax is unverified.
 - Brand <-> generic and code-name merging of network nodes (Keytruda, MK-3475 -> pembrolizumab). Trigger: an eval network splits one drug across nodes in a way the §6 name rules miss.
 - Investigator and site networks (the assignment lists both entities). Trigger: every Phase 2-6 "Done when" passes with time left. First verify `overallOfficials[].name` and `locations[].facility` on the live API; site names are messy free text.
@@ -490,21 +490,13 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) makes results visible for the demo.
 
-**Next move:** Phase 2 step 7 (spec assembly) on `phase-2-core`. Steps 1-6 shipped (see `BUILD_HISTORY.md`).
+**Next move:** push `phase-2-core`, get CI green, merge and tag `phase-2`; then Phase 3 "Decide first" (the plan schema).
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
 - **Foundation before features:** a phase starts only when the previous phase's "Done when" passes, because each phase consumes the previous one's output (records -> rows -> responses -> rendered charts -> measured results).
 - **Decide first:** each phase's open decisions are settled before its code is written, and recorded in the section they govern plus `BUILD_HISTORY.md` → Decisions. Items marked PROPOSED are recommendations awaiting the user's yes.
 - **Ship-then-prune:** when a step is done, delete it from its phase here and add a few 1-2 line bullets for it under that phase's heading in `BUILD_HISTORY.md`, in the SAME commit. Remaining steps keep their numbers. When a phase's "Done when" passes, delete the whole phase.
-
-### Phase 2: Aggregation, citations, checks (deterministic core)
-Goal: verified rows and complete specs for every question class and every viz type, with no LLM involved. All decisions are made (§6, §7.4, §7.5, SCHEMAS.md).
-
-Steps, in order (each red first, §9):
-7. **Spec assembly.** `viz.py` (deterministic part; the §7.4 shape -> type table already exists): encoding with channel types, and spec plus `meta` assembly. Then extend `tests/test_live_core.py` to assemble every aggregator's response and run `run_checks` on it.
-
-Done when: every §1 row has a registered aggregator; all six viz types assemble specs that pass every check; each aggregator test matches rows computed by hand; and each check has a passing and a failing fixture.
 
 ### Phase 3: LLM planning and the endpoint (end to end)
 Goal: a natural-language request returns the right status and a checked spec over HTTP. Decided: §3 model, §7.2 calls and retry, §7.3 stated vs inferred, §7.8 anchor rule and not-found probe, §8.1 endpoint and HTTP codes. Decide first: the plan schema (§13.1).
@@ -513,7 +505,7 @@ Steps, in order:
 1. **LLM client.** `llm.py`: an OpenAI structured-output call returning validated Pydantic models; malformed output raises a typed error; `uv add openai`. Verify the `gpt-5.4-mini` parameters (reasoning effort, structured outputs) against OpenAI's docs first.
 2. **Planner.** `planner.py`: the plan's JSON schema is generated from the registry, so the planner can only choose what exists. Validate, retry once with the error, then apply the anchor rule and classify filters as stated or inferred.
 3. **Title and notes.** The LLM part of `viz.py`: title and notes from plan, shape, columns and filters; never data. The `title` check guards it.
-4. **Pipeline.** `pipeline.py`: the §1 steps, per-cohort fetches, the not-found probe, repair-once, and typed error -> status mapping in one place.
+4. **Pipeline.** `pipeline.py`: the §1 steps, per-cohort fetches, the not-found probe, repair-once, and typed error -> status mapping in one place. A result with no trials in any row (or a network with no edges) becomes `no_results` naming the exclusions, before the checks (which would block it as an empty chart). `assemble` refuses `meta.filters` that differ from the filters a single cohort was fetched with, so the planner's stated/inferred split must cover exactly the applied filters.
 5. **Endpoint.** `main.py`: `POST /api/visualize`, one route that calls the pipeline; no branching.
 
 Done when: one query per §1 class returns `ok` with all checks passing; each §7.8 case returns its specified behavior; the planner tests pass against a stubbed LLM, including malformed output.

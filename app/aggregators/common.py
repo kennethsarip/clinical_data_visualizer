@@ -35,6 +35,7 @@ F_SPONSOR = "sponsorCollaboratorsModule.leadSponsor.name"
 F_SPONSOR_CLASS = "sponsorCollaboratorsModule.leadSponsor.class"
 F_CONDITION = "conditionsModule.conditions"
 F_ENROLLMENT = "designModule.enrollmentInfo.count"
+F_ENROLLMENT_TYPE = "designModule.enrollmentInfo.type"
 
 NO_CONDITIONS_RULE = "no conditions"
 

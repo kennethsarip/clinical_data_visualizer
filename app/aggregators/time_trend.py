@@ -1,7 +1,7 @@
 """Trials started per year, zero-filled (§1, §7.4).
 
-A year with no trials is information, so gap years get a zero row. The range runs from the stated
-start year (or the earliest trial) to the stated end year (or the latest trial).
+A year with no trials is information, so gap years get a zero row. The range spans the stated
+years and every trial's year, so a stated range widens the zero-fill but never drops a trial.
 """
 
 from collections.abc import Sequence
@@ -44,12 +44,12 @@ class TimeTrendAggregator:
         cohort = single_cohort(cohorts)
         categorized = START_YEAR.assign(cohort.batch.trials)
         buckets = count_by(categorized)
-        years = [key for key in buckets if isinstance(key, int)]
         stated = cohort.filters
-        first = stated.start_year if stated.start_year is not None else min(years, default=None)
-        last = stated.end_year if stated.end_year is not None else max(years, default=None)
-        if first is None or last is None:
+        years = [key for key in buckets if isinstance(key, int)]
+        bounds = [*years, *(y for y in (stated.start_year, stated.end_year) if y is not None)]
+        if not years:
             return Aggregation((), dict(categorized.excluded))
+        first, last = min(bounds), max(bounds)
         column = START_YEAR.column
         rows = tuple(
             buckets[year].row({column: year}) if year in buckets else empty_row({column: year})

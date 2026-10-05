@@ -4,7 +4,27 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ## Shipped
 
-### Phase 2: Aggregation, citations, checks (in progress on `phase-2-core`)
+### Phase 2: Aggregation, citations, checks (done 2026-10-04 on `phase-2-core`)
+
+- **Done when, met:** every §1 row has a registered aggregator (22); all six viz types assemble specs that pass every check, offline on the fixture and live on real records; each aggregator test matches hand-computed rows; each check has a passing and a failing fixture.
+- **2.7 Spec assembly** (2026-10-04): `viz.assemble` builds the full `ok` response from an aggregator's result.
+  - Python picks the type (`VIZ_TYPE`) and the encoding per shape: channel types, plus a log scale for scatter enrollment.
+  - Rows carry their citations; the `trials` lookup is built from the cohorts.
+  - `meta` is filled in full: interpretation (cohorts and their filters for comparisons), units, sort (canonical phase, count desc, asc time and bins), time granularity, grouping and series, one sample entry per cohort, citation cap, exclusions (unreadable records added, named per cohort in comparisons), top-N and pruning.
+  - Counting-rule assumptions are written by Python per dimension (multi-phase, "Not specified", drug rule, start-date basis, enrollment split, log-axis zero, edge weight, anchor hub, comparison overlap). Caller assumptions and LLM notes are appended.
+  - `default_title` is a number-free title from the plan, used until Phase 3. `CohortTrials` gained `total` (the API totalCount) for the sample disclosure.
+- **Bug review** (2026-10-04). Six defects found, each fixed red-first with a regression test:
+  1. A stated year range could drop trials outside it; the time trend now spans stated and data years.
+  2. A totalCount read from page 1 could fall below `fetched` if trials were added mid-fetch; it is now raised to `fetched`.
+  3. An empty chart passed every check vacuously; `shape` now blocks a chart with no trials (§7.6).
+  4. Code, number and date excerpts matched as substrings (`PHASE1` inside `EARLY_PHASE1`); they must now equal the value.
+  5. `assemble` accepted `meta.filters` that differed from the filters actually applied. It now raises `AssemblyError`; found by the live sweep, where "COVID-19" in a title failed the title check against undisclosed filters.
+  6. The default time-trend title read "Trials Started per Start Year"; it now reads "per Year".
+- **Robustness:** every aggregator handles an empty cohort and trials with no optional fields. Real charts pass every check, and empty ones are blocked.
+- **Live sweep** (2026-10-04, not committed): all 22 aggregators over 11 live queries were assembled and checked, 128/128 passing.
+  - Queries: broad cancer (2,000 of 123,756), pembrolizumab, Pfizer, diabetes in Germany, melanoma 2015-2020, melanoma Phase 3, recruiting COVID-19, Erdheim-Chester (26), and the comparisons pembrolizumab vs nivolumab and diabetes vs obesity.
+  - Two HTTP 429s were absorbed by the retries (logged in §13.4).
+- **Committed live test** `tests/test_live_core.py`: 45 passed. It assembles every aggregator's response from live records and runs all nine checks.
 
 - **2.6 Checks** (2026-10-04): `app/checks.py` `run_checks(response, CheckContext(shape, records))` returns `CheckError`s from nine checks: schema, encoding, shape, citation ids, excerpts, reconciliation, assumptions, title and disclosures. They read only the response, the declared shape and the raw cached records.
 - Excerpts are matched at their `field` path, descending through lists such as `locations[].country`; a null excerpt must mean the field is absent. Reconciliation enforces `trial_count == len(nct_ids)`, no duplicate IDs, and, for phase, status, sponsor class and start year, rows summing to fetched minus excluded per cohort. The title check allows only numbers that occur in filter values or cohort labels.

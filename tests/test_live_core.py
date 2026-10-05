@@ -24,11 +24,12 @@ from app.aggregators.registry import (
     GraphAggregation,
     Intent,
 )
-from app.checks import excerpt_matches
+from app.checks import CheckContext, excerpt_matches, run_checks
 from app.citations import provenance, trial_summaries
 from app.ctgov import TIMEOUT_SECONDS, CtgovClient, record_nct_id
 from app.normalize import normalize_records
-from app.schemas import RetrievalFilters
+from app.schemas import Filters, RetrievalFilters
+from app.viz import assemble, default_title
 
 pytestmark = pytest.mark.live
 
@@ -39,7 +40,8 @@ class Live:
     def __init__(self, client: CtgovClient, filters: RetrievalFilters, label: str | None) -> None:
         result = client.fetch(filters)
         self.raw = {record_nct_id(r): r for r in result.records}
-        self.cohort = CohortTrials(label, normalize_records(result.records), filters)
+        batch = normalize_records(result.records)
+        self.cohort = CohortTrials(label, batch, filters, result.total)
 
 
 @pytest.fixture(scope="module")
@@ -107,3 +109,36 @@ def test_condition_network_marks_its_anchor(live: dict[str, Live]) -> None:
     )
     assert isinstance(graph, GraphAggregation)
     assert [n.values["id"] for n in graph.nodes if n.values["is_anchor"]] == ["condition:melanoma"]
+
+
+def _stated(cohorts: list[CohortTrials]) -> Filters:
+    if len(cohorts) != 1:
+        return Filters(stated={}, inferred={})
+    applied = cohorts[0].filters.model_dump(mode="json", exclude_none=True)
+    return Filters.model_validate({"stated": applied, "inferred": {}})
+
+
+@pytest.mark.parametrize(
+    ("intent", "dimension"),
+    [pytest.param(i, d, id=f"{i}-{d}") for i, d in REGISTRY.registered()],
+)
+def test_every_assembled_live_response_passes_every_check(
+    live: dict[str, Live], intent: Intent, dimension: Dimension
+) -> None:
+    # The Phase 2 "Done when", on real records: rows -> spec + meta -> all nine checks.
+    if intent is Intent.COMPARISON:
+        sources = [live["pembrolizumab"], live["nivolumab"]]
+    else:
+        sources = [live["melanoma"]]
+    cohorts = [s.cohort for s in sources]
+    aggregator = REGISTRY.get(intent, dimension)
+    response = assemble(
+        aggregator,
+        aggregator.aggregate(cohorts),
+        cohorts,
+        filters=_stated(cohorts),
+        title=default_title(aggregator, cohorts),
+    )
+    records = {k: v for s in sources for k, v in s.raw.items()}
+    errors = run_checks(response, CheckContext(shape=aggregator.shape, records=records))
+    assert errors == [], [(e.check, e.message) for e in errors]

@@ -3,7 +3,7 @@
 from typing import Any
 
 from app.aggregators.registry import CohortTrials
-from app.normalize import Gap, NormalizedBatch, NormalizedTrial
+from app.normalize import Gap, NormalizedBatch, NormalizedTrial, UnreadableRecord
 from app.schemas import RetrievalFilters
 
 Interventions = list[tuple[str, str | None]]
@@ -38,9 +38,51 @@ def cohort(
     trials: list[NormalizedTrial],
     label: str | None = None,
     filters: RetrievalFilters | None = None,
+    total: int | None = None,
+    unreadable: int = 0,
 ) -> CohortTrials:
     gaps = {gap: sum(gap in t.gaps for t in trials) for gap in Gap}
-    return CohortTrials(label, NormalizedBatch(trials, gaps, []), filters or RetrievalFilters())
+    skipped = [UnreadableRecord(None, "synthetic") for _ in range(unreadable)]
+    fetched = len(trials) + unreadable
+    batch = NormalizedBatch(trials, gaps, skipped)
+    return CohortTrials(
+        label, batch, filters or RetrievalFilters(), fetched if total is None else total
+    )
+
+
+def raw_record(trial: NormalizedTrial) -> dict[str, Any]:
+    """The API record a normalized trial came from, so checks can run against raw records."""
+    design: dict[str, Any] = {"studyType": str(trial.study_type)}
+    if trial.phases:
+        design["phases"] = [str(p) for p in trial.phases]
+    if trial.enrollment is not None:
+        design["enrollmentInfo"] = {"count": trial.enrollment}
+        if trial.enrollment_type is not None:
+            design["enrollmentInfo"]["type"] = str(trial.enrollment_type)
+    status: dict[str, Any] = {"overallStatus": str(trial.overall_status)}
+    if trial.start_date is not None:
+        status["startDateStruct"] = {"date": trial.start_date}
+    section: dict[str, Any] = {
+        "identificationModule": {"nctId": trial.nct_id, "briefTitle": trial.brief_title},
+        "statusModule": status,
+        "designModule": design,
+        "sponsorCollaboratorsModule": {
+            "leadSponsor": {"name": trial.sponsor_name, "class": str(trial.sponsor_class)}
+        },
+        "conditionsModule": {"conditions": list(trial.conditions)},
+    }
+    if trial.interventions:
+        section["armsInterventionsModule"] = {
+            "interventions": [
+                {"type": str(i.type)} | ({"name": i.name} if i.name is not None else {})
+                for i in trial.interventions
+            ]
+        }
+    if trial.countries:
+        section["contactsLocationsModule"] = {
+            "locations": [{"country": c} for c in trial.countries]
+        }
+    return {"protocolSection": section}
 
 
 # The shared fixture. Every expected row in the aggregator tests is derived by hand from it.

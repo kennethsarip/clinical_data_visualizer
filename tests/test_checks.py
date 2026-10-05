@@ -338,3 +338,42 @@ def test_top_n_limit_must_bound_the_rows() -> None:
     payload = _bar()
     payload["meta"]["top_n"] = {"limit": 2, "categories_total": 3}
     assert _checks(_errors(payload)) == {"disclosures"}
+
+
+# --- regressions found in the Phase 2 bug review ---
+
+
+def test_chart_with_no_trials_fails_shape() -> None:
+    # §7.6: never return an empty chart; a zero-filled chart with no trials is empty too.
+    payload = _bar()
+    payload["visualization"]["data"] = [
+        {"phase": "Phase 3", "trial_count": 0, "nct_ids": [], "citations": []}
+    ]
+    payload["trials"] = {}
+    payload["meta"]["sample"] = [{"cohort": None, "fetched": 0, "total": 0, "capped": False}]
+    assert "shape" in _checks(_errors(payload))
+
+
+def test_code_excerpt_must_equal_the_value_not_be_part_of_it() -> None:
+    # "PHASE1" is a substring of "EARLY_PHASE1" but is not the trial's phase.
+    payload = _bar()
+    payload["visualization"]["data"][1]["citations"][0]["excerpt"] = "PHASE1"
+    records = dict(BAR_RECORDS)
+    records["NCT00000002"] = _record("NCT00000002", designModule={"phases": ["EARLY_PHASE1"]})
+    assert "excerpts" in _checks(_errors(payload, records=records))
+
+
+def test_free_text_excerpt_may_be_a_substring() -> None:
+    payload = _bar()
+    payload["visualization"]["data"][1]["citations"][0] = {
+        "nct_id": "NCT00000002",
+        "excerpt": "Pembrolizumab",
+        "field": "armsInterventionsModule.interventions.name",
+    }
+    records = dict(BAR_RECORDS)
+    records["NCT00000002"] = _record(
+        "NCT00000002",
+        designModule={"phases": ["PHASE3"]},
+        armsInterventionsModule={"interventions": [{"name": "Pembrolizumab 200 mg IV"}]},
+    )
+    assert _errors(payload, records=records) == []
