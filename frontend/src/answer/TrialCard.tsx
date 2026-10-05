@@ -17,6 +17,7 @@ export function TrialCard({ nctId, number, trial, citations, onHover, onOpen }: 
   const extra = trial.conditions.length - MAX_CONDITIONS
   return (
     <li
+      id={`source-${nctId}`}
       className="source-card"
       tabIndex={0}
       onMouseEnter={() => onHover(nctId)}
@@ -42,6 +43,11 @@ export function TrialCard({ nctId, number, trial, citations, onHover, onOpen }: 
         </a>
       </div>
       <p className="source-title">{trial.brief_title}</p>
+      {trial.official_title && (
+        <p className="source-description" data-testid="description">
+          {trial.official_title}
+        </p>
+      )}
       <p className="source-meta">
         <span>{trial.start_date ?? 'Start date not registered'}</span>
         <span aria-hidden="true"> · </span>

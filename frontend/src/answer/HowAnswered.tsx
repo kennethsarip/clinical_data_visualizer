@@ -2,16 +2,31 @@ import type { components } from '../api/types'
 import { count, humanize, trials } from '../format'
 import { CHECKS, filterLabel, formatFilterValue } from '../vocab'
 import { FilterChips } from './FilterChips'
+import { Ledger } from './Ledger'
 
 type Schemas = components['schemas']
 type OkMeta = Schemas['OkMeta']
 
 /** "How this was answered": everything SCHEMAS.md §4 `meta` discloses about an `ok` answer. */
-export function HowAnswered({ meta }: { meta: OkMeta }) {
+export function HowAnswered({
+  meta,
+  open,
+  onToggle,
+}: {
+  meta: OkMeta
+  open?: boolean
+  onToggle?: (open: boolean) => void
+}) {
   const capped = meta.sample.some((entry) => entry.capped)
   const inferred = Object.keys(meta.filters.inferred).length > 0
   return (
-    <details className="card how-answered" aria-label="How this was answered">
+    <details
+      className="card how-answered"
+      aria-label="How this was answered"
+      id="how-answered"
+      open={open}
+      onToggle={(event) => onToggle?.((event.currentTarget as HTMLDetailsElement).open)}
+    >
       <summary>
         <span className="how-title">How this was answered</span>
         {capped && <span className="flag flag-warn">Capped sample</span>}
@@ -19,6 +34,10 @@ export function HowAnswered({ meta }: { meta: OkMeta }) {
         <span className="flag">{CHECKS.length} checks passed</span>
       </summary>
       <div className="how-body">
+        <Section title="Verification" wide>
+          <Ledger steps={meta.verification} />
+        </Section>
+
         <Section title="Question read as">
           <p>{interpretationText(meta.interpretation)}</p>
           {meta.interpretation.cohorts && (
@@ -85,7 +104,12 @@ export function HowAnswered({ meta }: { meta: OkMeta }) {
             <ul className="how-list">
               {meta.excluded.map((exclusion) => (
                 <li key={exclusion.rule}>
-                  {exclusion.rule}: {trials(exclusion.count)}
+                  <details>
+                    <summary>
+                      {exclusion.rule}: {trials(exclusion.count)}
+                    </summary>
+                    <p className="excluded-ids">{idList(exclusion.nct_ids)}</p>
+                  </details>
                 </li>
               ))}
             </ul>
@@ -107,6 +131,13 @@ export function HowAnswered({ meta }: { meta: OkMeta }) {
       </div>
     </details>
   )
+}
+
+const MAX_IDS = 50
+
+function idList(ids: string[]): string {
+  const more = ids.length - MAX_IDS
+  return ids.slice(0, MAX_IDS).join(', ') + (more > 0 ? `, +${more} more` : '')
 }
 
 function Section({ title, wide, children }: { title: string; wide?: boolean; children: React.ReactNode }) {

@@ -166,6 +166,7 @@ def assemble(
         top_n=None if isinstance(result, GraphAggregation) else result.top_n,
         pruning=result.pruning if isinstance(result, GraphAggregation) else None,
         notes=list(notes),
+        verification=[],  # the pipeline attaches the ledger once the checks have run
     )
     return OkResponse(
         status="ok",

@@ -68,6 +68,24 @@ describe('SourcesPanel', () => {
     expect(within(cards()[0]).getByTestId('excerpt')).toHaveTextContent('Not cited: each datum cites at most 25 trials')
   })
 
+  it('shows the official title verbatim as the card description', () => {
+    show()
+    const first = cards().find((card) => card.textContent?.includes('NCT00000001'))!
+    expect(within(first).getByTestId('description')).toHaveTextContent(
+      'A Phase 3, Randomized Study of Pembrolizumab in Participants With Advanced Melanoma',
+    )
+    const second = cards().find((card) => card.textContent?.includes('NCT00000002'))!
+    expect(within(second).queryByTestId('description')).not.toBeInTheDocument() // none registered
+  })
+
+  it('numbers the selected datum\'s trials as markers that jump to their cards', async () => {
+    const row = selectedRow(VIZ, { kind: 'row', index: 1 })!
+    show(row)
+    const markers = within(screen.getByRole('navigation', { name: 'Trials in this datum' })).getAllByRole('link')
+    expect(markers.map((m) => m.textContent)).toEqual(['[1]', '[2]'])
+    expect(markers[0]).toHaveAttribute('href', '#source-NCT00000001') // source 1 in trials order
+  })
+
   it('clears the selection', async () => {
     const { onClearSelection } = show(selectedRow(VIZ, { kind: 'row', index: 1 }))
     await userEvent.click(screen.getByRole('button', { name: 'Show all sources' }))

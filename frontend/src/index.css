@@ -1180,3 +1180,141 @@ a {
   justify-content: center;
   gap: 8px;
 }
+
+/* --- Phase 7: verification ledger, datum markers, card descriptions --- */
+
+.source-description {
+  margin: 0 0 6px;
+  color: var(--color-text-body);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.markers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.marker {
+  color: var(--color-accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.marker:hover,
+.marker:focus-visible {
+  text-decoration: underline;
+}
+
+.marker-more {
+  color: var(--color-text-muted);
+}
+
+.verified-badge {
+  justify-self: start;
+  border: 1px solid var(--color-blue-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-blue-tint);
+  color: var(--color-accent);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 4px 12px;
+  cursor: pointer;
+}
+
+.verified-badge::before {
+  content: '✓ ';
+}
+
+.ledger {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ledger-step {
+  display: grid;
+  grid-template-columns: 96px 88px 72px 1fr;
+  gap: 4px 12px;
+  align-items: baseline;
+  font-size: 13px;
+}
+
+.ledger-name {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.ledger-status {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.ledger-passed .ledger-status {
+  color: var(--color-accent);
+}
+
+.ledger-stopped .ledger-status {
+  color: var(--color-warning);
+}
+
+.ledger-failed .ledger-status {
+  color: var(--color-error);
+}
+
+.ledger-not_reached {
+  color: var(--color-text-muted);
+}
+
+.ledger-count {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-body);
+}
+
+.ledger-result {
+  color: var(--color-text-body);
+}
+
+.ledger-checks {
+  grid-column: 4;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  .ledger-step {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .ledger-result,
+  .ledger-checks {
+    grid-column: 1 / -1;
+  }
+}
+
+.excluded-ids {
+  margin: 4px 0 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--color-text-body);
+  word-break: break-word;
+}
+
+.where-stopped {
+  margin-top: 12px;
+  text-align: left;
+  font-size: 13px;
+}
+
+.where-stopped summary {
+  cursor: pointer;
+  color: var(--color-text-body);
+  text-align: center;
+}

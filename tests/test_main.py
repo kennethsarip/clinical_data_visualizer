@@ -36,6 +36,7 @@ CLARIFY = ClarificationResponse(
         unapplied=[],
         conflicts=[],
         suggested_query=None,
+        verification=[],
     ),
 )
 

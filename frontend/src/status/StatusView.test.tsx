@@ -41,6 +41,15 @@ describe('StatusView, from the SCHEMAS.md §5 examples', () => {
     expect(onAsk).toHaveBeenCalledExactlyOnceWith('How are asthma trials distributed across phases?')
   })
 
+  it('a refusal shows where it stopped in the verification ledger', () => {
+    show(ok(exampleWith((r) => r.status === 'clarification_needed')))
+    const ledger = screen.getByRole('list', { name: 'Verification' })
+    const steps = within(ledger).getAllByRole('listitem')
+    expect(steps[1]).toHaveTextContent('plan')
+    expect(steps[1]).toHaveTextContent('stopped')
+    expect(steps[2]).toHaveTextContent('not reached')
+  })
+
   it('clarification without a suggestion offers no ask button', () => {
     show(ok(exampleWith((r) => r.status === 'clarification_needed')))
     expect(screen.queryByRole('button', { name: /^Ask:/ })).not.toBeInTheDocument()
@@ -74,7 +83,7 @@ describe('StatusView, from the SCHEMAS.md §5 examples', () => {
     show(ok(exampleWith((r) => r.status === 'no_results' && (meta(r).not_found as string[]).length > 0)))
     expect(screen.getByRole('heading', { name: 'Not found on ClinicalTrials.gov' })).toBeInTheDocument()
     expect(within(screen.getByRole('list', { name: 'Not found' })).getByText('Zorblaxumab')).toBeInTheDocument()
-    expect(screen.getByText(/No similar drug was substituted/)).toBeInTheDocument()
+    expect(screen.getByText(/No similar drug was substituted/, { selector: 'p.note' })).toBeInTheDocument()
   })
 
   it('degraded: lists each failed check with its message', () => {

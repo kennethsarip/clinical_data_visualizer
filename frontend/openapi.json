@@ -189,6 +189,13 @@
             },
             "title": "Unapplied",
             "type": "array"
+          },
+          "verification": {
+            "items": {
+              "$ref": "#/components/schemas/VerificationStep"
+            },
+            "title": "Verification",
+            "type": "array"
           }
         },
         "required": [
@@ -196,6 +203,7 @@
           "filters",
           "assumptions",
           "notes",
+          "verification",
           "missing",
           "unapplied",
           "conflicts",
@@ -343,6 +351,13 @@
             "const": "clinicaltrials.gov",
             "title": "Source",
             "type": "string"
+          },
+          "verification": {
+            "items": {
+              "$ref": "#/components/schemas/VerificationStep"
+            },
+            "title": "Verification",
+            "type": "array"
           }
         },
         "required": [
@@ -350,6 +365,7 @@
           "filters",
           "assumptions",
           "notes",
+          "verification",
           "errors"
         ],
         "title": "DegradedMeta",
@@ -721,6 +737,13 @@
             "const": "clinicaltrials.gov",
             "title": "Source",
             "type": "string"
+          },
+          "verification": {
+            "items": {
+              "$ref": "#/components/schemas/VerificationStep"
+            },
+            "title": "Verification",
+            "type": "array"
           }
         },
         "required": [
@@ -728,6 +751,7 @@
           "filters",
           "assumptions",
           "notes",
+          "verification",
           "not_found"
         ],
         "title": "NoResultsMeta",
@@ -916,6 +940,13 @@
             },
             "title": "Units",
             "type": "object"
+          },
+          "verification": {
+            "items": {
+              "$ref": "#/components/schemas/VerificationStep"
+            },
+            "title": "Verification",
+            "type": "array"
           }
         },
         "required": [
@@ -923,6 +954,7 @@
           "filters",
           "assumptions",
           "notes",
+          "verification",
           "interpretation",
           "units",
           "sort",
@@ -1345,6 +1377,67 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "VerificationStep": {
+        "additionalProperties": false,
+        "description": "One pipeline step in `meta.verification` (Phase 7 step 5), written by Python.",
+        "properties": {
+          "checks": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Checks",
+            "type": "array"
+          },
+          "result": {
+            "title": "Result",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "passed",
+              "stopped",
+              "failed",
+              "not_reached"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "step": {
+            "enum": [
+              "request",
+              "plan",
+              "retrieval",
+              "records",
+              "aggregation",
+              "citations",
+              "prose",
+              "response"
+            ],
+            "title": "Step",
+            "type": "string"
+          },
+          "total": {
+            "minimum": 0.0,
+            "title": "Total",
+            "type": "integer"
+          },
+          "verified": {
+            "minimum": 0.0,
+            "title": "Verified",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "step",
+          "status",
+          "checks",
+          "verified",
+          "total",
+          "result"
+        ],
+        "title": "VerificationStep",
         "type": "object"
       },
       "VisualizeRequest": {

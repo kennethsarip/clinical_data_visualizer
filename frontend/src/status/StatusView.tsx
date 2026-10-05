@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import type { ApiResult, FieldError, VisualizeResponse } from '../api/client'
 import type { components } from '../api/types'
 import { FilterChips } from '../answer/FilterChips'
+import { Ledger } from '../answer/Ledger'
 import { filterLabel } from '../vocab'
 
 type Schemas = components['schemas']
@@ -75,6 +76,7 @@ function Clarification({
           Edit the question
         </button>
       </div>
+      <WhereItStopped steps={meta.verification} />
     </Panel>
   )
 }
@@ -89,6 +91,7 @@ function NoResults({ meta }: { meta: Schemas['NoResultsMeta'] }) {
           ))}
         </ul>
         <Notes notes={meta.notes} />
+        <WhereItStopped steps={meta.verification} />
       </Panel>
     )
   }
@@ -96,6 +99,7 @@ function NoResults({ meta }: { meta: Schemas['NoResultsMeta'] }) {
     <Panel title="No matching trials">
       <FilterChips filters={meta.filters} label="Filters applied" />
       <Notes notes={meta.notes} />
+      <WhereItStopped steps={meta.verification} />
     </Panel>
   )
 }
@@ -112,6 +116,7 @@ function Degraded({ meta }: { meta: Schemas['DegradedMeta'] }) {
         ))}
       </ul>
       <Notes notes={meta.notes} />
+      <WhereItStopped steps={meta.verification} />
     </Panel>
   )
 }
@@ -135,6 +140,15 @@ function Notes({ notes }: { notes: string[] }) {
       {note}
     </p>
   ))
+}
+
+function WhereItStopped({ steps }: { steps: Schemas['VerificationStep'][] }) {
+  return (
+    <details className="where-stopped">
+      <summary>Where it stopped</summary>
+      <Ledger steps={steps} />
+    </details>
+  )
 }
 
 function Panel({ title, tone, onRetry, children }: { title: string; tone?: 'error'; onRetry?: () => void; children: ReactNode }) {

@@ -38,6 +38,16 @@ describe('Answer', () => {
   })
 
 
+  it('a badge under the chart sums up verification and opens the ledger', async () => {
+    const user = userEvent.setup()
+    render(<Answer response={BAR as never} />)
+    const badge = screen.getByRole('button', { name: '4 trials accounted for · 5 citations verified' })
+    const drawer = screen.getByRole('group', { name: 'How this was answered' })
+    expect(drawer).not.toHaveAttribute('open')
+    await user.click(badge)
+    expect(drawer).toHaveAttribute('open')
+  })
+
   it('shows the chart title and every source', async () => {
     render(<Answer response={BAR as never} />)
     expect(screen.getByRole('heading', { name: 'Trials by Phase for Pembrolizumab' })).toBeInTheDocument()

@@ -4,6 +4,7 @@ import type { Selection } from '../charts/rendererProps'
 import { ChartCard } from './ChartCard'
 import { FilterChips } from './FilterChips'
 import { HowAnswered } from './HowAnswered'
+import { ledgerSummary } from './ledgerSummary'
 import { selectedRow, trialCitations } from './selection'
 import { SourcesPanel, type PanelTab } from './SourcesPanel'
 
@@ -19,6 +20,8 @@ export function Answer({ response }: { response: OkResponse }) {
   const [hovered, setHovered] = useState<string | null>(null)
   const [tab, setTab] = useState<PanelTab>('sources')
   const [viewing, setViewing] = useState<string | null>(null)
+  const [howOpen, setHowOpen] = useState(false)
+  const verified = ledgerSummary(response.meta.verification)
   const row = useMemo(() => (selection ? selectedRow(viz, selection) : null), [viz, selection])
   const highlighted = useMemo(
     () => (hovered ? new Set([hovered]) : row ? new Set(row.nctIds) : NONE),
@@ -38,7 +41,19 @@ export function Answer({ response }: { response: OkResponse }) {
             setTab('sources')
           }}
         />
-        <HowAnswered meta={response.meta} />
+        {verified && (
+          <button
+            type="button"
+            className="verified-badge"
+            onClick={() => {
+              setHowOpen(true)
+              document.getElementById('how-answered')?.scrollIntoView?.({ behavior: 'smooth' })
+            }}
+          >
+            {verified}
+          </button>
+        )}
+        <HowAnswered meta={response.meta} open={howOpen} onToggle={setHowOpen} />
       </div>
       <SourcesPanel
         trials={response.trials}
