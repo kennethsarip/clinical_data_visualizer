@@ -38,19 +38,19 @@ FILTER_KEYS: tuple[FilterKey, ...] = get_args(FilterKey)
 # aggregator fails `test_prompt_describes_every_registered_key...` until it is described here.
 INTENT_GUIDE: Mapping[Intent, str] = {
     Intent.TIME_TREND: "how many trials started per year",
-    Intent.DISTRIBUTION: "how one cohort's trials split into categories, or its top-N entities",
+    Intent.DISTRIBUTION: "how one cohort's trial counts split into categories (never enrollment)",
     Intent.COMPARISON: "the same categories side by side for 2-4 named cohorts (needs cohorts)",
     Intent.GEOGRAPHIC: "which countries host the trials",
-    Intent.NUMERIC: "enrollment (participant counts) per trial",
+    Intent.NUMERIC: "enrollment (participants, sample size) per trial",
     Intent.NETWORK: "which entities appear together in the same trials",
 }
 DIMENSION_GUIDE: Mapping[Dimension, str] = {
     Dimension.PHASE: "by trial phase",
     Dimension.OVERALL_STATUS: "by recruitment status (recruiting, completed, ...)",
     Dimension.INTERVENTION_TYPE: "by intervention type (drug, device, behavioral, ...)",
-    Dimension.SPONSOR_CLASS: "by sponsor category (industry, NIH, other, ...)",
+    Dimension.SPONSOR_CLASS: "by sponsor category (industry, NIH, academic/other, ...)",
     Dimension.DRUG: "by drug (top drugs)",
-    Dimension.SPONSOR: "by lead sponsor (top sponsors)",
+    Dimension.SPONSOR: "by lead sponsor name (top sponsors)",
     Dimension.CONDITION: "by condition (top conditions)",
     Dimension.COUNTRY: "by country",
     Dimension.START_YEAR: "by start year",
@@ -142,13 +142,15 @@ Choose exactly one `analysis` key:
 
 `filters`: copy values only from the question text, spelled as the user wrote them. Never correct,
 expand or translate a name, and never add a value the question does not imply. Leave a filter null
-when the question does not mention it. Structured fields listed with the question are already
-applied; do not copy them into filters.
+when the question does not mention it. Always copy values written in the question, even when a
+structured field listed with it sets the same filter (Python resolves conflicts); never copy a value
+that appears only in the structured fields.
 - drug_name, condition, sponsor, country: the names as written.
 - trial_phase: one phase when the question names exactly one (Phase 3 -> PHASE3).
 - overall_status: one status when the question names exactly one (recruiting -> RECRUITING).
-- start_year, end_year: trial start years. Resolve relative periods ("last five years") against
-  today's date, {today}.
+- start_year, end_year: trial start years. "Since 2015" or "the last five years" sets only
+  start_year (resolve relative periods against today's date, {today}). Set end_year only when the
+  question names an upper bound ("until 2020", "before 2020", "between 2015 and 2020").
 
 `cohorts`: only for a comparison.* key, else null. One cohort per compared drug, condition or
 sponsor, all of the same kind: `label` is the name as written, `entity` its kind, `value` the
@@ -158,8 +160,9 @@ compared entity in `filters`.
 `unsupported_reason`: null unless no key fits the question (e.g. it asks about investigators or
 outcomes); then one sentence saying what cannot be charted.
 
-Distinguish "how many trials per year" (time_trend.start_year) from "how has enrollment changed
-over time" (numeric.enrollment_by_start_date).
+Any question about enrollment, participants or sample size uses a numeric.* key, even when it says
+"distribution": enrollment sizes -> numeric.enrollment; enrollment over time ->
+numeric.enrollment_by_start_date. "How many trials per year" is time_trend.start_year.
 """
 
 

@@ -375,7 +375,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 | API client | Param building, pagination and the cap, against small recorded fixtures |
 | Planner / viz | Parsing and validation of LLM output with a stubbed LLM, including malformed output |
 | Frontend | Each viz renderer against the `SCHEMAS.md` examples; status views (Vitest; Phase 4) |
-| Live LLM | `tests/test_live_llm.py` (`-m live`): OpenAI accepts the strict schema `llm.strict_json_schema` generates and the reply validates. `tests/test_live_planner.py`: the real planner against every eval expectation, one test per question |
+| Live LLM | `tests/test_live_llm.py` (`-m live`): OpenAI accepts the strict schema `llm.strict_json_schema` generates and the reply validates. `tests/test_live_planner.py`: the real planner against every eval expectation, one test per question. `tests/test_live_prose.py`: an LLM title without fallback for every `ok` eval question |
 | Live core | `tests/test_live_core.py` (`-m live`): every registered aggregator plus citations on real records; checks provenance, retrieved IDs, excerpts, §8.5 reconciliation and network edges. Extended by each later step |
 | Eval | `eval/questions.json` (30 questions, loaded by `tests/eval_questions.py`, coherence-tested by `tests/test_eval_questions.py`): every §1 class plus ambiguous input, a zero-result combination, a nonexistent entity, a contradictory date range, multi-phase or missing-field records, and a very broad condition. For each question, record the intent, viz type, record count, check pass/fail, latency and failure mode |
 
@@ -492,7 +492,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) makes results visible for the demo.
 
-**Next move:** add credits to the OpenAI account (the new key authenticates but returns 429 `insufficient_quota`), then run `tests/test_live_llm.py` and `tests/test_live_planner.py` (`-m live`) and fix the prompt against any failing eval question; Phase 3 step 4 (the pipeline) can proceed meanwhile.
+**Next move:** Phase 3 step 4 (the pipeline). Pending user decision: reasoning effort `low` -> `medium` (evidence in BUILD_HISTORY 3.2-3.3 live runs).
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.

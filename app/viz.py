@@ -378,6 +378,8 @@ Use no numbers except years that appear in the filters.
 `notes`: 0-3 short sentences on how the question was interpreted (what is counted, which trials
 are included). Never state counts, trends, rankings or findings: you have not seen the data.
 Counting rules and caps are disclosed elsewhere; do not repeat them.
+
+Write for the person who asked: plain words, never internal field names such as drug_name.
 """
 
 

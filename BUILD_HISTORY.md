@@ -10,7 +10,13 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
   - The §7.6 number rule moved to `viz.stray_numbers`, shared with `checks._title`, so the prose step and the check cannot disagree. A title with a stray number falls back; a note with one is dropped on its own.
   - Any failure (malformed answer, refusal, upstream error, stray number) returns `default_title` plus a note saying so, with no retry, keeping the response `ok`.
   - 9 offline tests, seen red (8 failures) against a stub.
-- **Live status** (2026-10-04): the replacement key authenticates, but the account returns 429 `insufficient_quota` ("no credits remaining"), so both live LLM tests are still blocked. The SDK retries that 429 twice (~6 s wasted); it is permanent, not transient.
+- **Live runs, steps 3.1-3.3** (2026-10-04, after a working key): `test_live_llm` passes, so OpenAI accepts the generated strict schema. Planner on the 29 plannable eval questions, `gpt-5.4-mini` at `low`:
+  - Baseline 27/29. Misses: "last five years" also set `end_year` 2026, which would drop future-dated trials; "distribution of enrollment sizes" went to `distribution.drug` (intermittent).
+  - Prompt fix 1: `end_year` only for an explicit upper bound; any enrollment question is `numeric.*`. 3 runs: 28, 26, 29. New intermittent miss: with a conflicting `drug_name` field, the model sometimes omitted the query's drug, so the override note was lost.
+  - Prompt fix 2: always copy values written in the question; sponsor name vs category made explicit. 3 runs: 29, 28, 28. The remaining miss is only the enrollment histogram.
+  - That question alone, 15 samples each: `low` 12/15 correct (1.5 s mean), `medium` 15/15 (1.7 s). Full set at `medium`, 3 runs: 87/87, ~55-66 s per run vs ~45 s at `low`. A change of default is proposed, not applied.
+  - Prose (`tests/test_live_prose.py`): all 23 `ok` questions get an LLM title with no fallback. One note used the field name "drug_name"; the prose prompt now forbids internal field names (rerun 23/23).
+- **Earlier key problems** (same day): the first key returned 401 `invalid_api_key`; the second authenticated but had no credits (429 `insufficient_quota`, which the SDK retries uselessly, ~6 s); the third works.
 
 - **3.2 Planner** (2026-10-04): `app/planner.py` `plan_request(request, llm)` returns a `QueryPlan` or a `Clarification`; `build_plan` holds every rule and needs no LLM.
   - `plan_schema()` is the strict `LLMPlan` schema with `analysis` narrowed to the 22 registered keys. The prompt lists each key from per-intent and per-dimension guides, so a new aggregator fails a test until it is described. Today's date is in the prompt for relative years.
