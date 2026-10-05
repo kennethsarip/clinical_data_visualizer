@@ -930,7 +930,15 @@
           "PHASE4"
         ],
         "title": "Phase",
-        "type": "string"
+        "type": "string",
+        "x-labels": {
+          "EARLY_PHASE1": "Early Phase 1",
+          "NA": "Not Applicable",
+          "PHASE1": "Phase 1",
+          "PHASE2": "Phase 2",
+          "PHASE3": "Phase 3",
+          "PHASE4": "Phase 4"
+        }
       },
       "Pruning": {
         "additionalProperties": false,

@@ -48,3 +48,18 @@ def test_committed_schema_matches_the_app() -> None:
     # Catches a model change without regenerated frontend types, even where Node is absent.
     # Fix: `cd frontend && npm run gen:types`.
     assert COMMITTED.read_text() == openapi_json()
+
+
+def test_phase_enum_carries_the_vocab_display_labels() -> None:
+    # vocab.py stays the single source of labels; the frontend's phase picker reads them here.
+    phase = json.loads(openapi_json())["components"]["schemas"]["Phase"]
+    assert phase["x-labels"] == {
+        "NA": "Not Applicable",
+        "EARLY_PHASE1": "Early Phase 1",
+        "PHASE1": "Phase 1",
+        "PHASE2": "Phase 2",
+        "PHASE3": "Phase 3",
+        "PHASE4": "Phase 4",
+    }
+    # The dump sorts keys, so display order comes from `enum`; every value must have a label.
+    assert set(phase["x-labels"]) == set(phase["enum"])

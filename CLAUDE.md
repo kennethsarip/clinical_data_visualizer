@@ -497,7 +497,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) makes results visible for the demo.
 
-**Next move:** Phase 4 step 4 (search page).
+**Next move:** Phase 4 step 5 (status views).
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
@@ -515,7 +515,6 @@ Goal: a search-first app where a user asks a question, sees the chart as the ans
 **Decided from the reference pass** (user, 2026-10-04; patterns in `BUILD_HISTORY.md` → Decisions): a right panel with **Sources | Viewer** tabs; numbered source cards; a datum tooltip of "N trials, click to see sources"; reverse highlight (hovering a card highlights every row whose `nct_ids` holds that trial); a Viewer showing the cached record with the cited field highlighted; export as chart SVG/PNG plus response JSON. Two of these changed the backend contract (step 1, shipped: `BUILD_HISTORY.md`).
 
 Steps, in order:
-4. **Search page.** One large query box, example-question chips (one per §1 class, which also shows coverage), and the optional filters in a collapsible row; client-side checks mirror request validation, and the server stays authoritative.
 5. **Status views.** `clarification_needed` (the missing anchor, with suggestion chips), `no_results` and not found (the filters applied), `degraded` (the errors), and loading (spinner, elapsed time, cancel). HTTP errors as well: 422 shows the field errors, and 502 says a dependency is down and offers a retry. No response ever renders as a blank page.
 6. **Renderer dispatch.** One map from `type` to renderer. Vega-Lite renders the five chart types by translating `encoding` (fields, channel types, scale) + `data`; Cytoscape.js renders `network_graph`, de-emphasizing `is_anchor` nodes. Renderers read only `encoding` and never hardcode a column. Each renderer takes a `highlighted` NCT ID set (for reverse highlight) and exposes SVG/PNG export (Vega `view.toSVG()`/`toImageURL()`, Cytoscape `png()`).
 7. **Sources panel, Sources tab.** Numbered cards for the cited trials from `trials`: NCT ID, title, and status, phase, start date, sponsor and condition chips. Clicking a bar, point, node or edge filters the list to that datum's trials and shows each excerpt with its field; hovering a card highlights the rows that trial contributes to. This is where deep citations become visible.

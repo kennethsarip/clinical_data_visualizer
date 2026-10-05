@@ -11,10 +11,11 @@ module only translates the one exception the pipeline raises into its HTTP code.
 import logging
 from collections.abc import Iterator
 from functools import cache
-from typing import Annotated
+from typing import Annotated, Any
 
 import psycopg
 from fastapi import Depends, FastAPI, HTTPException, Path
+from fastapi.openapi.utils import get_openapi
 
 from app import aggregators  # noqa: F401  (registers every aggregator)
 from app.cache import TrialCache
@@ -30,6 +31,7 @@ from app.schemas import (
     VisualizeRequest,
     VisualizeResponse,
 )
+from app.vocab import PHASE_LABELS, Phase
 
 # uvicorn configures only its own loggers; without this, the app's INFO logs (cache hits and
 # misses, retries, repairs) are dropped.
@@ -37,6 +39,21 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(messag
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="ClinicalTrials.gov Query-to-Visualization Agent")
+
+
+def _openapi() -> dict[str, Any]:
+    """FastAPI's schema plus the phase display labels from `vocab.py`, so the frontend's phase
+    picker reads labels from the drift-checked schema instead of keeping a second copy."""
+    if app.openapi_schema is None:
+        schema = get_openapi(title=app.title, version=app.version, routes=app.routes)
+        schema["components"]["schemas"]["Phase"]["x-labels"] = {
+            phase.value: PHASE_LABELS[phase] for phase in Phase
+        }
+        app.openapi_schema = schema
+    return app.openapi_schema
+
+
+app.openapi = _openapi  # type: ignore[method-assign]
 
 
 # Settings and the HTTP-backed clients are built once and shared: both clients are thread-safe.

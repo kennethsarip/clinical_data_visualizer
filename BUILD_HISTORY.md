@@ -6,6 +6,11 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ### Phase 4: Frontend (in progress)
 
+- **4.4 Search page** (2026-10-05): `src/search/`: a query card (Enter submits, Shift+Enter adds a line), a collapsible filter row with an active-filter count, and six example chips, one per §1 class. Client checks in `request.ts` mirror `VisualizeRequest` (trimmed lengths, whole years, start <= end, blanks omitted); the server stays authoritative.
+  - The chips are eval questions expected `ok`, verbatim; a test keeps each in sync with `eval/questions.json` and its class. A chip clears the filters, so it runs exactly as verified.
+  - The phase picker reads codes and labels from `openapi.json`: the app's OpenAPI override publishes `vocab.py`'s labels as `Phase.x-labels`, leaving the LLM plan schema untouched, so labels have one source.
+  - Checked live: the network chip's question returned `ok` / `network_graph` through the Vite proxy (~10 s). Screenshots at 1440 px and a true 390 px (iframe, since headless Chrome won't go below 500 px) show no overflow.
+  - Dependency audit before the step: clean `npm ci`, 0 npm vulnerabilities, `uv lock --check` and `uv pip check` clean. TypeScript stays on 6.0 although 7.0 is out (the template's pin, and `openapi-typescript` already needs an override for 6). Added dev dependency `@testing-library/user-event` for realistic typing in form tests.
 - **4.3 Types and client** (2026-10-04): `app/export_openapi.py` prints the app's OpenAPI schema (sorted, no server, DB or key needed); `npm run gen:types` writes `frontend/openapi.json` and `src/api/types.ts` via `openapi-typescript`. Drift is caught twice: CI's `check:types` regenerates and diffs both files, and a pytest compares the committed `openapi.json` with the app, so the backend checks catch it without Node. Both were seen failing on an added model field.
   - Both routes now document their error bodies (`ErrorDetail`, `{detail}`: 404 on trials, 502 on visualize), so the generated types cover every body the client handles.
   - `src/api/client.ts` is the only backend caller and maps each HTTP outcome to one `ApiResult` kind (`ok`, `invalid` 422, `not_found` 404, `unavailable` 502, `failed` otherwise); a cancel rethrows its AbortError. Nine red-first tests.
