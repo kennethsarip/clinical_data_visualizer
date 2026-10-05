@@ -14,7 +14,7 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
   - Baseline 27/29. Misses: "last five years" also set `end_year` 2026, which would drop future-dated trials; "distribution of enrollment sizes" went to `distribution.drug` (intermittent).
   - Prompt fix 1: `end_year` only for an explicit upper bound; any enrollment question is `numeric.*`. 3 runs: 28, 26, 29. New intermittent miss: with a conflicting `drug_name` field, the model sometimes omitted the query's drug, so the override note was lost.
   - Prompt fix 2: always copy values written in the question; sponsor name vs category made explicit. 3 runs: 29, 28, 28. The remaining miss is only the enrollment histogram.
-  - That question alone, 15 samples each: `low` 12/15 correct (1.5 s mean), `medium` 15/15 (1.7 s). Full set at `medium`, 3 runs: 87/87, ~55-66 s per run vs ~45 s at `low`. A change of default is proposed, not applied.
+  - That question alone, 15 samples each: `low` 12/15 correct (1.5 s mean), `medium` 15/15 (1.7 s). Full set at `medium`, 3 runs: 87/87, ~55-66 s per run vs ~45 s at `low`. The default is now `medium` (user decision); at the new default, `test_live_planner` + `test_live_prose` passed 52/52.
   - Prose (`tests/test_live_prose.py`): all 23 `ok` questions get an LLM title with no fallback. One note used the field name "drug_name"; the prose prompt now forbids internal field names (rerun 23/23).
 - **Earlier key problems** (same day): the first key returned 401 `invalid_api_key`; the second authenticated but had no credits (429 `insufficient_quota`, which the SDK retries uselessly, ~6 s); the third works.
 

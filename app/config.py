@@ -22,8 +22,9 @@ class ConfigError(RuntimeError):
 class Settings(BaseModel):
     openai_api_key: SecretStr
     openai_model: str
-    # Planning is enum classification, so low effort keeps latency down (CLAUDE.md §3).
-    openai_reasoning_effort: ReasoningEffort = "low"
+    # medium, not low: low misrouted 3/15 enrollment questions, medium 0/15, for ~0.2 s more
+    # (live eval, 2026-10-04; CLAUDE.md §3).
+    openai_reasoning_effort: ReasoningEffort = "medium"
     database_url: SecretStr  # may embed the DB password
     ctgov_base_url: str = "https://clinicaltrials.gov/api/v2"
     fetch_cap: PositiveInt = 2000  # max records fetched per request (CLAUDE.md §7.3)

@@ -132,7 +132,7 @@ Happy path (LLM steps marked):
 | API framework | FastAPI | Request and response models use Pydantic, FastAPI's model layer |
 | Database | Postgres, run with Docker Compose | Response cache only (§6) |
 | Data source | ClinicalTrials.gov Data API v2 | The authoritative source. No API key needed (verified 2026-10-04). Facts in §8.4 |
-| LLM | OpenAI `gpt-5.4-mini`, low reasoning effort | The company supplied the key and an allowed-model list. Planning is enum classification, so a current mini model gives accuracy at low latency. No model benchmarking (user decision, 2026-10-04). Set in `OPENAI_MODEL`. Used only for planning and prose (§7.2) |
+| LLM | OpenAI `gpt-5.4-mini`, medium reasoning effort | The company supplied the key and an allowed-model list. Planning is enum classification, so a current mini model gives accuracy at low latency. Effort raised from `low` to `medium` after live eval runs: low misrouted 3/15 enrollment questions, medium 0/15 and 87/87 on the full set, for ~0.2-0.6 s more (user decision, 2026-10-04; `OPENAI_REASONING_EFFORT`). No model benchmarking (user decision, 2026-10-04). Set in `OPENAI_MODEL`. Used only for planning and prose (§7.2) |
 | Orchestration | Hand-rolled Python | No agent framework (§13.3) |
 | Vector DB | None | Rejected (§13.3) |
 | HTTP client | httpx (sync) | FastAPI runs sync routes in a threadpool and requests are sequential, so async adds complexity without need; `MockTransport` serves test fixtures without a mocking dependency. The OpenAI SDK (3.x) brings its own fork, `httpx2`, so the LLM fakes use `httpx2.MockTransport` (a declared dev dependency) |
@@ -492,7 +492,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) makes results visible for the demo.
 
-**Next move:** Phase 3 step 4 (the pipeline). Pending user decision: reasoning effort `low` -> `medium` (evidence in BUILD_HISTORY 3.2-3.3 live runs).
+**Next move:** Phase 3 step 4 (the pipeline).
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
