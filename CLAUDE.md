@@ -488,7 +488,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) makes results visible for the demo.
 
-**Next move:** Phase 2 step 1 (response models + contract test) on `phase-2-core`. Phase 2 decisions are recorded (2026-10-04).
+**Next move:** Phase 2 step 2 (registry) on `phase-2-core`. Step 1 shipped (see `BUILD_HISTORY.md`).
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
@@ -500,7 +500,6 @@ The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) m
 Goal: verified rows and complete specs for every question class and every viz type, with no LLM involved. All decisions are made (§6, §7.4, §7.5, SCHEMAS.md).
 
 Steps, in order (each red first, §9):
-1. **Response models.** `schemas.py` response models matching the locked `SCHEMAS.md`, plus the contract test that validates every JSON example in it.
 2. **Registry.** `aggregators/registry.py`: an `Aggregator` protocol declaring intent, dimension, output columns, row shape and excerpt source; registration by `(intent, dimension)`; a lookup miss raises a typed error.
 3. **Entities.** `entities.py`: the §6 drug rule (with its exclusion counts) and the §6 name normalization, each tested on names shaped like the §6 evidence.
 4. **Aggregators**, one module each, built on one shared count-by-key helper; each emits rows with `nct_ids`; expected rows computed by hand:

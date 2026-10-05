@@ -30,8 +30,8 @@ Unknown fields are rejected. The query, or a field, must name a drug, condition 
 
 ## 2. Response envelope
 
-```json
-{"status": "ok", "visualization": {}, "trials": {}, "meta": {}}
+```text
+{status, visualization, trials, meta}
 ```
 
 | Field | Type | Notes |

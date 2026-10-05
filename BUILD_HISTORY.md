@@ -4,6 +4,13 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ## Shipped
 
+### Phase 2: Aggregation, citations, checks (in progress on `phase-2-core`)
+
+- **2.1 Response models** (2026-10-04): `app/schemas.py` implements the locked SCHEMAS.md. Responses form a union keyed on `status`, so an `ok` response must carry a spec and a non-`ok` one must carry `visualization: null` and empty `trials`. Each status has its own `meta` model, and nullable `ok` keys are still required.
+- Models check structure only. Rules that compare values (encoding fields exist, `trial_count == len(nct_ids)`, excerpts) stay in `checks.py`, so each rule has one home.
+- The request and the plan filters share one base model, so the year-order rule and the field names cannot drift apart. `meta.filters` keys are a `Literal` that a test keeps equal to the plan's filter fields.
+- `tests/test_contract.py` validates every SCHEMAS.md JSON example, requires an example for each of the six types and four statuses, and rejects malformed variants. It was seen red against placeholder models; two of its rejection tests were mutation-checked.
+
 ### Phase 1: Foundation (done locally 2026-10-04; CI pending on push)
 
 - **1.8 Normalize** (2026-10-04): `app/normalize.py` maps a record to a frozen `NormalizedTrial` (§6 fields); multi-phase records get one category via `vocab.phase_label`; countries are deduped and sorted.
