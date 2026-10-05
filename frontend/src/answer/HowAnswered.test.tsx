@@ -40,7 +40,7 @@ describe('HowAnswered (SCHEMAS.md §4 meta)', () => {
     const drawer = await open(META)
     const checks = within(drawer).getByRole('list', { name: 'Checks passed' })
     const items = within(checks).getAllByRole('listitem')
-    expect(items).toHaveLength(10) // CLAUDE.md §7.6, conformance added in Phase 6 step 4
+    expect(items).toHaveLength(11) // CLAUDE.md §7.6: conformance (Phase 6.4), membership (Phase 7)
     expect(items[0]).toHaveTextContent('schema: The response matches the documented schema.')
     expect(items[9]).toHaveTextContent('conformance: Every charted trial meets each exact filter')
   })

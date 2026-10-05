@@ -7,7 +7,7 @@ years and every trial's year, so a stated range widens the zero-fill but never d
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from app.aggregators.common import START_YEAR, count_by, empty_row, single_cohort
+from app.aggregators.common import START_YEAR, Categorizer, count_by, empty_row, single_cohort
 from app.aggregators.registry import (
     REGISTRY,
     Aggregation,
@@ -39,6 +39,10 @@ class TimeTrendAggregator:
     @property
     def excerpt_fields(self) -> tuple[str, ...]:
         return START_YEAR.excerpt_fields
+
+    @property
+    def categorizer(self) -> Categorizer:
+        return START_YEAR
 
     def aggregate(self, cohorts: Sequence[CohortTrials]) -> Aggregation:
         cohort = single_cohort(cohorts)

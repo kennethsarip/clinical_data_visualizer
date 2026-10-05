@@ -1824,6 +1824,10 @@
     {
       "name": "conformance",
       "rule": "Every charted trial meets each exact filter; the filters shown are those sent."
+    },
+    {
+      "name": "membership",
+      "rule": "Each trial's own record puts it in its datum, and no matching trial is missing."
     }
   ]
 }

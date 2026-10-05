@@ -181,7 +181,10 @@ class Pipeline:
     ) -> AnyResponse:
         """§1 steps 7-9: prose, assembly, checks, one repair without the prose, else degraded."""
         filters = _filters(plan)
-        context = CheckContext(aggregator.shape, fetched.records, fetched.sent)
+        # Chart aggregators expose their categorizer so `membership` can re-derive each trial's
+        # category; networks and numeric charts have none.
+        categorizer = getattr(aggregator, "categorizer", None)
+        context = CheckContext(aggregator.shape, fetched.records, fetched.sent, categorizer)
 
         def build(title: str, notes: Sequence[str]) -> OkResponse:
             return assemble(

@@ -10,11 +10,13 @@ import re
 from pathlib import Path
 from typing import Any
 
+from app.aggregators.common import PHASE
 from app.aggregators.registry import RowShape
 from app.checks import CheckContext, run_checks
 from app.ctgov import build_params
 from app.schemas import RESPONSE_ADAPTER, OkResponse, RetrievalFilters
 from app.viz import VIZ_TYPE
+from tests.factories import make_trial, raw_record
 
 SCHEMAS_MD = Path(__file__).resolve().parents[1] / "SCHEMAS.md"
 _BLOCKS = [
@@ -340,6 +342,52 @@ def test_meta_filters_must_equal_the_params_sent() -> None:
     assert errors(_sent()) == {"conformance"}  # meta shows a filter never sent
     hidden = _sent(drug_name="Pembrolizumab", country="Japan")
     assert errors(hidden) == {"conformance"}  # a filter was sent that meta does not show
+
+
+# --- membership (Phase 7 steps 1-2): each trial's raw record puts it in its datum ---
+
+PHASE_TRIALS = {
+    "NCT00000001": ["PHASE3"],
+    "NCT00000002": ["PHASE3"],
+    "NCT00000003": ["PHASE1", "PHASE2"],
+    "NCT00000004": [],
+}
+
+
+def _membership_errors(
+    payload: dict[str, Any], phases: dict[str, list[str]] | None = None
+) -> list[tuple[str, str]]:
+    records = {n: raw_record(make_trial(n, phases=p)) for n, p in (phases or PHASE_TRIALS).items()}
+    response = RESPONSE_ADAPTER.validate_python(payload)
+    assert isinstance(response, OkResponse)
+    context = CheckContext(RowShape.CATEGORICAL, records, categorizer=PHASE)
+    return [(e.check, e.message) for e in run_checks(response, context)]
+
+
+def test_every_trial_in_its_records_category_passes_membership() -> None:
+    assert _membership_errors(_bar()) == []
+
+
+def test_a_trial_on_the_wrong_bar_cited_with_its_own_value_fails_membership() -> None:
+    """The case the excerpt check cannot see: NCT00000001 is Phase 2, sits on the Phase 3 bar,
+    and is cited "PHASE2", which really is in its record."""
+    payload = _bar()
+    phase3 = payload["visualization"]["data"][1]
+    phase3["citations"][1]["excerpt"] = "PHASE2"
+    errors = _membership_errors(payload, PHASE_TRIALS | {"NCT00000001": ["PHASE2"]})
+    assert _checks(errors) == {"membership"}
+    assert any("NCT00000001" in m and "Phase 3" in m for _, m in errors)
+
+
+def test_a_trial_left_off_its_bar_fails_membership() -> None:
+    payload = _bar()
+    phase3 = payload["visualization"]["data"][1]
+    phase3["nct_ids"] = ["NCT00000001"]
+    phase3["trial_count"] = 1
+    phase3["citations"] = [c for c in phase3["citations"] if c["nct_id"] == "NCT00000001"]
+    errors = _membership_errors(payload)
+    assert "membership" in _checks(errors)
+    assert any("NCT00000002" in m and "missing" in m for _, m in errors)
 
 
 # --- title ---

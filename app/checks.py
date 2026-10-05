@@ -23,9 +23,11 @@ from app.aggregators.common import (
     F_SPONSOR_CLASS,
     F_START_DATE,
     F_STATUS,
+    Categorizer,
 )
 from app.aggregators.registry import RowShape
 from app.ctgov import build_params
+from app.normalize import RecordShapeError, normalize_record
 from app.schemas import (
     RESPONSE_ADAPTER,
     ChartVisualization,
@@ -68,6 +70,9 @@ class CheckContext:
     # The API params each cohort was fetched with. The pipeline always passes them; None (unit
     # tests of other checks) skips only the "filters equal the params sent" half of conformance.
     sent: Sequence[Mapping[str, str]] | None = None
+    # The aggregator's categorizer, for re-deriving each trial's category from its raw record
+    # (membership); None for shapes without one (networks, numeric charts).
+    categorizer: Categorizer | None = None
 
 
 Check = Callable[[OkResponse, CheckContext], list[str]]
@@ -371,6 +376,62 @@ def _param_terms(params: Mapping[str, str]) -> set[tuple[str, str]]:
     return terms
 
 
+def _membership(response: OkResponse, context: CheckContext) -> list[str]:
+    """Phase 7 steps 1-2: every trial in every row belongs there by its own raw record, re-derived
+    with the aggregator's categorizer for all `nct_ids` (not only the cited ones), so a trial on
+    the wrong bar fails even when its excerpt is real. With one cohort, the reverse holds too: no
+    retrieved trial that meets the filters and belongs to a shown row is missing from it."""
+    spec = response.visualization
+    categorizer = context.categorizer
+    if categorizer is None or isinstance(spec, NetworkVisualization):
+        return []
+    rows = [r.model_dump() for r in spec.data]
+    charted = {n for row in rows for n in row["nct_ids"]}
+    one_cohort = response.meta.interpretation.cohorts is None
+    filters = {**response.meta.filters.stated, **response.meta.filters.inferred}
+    pool = {
+        n: r
+        for n, r in context.records.items()
+        if n in charted
+        or (
+            one_cohort
+            and all(_meets_raw(r.get("protocolSection", {}), k, v) for k, v in filters.items())
+        )
+    }
+    keys, unreadable = _categories(categorizer, pool)
+    messages = [f"{n} cannot be re-read to verify its category" for n in sorted(unreadable)]
+    label_keys: dict[object, set[object]] = {}
+    for assigned in keys.values():
+        for key, label in assigned:
+            label_keys.setdefault(label, set()).add(key)
+    for row in rows:
+        label = row[categorizer.column]
+        row_keys = label_keys.get(label, set())
+        for n in row["nct_ids"]:
+            if n in keys and not {k for k, _ in keys[n]} & row_keys:
+                found = ", ".join(str(lbl) for _, lbl in keys[n]) or "no category"
+                messages.append(f"{n} is in {label!r} but its record puts it in {found}")
+        if one_cohort and row_keys:
+            belong = {n for n, assigned in keys.items() if {k for k, _ in assigned} & row_keys}
+            for n in sorted(belong - set(row["nct_ids"]), reverse=True):
+                messages.append(f"{n} belongs in {label!r} by its record but is missing from it")
+    return messages
+
+
+def _categories(
+    categorizer: Categorizer, records: Mapping[str, dict[str, Any]]
+) -> tuple[dict[str, list[tuple[object, object]]], set[str]]:
+    """nct_id -> its (key, label) categories, from each raw record normalized afresh."""
+    trials, unreadable = [], set()
+    for nct_id, record in records.items():
+        try:
+            trials.append(normalize_record(record))
+        except RecordShapeError:
+            unreadable.add(nct_id)
+    by_trial = categorizer.assign(trials).by_trial
+    return {n: [(a.key, a.label) for a in assigned] for n, assigned in by_trial.items()}, unreadable
+
+
 CHECKS: tuple[tuple[str, Check], ...] = (
     ("schema", _schema),
     ("encoding", _encoding),
@@ -382,6 +443,7 @@ CHECKS: tuple[tuple[str, Check], ...] = (
     ("title", _title),
     ("disclosures", _disclosures),
     ("conformance", _conformance),
+    ("membership", _membership),
 )
 
 
@@ -398,4 +460,5 @@ CHECK_RULES: Mapping[str, str] = {
     "title": "The title contains no number that is not in the filters.",
     "disclosures": "Sample caps, pruning and top-N limits are disclosed consistently.",
     "conformance": "Every charted trial meets each exact filter; the filters shown are those sent.",
+    "membership": "Each trial's own record puts it in its datum, and no matching trial is missing.",
 }
