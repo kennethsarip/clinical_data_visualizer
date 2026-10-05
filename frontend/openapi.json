@@ -138,6 +138,13 @@
             "title": "Assumptions",
             "type": "array"
           },
+          "conflicts": {
+            "items": {
+              "$ref": "#/components/schemas/Conflict"
+            },
+            "title": "Conflicts",
+            "type": "array"
+          },
           "filters": {
             "$ref": "#/components/schemas/Filters"
           },
@@ -164,6 +171,24 @@
             "const": "clinicaltrials.gov",
             "title": "Source",
             "type": "string"
+          },
+          "suggested_query": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested Query"
+          },
+          "unapplied": {
+            "items": {
+              "$ref": "#/components/schemas/Unapplied"
+            },
+            "title": "Unapplied",
+            "type": "array"
           }
         },
         "required": [
@@ -171,7 +196,10 @@
           "filters",
           "assumptions",
           "notes",
-          "missing"
+          "missing",
+          "unapplied",
+          "conflicts",
+          "suggested_query"
         ],
         "title": "ClarificationMeta",
         "type": "object"
@@ -250,6 +278,38 @@
           "filters"
         ],
         "title": "Cohort",
+        "type": "object"
+      },
+      "Conflict": {
+        "additionalProperties": false,
+        "properties": {
+          "filter": {
+            "enum": [
+              "drug_name",
+              "condition",
+              "sponsor",
+              "country",
+              "trial_phase",
+              "overall_status",
+              "start_year",
+              "end_year"
+            ],
+            "title": "Filter",
+            "type": "string"
+          },
+          "quotes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Quotes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "filter",
+          "quotes"
+        ],
+        "title": "Conflict",
         "type": "object"
       },
       "DegradedMeta": {
@@ -1205,6 +1265,25 @@
           "conditions"
         ],
         "title": "TrialSummary",
+        "type": "object"
+      },
+      "Unapplied": {
+        "additionalProperties": false,
+        "properties": {
+          "quote": {
+            "title": "Quote",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "quote",
+          "reason"
+        ],
+        "title": "Unapplied",
         "type": "object"
       },
       "ValidationError": {

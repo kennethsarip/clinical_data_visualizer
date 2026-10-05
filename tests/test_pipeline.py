@@ -32,7 +32,7 @@ from app.schemas import (
 from app.viz import PROSE_FALLBACK_NOTE, PROSE_SCHEMA_NAME
 from tests.factories import FIXTURE, T3, make_trial, raw_record
 from tests.llm_fakes import fake_llm, json_reply
-from tests.test_planner import reply
+from tests.test_planner import constraint, reply
 
 TODAY = date(2026, 10, 4)
 PROSE = {"title": "Melanoma Trials by Phase", "notes": ["Counts trials listing melanoma."]}
@@ -231,6 +231,46 @@ def test_no_anchor_asks_before_any_fetch() -> None:
     assert response.meta.missing == ["drug_name", "condition", "sponsor"]
     assert ANCHOR_NOTE in response.meta.notes
     assert fetcher.fetched == [] and len(bodies) == 1
+
+
+def test_a_constraint_no_filter_expresses_asks_before_any_fetch() -> None:
+    fetcher = FakeFetcher()
+    plan = reply(
+        condition="asthma",
+        constraints=[
+            constraint("asthma", "condition"),
+            constraint("pediatric", None, "no filter for age group"),
+        ],
+        suggested="How are asthma trials distributed across phases?",
+    )
+    response, _ = run(
+        "How are pediatric asthma trials distributed across phases?", [json_reply(plan)], fetcher
+    )
+    assert isinstance(response, ClarificationResponse)
+    meta = response.meta
+    assert meta.missing == [] and meta.conflicts == []
+    assert [u.model_dump() for u in meta.unapplied] == [
+        {"quote": "pediatric", "reason": "no filter for age group"}
+    ]
+    assert meta.suggested_query == "How are asthma trials distributed across phases?"
+    assert meta.filters.stated == {"condition": "asthma"}
+    assert fetcher.fetched == []
+
+
+def test_two_values_for_one_filter_name_both_in_meta() -> None:
+    plan = reply(
+        condition="lung cancer",
+        country="Japan",
+        constraints=[constraint("Japan", "country"), constraint("Korea", "country")],
+    )
+    response, _ = run(
+        "Lung cancer trials in Japan and Korea by phase", [json_reply(plan)], FakeFetcher()
+    )
+    assert isinstance(response, ClarificationResponse)
+    assert [c.model_dump() for c in response.meta.conflicts] == [
+        {"filter": "country", "quotes": ["Japan", "Korea"]}
+    ]
+    assert response.meta.suggested_query is None
 
 
 def test_plan_invalid_twice_is_degraded_with_the_request_filters() -> None:

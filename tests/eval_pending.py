@@ -9,10 +9,8 @@ from _pytest.mark import ParameterSet
 
 from eval.questions import EvalQuestion
 
-PENDING = {
-    "edge_two_values_one_filter": "Phase 6 step 3: two places for one filter ask which one",
-    "edge_unexpressible_constraint": "Phase 6 step 3: an age group no filter expresses asks first",
-}
+# question id -> the step that makes it pass. Empty: every Phase 6 step 0 question now passes.
+PENDING: dict[str, str] = {}
 
 
 def eval_params(questions: list[EvalQuestion]) -> list[ParameterSet]:

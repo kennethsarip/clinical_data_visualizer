@@ -14,6 +14,7 @@ with the error; a second failure raises `PlanError` (`degraded`, §7.7). A reque
 fix returns a `Clarification`.
 """
 
+import logging
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date
@@ -23,8 +24,17 @@ from pydantic import ValidationError
 
 from app.aggregators.registry import REGISTRY, Dimension, Intent, Registry
 from app.llm import LLMClient, LLMOutputError, strict_json_schema
-from app.schemas import FilterKey, LLMCohort, LLMPlan, RetrievalFilters, VisualizeRequest
+from app.schemas import (
+    FilterKey,
+    LLMCohort,
+    LLMConstraint,
+    LLMPlan,
+    RetrievalFilters,
+    VisualizeRequest,
+)
 from app.vocab import Phase, Status, label
+
+logger = logging.getLogger(__name__)
 
 PLAN_SCHEMA_NAME = "query_plan"
 ANCHORS: tuple[FilterKey, ...] = ("drug_name", "condition", "sponsor")
@@ -107,6 +117,9 @@ class Clarification:
     missing: tuple[FilterKey, ...]  # absent anchors; empty when the problem is something else
     stated: FilterValues
     notes: tuple[str, ...]
+    unapplied: tuple[tuple[str, str], ...] = ()  # (quote, reason): no filter expresses it
+    conflicts: tuple[tuple[FilterKey, tuple[str, ...]], ...] = ()  # one filter, several values
+    suggested_query: str | None = None
 
 
 def analysis_key(intent: Intent, dimension: Dimension) -> str:
@@ -159,6 +172,19 @@ that appears only in the structured fields.
 sponsor, all of the same kind: `label` is the name as written, `entity` its kind, `value` the
 name to search. List every compared item, even if there are more than 4. Do not also put the
 compared entity in `filters`.
+
+`constraints`: every part of the question that limits which trials count (a drug, condition,
+sponsor, place, phase, status or time period, and also anything no filter covers, such as an age
+group, sex, city or region), never the chart's dimension. `quote`: the words exactly as written in
+the question. `applied_as`: the filter key it set, or null when no filter can express it, with
+`reason` a short phrase saying why (e.g. "no filter for age group"); `reason` is null otherwise. In
+a comparison, quote each compared item with its entity kind. A place you cannot map to one country
+(a city, a region) is not applied; never pick a country for it. Leave out a phrase that only points
+to a structured field ("this drug" when drug_name is supplied): the field already applies it.
+
+`suggested_query`: when a constraint is not applied, or the question gives one filter two values,
+the question rephrased so it can be charted: drop what cannot be applied, or keep only the first
+of the two values, and change nothing else. Otherwise null.
 
 `unsupported_reason`: null unless no key fits the question (e.g. it asks about investigators or
 outcomes); then one sentence saying what cannot be charted.
@@ -220,12 +246,85 @@ def build_plan(
     # so the clarification is about the count, not a missing anchor.
     has_anchor = bool(llm_plan.cohorts) or any(getattr(filters, key) for key in ANCHORS)
     missing = () if has_anchor else ANCHORS
+    unapplied, conflicts = _account(request, llm_plan, cohort_entity=_cohort_entity(llm_plan))
     problems = [p for p in (llm_plan.unsupported_reason, cohort_problem) if p]
+    problems += [f'"{quote}" cannot be applied: {reason}.' for quote, reason in unapplied]
+    problems += [
+        f"The question names more than one {FILTER_NAMES[key]}: {', '.join(quotes)}. "
+        "Ask about one at a time."
+        for key, quotes in conflicts
+    ]
     if missing or problems:
         anchor_note = () if has_anchor else (ANCHOR_NOTE,)
-        return Clarification(missing, {**stated, **inferred}, (*anchor_note, *problems, *notes))
+        suggested = _suggestion(request, llm_plan.suggested_query, unapplied)
+        return Clarification(
+            missing,
+            {**stated, **inferred},
+            (*anchor_note, *problems, *notes),
+            unapplied,
+            conflicts,
+            suggested,
+        )
     assumptions = (*_inferred_assumptions(inferred), *_cohort_assumptions(llm_plan.cohorts or []))
     return QueryPlan(intent, dimension, filters, cohorts, stated, inferred, assumptions, notes)
+
+
+def _cohort_entity(llm_plan: LLMPlan) -> FilterKey | None:
+    """The entity a comparison's cohorts vary: its several values are cohorts, not a conflict."""
+    return llm_plan.cohorts[0].entity if llm_plan.cohorts else None
+
+
+def _account(
+    request: VisualizeRequest, llm_plan: LLMPlan, cohort_entity: FilterKey | None
+) -> tuple[tuple[tuple[str, str], ...], tuple[tuple[FilterKey, tuple[str, ...]], ...]]:
+    """Phase 6 step 3: every constraint the LLM quoted is in the question and, if applied, set a
+    filter. Returns the constraints no filter expresses and the filters quoted with several
+    values; an inconsistency only the LLM can fix raises for the retry."""
+    query = request.query.casefold()
+    by_filter: dict[FilterKey, list[str]] = {}
+    unapplied: list[tuple[str, str]] = []
+    for c in llm_plan.constraints:
+        if c.quote.casefold() not in query:
+            raise LLMOutputError(
+                f"constraints: {c.quote!r} is not in the question; quote it exactly"
+            )
+        if c.applied_as is None:
+            unapplied.append((c.quote, _reason(c)))
+        elif c.applied_as == cohort_entity:
+            continue
+        elif getattr(llm_plan.filters, c.applied_as) is None:
+            raise LLMOutputError(
+                f"constraints: {c.quote!r} is applied as {c.applied_as}, "
+                "which is not set in filters"
+            )
+        else:
+            by_filter.setdefault(c.applied_as, []).append(c.quote)
+    conflicts = tuple(
+        (key, tuple(quotes))
+        for key, quotes in by_filter.items()
+        if len({q.casefold() for q in quotes}) > 1
+    )
+    return tuple(unapplied), conflicts
+
+
+def _reason(constraint: LLMConstraint) -> str:
+    if not constraint.reason:
+        raise LLMOutputError(f"constraints: {constraint.quote!r} is not applied but has no reason")
+    return constraint.reason
+
+
+def _suggestion(
+    request: VisualizeRequest, suggested: str | None, unapplied: tuple[tuple[str, str], ...]
+) -> str | None:
+    """The LLM's rephrasing, offered only if it drops every unapplied constraint and differs from
+    the question; otherwise the user would be offered the same dead end."""
+    if suggested is None:
+        return None
+    text = suggested.casefold()
+    if text == request.query.casefold() or any(q.casefold() in text for q, _ in unapplied):
+        logger.warning("dropping a suggested query that keeps the problem: %r", suggested)
+        return None
+    return suggested
 
 
 def _parse_analysis(key: str, registry: Registry) -> tuple[Intent, Dimension]:

@@ -5,6 +5,8 @@ import { toRequest, type FormErrors } from './request'
 export interface SearchFormHandle {
   /** Put the cursor back in the question, e.g. after a clarification asks for more detail. */
   focusQuery: () => void
+  /** Show a question asked from elsewhere (a clarification's suggestion) in the box. */
+  setQuery: (query: string) => void
 }
 
 interface Props {
@@ -25,6 +27,10 @@ export function SearchForm({ busy, onSubmit, ref }: Props) {
       if (!element) return
       element.focus()
       element.setSelectionRange(element.value.length, element.value.length)
+    },
+    setQuery(next) {
+      setQuery(next)
+      setErrors({})
     },
   }))
 

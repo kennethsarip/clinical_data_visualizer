@@ -78,6 +78,21 @@ class VisualizeRequest(_FilterFields):
     ]
 
 
+# Every key a filter can appear under in `meta.filters`; a test keeps it equal to the
+# RetrievalFilters fields.
+FilterKey = Literal[
+    "drug_name",
+    "condition",
+    "sponsor",
+    "country",
+    "trial_phase",
+    "overall_status",
+    "start_year",
+    "end_year",
+]
+FilterValues = dict[FilterKey, str | int]
+
+
 # --- LLM output (CLAUDE.md §7.2): parsed and validated before any code uses it ---
 
 PlanEntity = Literal["drug_name", "condition", "sponsor"]
@@ -91,6 +106,17 @@ class LLMCohort(BaseModel):
     label: FilterText
     entity: PlanEntity
     value: FilterText
+
+
+class LLMConstraint(BaseModel):
+    """One part of the question that limits which trials count (Phase 6 step 3), quoted verbatim.
+    `applied_as` is the filter it became, or null with a `reason` when no filter expresses it."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    quote: FilterText
+    applied_as: FilterKey | None
+    reason: Annotated[str, StringConstraints(strip_whitespace=True, max_length=200)] | None
 
 
 class LLMPlan(BaseModel):
@@ -107,6 +133,14 @@ class LLMPlan(BaseModel):
     filters: RetrievalFilters
     cohorts: list[LLMCohort] | None
     unsupported_reason: str | None  # set when no analysis fits the question
+    constraints: list[LLMConstraint]  # every constraint in the question, applied or not
+    # A rephrased question when a constraint cannot be applied or names two values; else null.
+    suggested_query: (
+        Annotated[
+            str, StringConstraints(strip_whitespace=True, min_length=1, max_length=QUERY_MAX_LENGTH)
+        ]
+        | None
+    )
 
 
 ProseNote = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=300)]
@@ -129,20 +163,6 @@ class LLMProse(BaseModel):
 NCT_ID_PATTERN = r"^NCT\d{8}$"
 NctId = Annotated[str, Field(pattern=NCT_ID_PATTERN)]
 Count = Annotated[int, Field(ge=0)]
-
-# Every key a filter can appear under in `meta.filters`; a test keeps it equal to the
-# RetrievalFilters fields.
-FilterKey = Literal[
-    "drug_name",
-    "condition",
-    "sponsor",
-    "country",
-    "trial_phase",
-    "overall_status",
-    "start_year",
-    "end_year",
-]
-FilterValues = dict[FilterKey, str | int]
 
 
 class _Contract(BaseModel):
@@ -318,8 +338,21 @@ class OkMeta(_MetaBase):
     pruning: Pruning | None
 
 
+class Unapplied(_Contract):
+    quote: str  # verbatim from the question
+    reason: str  # why no filter expresses it
+
+
+class Conflict(_Contract):
+    filter: FilterKey
+    quotes: list[str]  # the values the question names for this one filter, verbatim
+
+
 class ClarificationMeta(_MetaBase):
     missing: list[Literal["drug_name", "condition", "sponsor"]]
+    unapplied: list[Unapplied]  # constraints no filter expresses (Phase 6 step 3)
+    conflicts: list[Conflict]  # filters the question gives more than one value
+    suggested_query: str | None  # a rephrasing that can be charted, offered as one click
 
 
 class NoResultsMeta(_MetaBase):

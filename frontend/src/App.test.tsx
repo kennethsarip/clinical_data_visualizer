@@ -63,6 +63,20 @@ describe('App', () => {
     expect(box).toHaveValue('show me trials')
   })
 
+  it('asking the suggested rephrase puts it in the box and sends it', async () => {
+    const suggestion = exampleWith((r) => r.status === 'clarification_needed' && r.meta.suggested_query != null)
+    const fetch = vi.fn().mockResolvedValueOnce(json(200, suggestion)).mockReturnValue(new Promise(() => {}))
+    vi.stubGlobal('fetch', fetch)
+    const user = userEvent.setup()
+    render(<App />)
+    await ask(user, 'How are pediatric asthma trials distributed across phases?')
+    const rephrase = 'How are asthma trials distributed across phases?'
+    await user.click(await screen.findByRole('button', { name: `Ask: ${rephrase}` }))
+    expect(screen.getByRole('textbox', { name: /ask about clinical trials/i })).toHaveValue(rephrase)
+    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(JSON.parse(fetch.mock.calls[1][1].body)).toEqual({ query: rephrase })
+  })
+
   it('cancel returns to idle without an error', async () => {
     vi.stubGlobal('fetch', hangingFetch())
     const user = userEvent.setup()

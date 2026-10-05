@@ -264,6 +264,9 @@ The full `meta` of an `ok` response is in §3.1.
 | pruning | when `ok` | `null` unless network: `{min_edge_weight, top_n_nodes, fallback_used, nodes_removed, edges_removed}` |
 | notes | always | LLM-written prose about the interpretation |
 | missing | `clarification_needed` only | The anchors the request lacks |
+| unapplied | `clarification_needed` only | `[{quote, reason}]`: parts of the question no filter can express (an age group, a city, a region), quoted verbatim from `query`, so the chart would silently ignore them |
+| conflicts | `clarification_needed` only | `[{filter, quotes}]`: a filter the question gives more than one value (`"Japan"`, `"Korea"`), each quoted verbatim |
+| suggested_query | `clarification_needed` only | A rephrased question that can be charted (written by the planner; never contains an `unapplied` quote), or `null`. A frontend can offer it as one click |
 | not_found | `no_results` only | Entities that match no trial on their own; empty when the filters together match nothing |
 | errors | `degraded` only | `[{check, message}]` |
 
@@ -274,11 +277,21 @@ Network `pruning` example: `{"min_edge_weight": 2, "top_n_nodes": 50, "fallback_
 ```json
 {"status": "clarification_needed", "visualization": null, "trials": {},
  "meta": {"source": "clinicaltrials.gov", "filters": {"stated": {}, "inferred": {}}, "assumptions": [],
-          "missing": ["drug_name", "condition", "sponsor"],
+          "missing": ["drug_name", "condition", "sponsor"], "unapplied": [], "conflicts": [], "suggested_query": null,
           "notes": ["Name a drug, condition or sponsor to chart."]}}
 ```
 
 `missing` lists absent anchors only. A request that is anchored but cannot be planned, such as a comparison of more than 4 cohorts, returns `clarification_needed` with `missing: []` and the reason in `notes`.
+
+A constraint no filter expresses (CLAUDE.md §14 Phase 6 step 3). Charting asthma trials by phase would silently drop "pediatric", so the answer asks first:
+
+```json
+{"status": "clarification_needed", "visualization": null, "trials": {},
+ "meta": {"source": "clinicaltrials.gov", "filters": {"stated": {"condition": "asthma"}, "inferred": {}}, "assumptions": [],
+          "missing": [], "unapplied": [{"quote": "pediatric", "reason": "no filter for age group"}], "conflicts": [],
+          "suggested_query": "How are asthma trials distributed across phases?",
+          "notes": ["\"pediatric\" cannot be applied: no filter for age group."]}}
+```
 
 Zero results with every entity found (the filters together match nothing):
 

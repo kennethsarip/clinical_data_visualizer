@@ -9,10 +9,11 @@ interface Props {
   result: ApiResult<VisualizeResponse>
   onRetry: () => void
   onEditQuestion: () => void
+  onAsk: (query: string) => void
 }
 
 /** Every outcome except a chart: non-`ok` statuses (SCHEMAS.md §5) and HTTP errors. */
-export function StatusView({ result, onRetry, onEditQuestion }: Props) {
+export function StatusView({ result, onRetry, onEditQuestion, onAsk }: Props) {
   if (result.kind === 'invalid') return <Invalid errors={result.errors} />
   if (result.kind === 'unavailable') {
     return (
@@ -32,7 +33,7 @@ export function StatusView({ result, onRetry, onEditQuestion }: Props) {
   const response = result.data
   switch (response.status) {
     case 'clarification_needed':
-      return <Clarification meta={response.meta} onEditQuestion={onEditQuestion} />
+      return <Clarification meta={response.meta} onEditQuestion={onEditQuestion} onAsk={onAsk} />
     case 'no_results':
       return <NoResults meta={response.meta} />
     case 'degraded':
@@ -42,14 +43,38 @@ export function StatusView({ result, onRetry, onEditQuestion }: Props) {
   }
 }
 
-function Clarification({ meta, onEditQuestion }: { meta: Schemas['ClarificationMeta']; onEditQuestion: () => void }) {
-  // The question box is the only input, so the answer to a clarification is a rephrased question.
+function Clarification({
+  meta,
+  onEditQuestion,
+  onAsk,
+}: {
+  meta: Schemas['ClarificationMeta']
+  onEditQuestion: () => void
+  onAsk: (query: string) => void
+}) {
+  // The question box is the only input, so the answer to a clarification is a rephrased question:
+  // the planner's suggestion in one click (SCHEMAS.md §5), or the user's own edit.
+  const suggestion = meta.suggested_query
   return (
     <Panel title="More detail needed">
       <Notes notes={meta.notes} />
-      <button type="button" className="example-chip" onClick={onEditQuestion}>
-        Edit the question
-      </button>
+      {meta.unapplied.length > 0 && (
+        <ul className="pill-list" aria-label="Not applied">
+          {meta.unapplied.map(({ quote }) => (
+            <li key={quote}>{quote}</li>
+          ))}
+        </ul>
+      )}
+      <div className="clarify-actions">
+        {suggestion && (
+          <button type="button" className="button-primary" onClick={() => onAsk(suggestion)}>
+            Ask: {suggestion}
+          </button>
+        )}
+        <button type="button" className="example-chip" onClick={onEditQuestion}>
+          Edit the question
+        </button>
+      </div>
     </Panel>
   )
 }

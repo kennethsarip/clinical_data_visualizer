@@ -11,8 +11,11 @@ const meta = (r: VisualizeResponse) => r.meta as unknown as Meta
 function show(result: ApiResult<VisualizeResponse>) {
   const onRetry = vi.fn()
   const onEditQuestion = vi.fn()
-  const { container } = render(<StatusView result={result} onRetry={onRetry} onEditQuestion={onEditQuestion} />)
-  return { onRetry, onEditQuestion, container }
+  const onAsk = vi.fn()
+  const { container } = render(
+    <StatusView result={result} onRetry={onRetry} onEditQuestion={onEditQuestion} onAsk={onAsk} />,
+  )
+  return { onRetry, onEditQuestion, onAsk, container }
 }
 
 const ok = (data: VisualizeResponse): ApiResult<VisualizeResponse> => ({ kind: 'ok', data })
@@ -26,6 +29,22 @@ describe('StatusView, from the SCHEMAS.md §5 examples', () => {
     expect(screen.queryByRole('button', { name: /^Add a/ })).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Edit the question' }))
     expect(onEditQuestion).toHaveBeenCalledOnce()
+  })
+
+  it('clarification with an unapplied constraint: names it and offers the rephrase as one click', async () => {
+    const response = exampleWith((r) => r.status === 'clarification_needed' && meta(r).suggested_query !== null)
+    const { onAsk } = show(ok(response))
+    expect(screen.getByText('"pediatric" cannot be applied: no filter for age group.')).toBeInTheDocument()
+    const notApplied = screen.getByRole('list', { name: 'Not applied' })
+    expect(within(notApplied).getByRole('listitem')).toHaveTextContent('pediatric')
+    await userEvent.click(screen.getByRole('button', { name: 'Ask: How are asthma trials distributed across phases?' }))
+    expect(onAsk).toHaveBeenCalledExactlyOnceWith('How are asthma trials distributed across phases?')
+  })
+
+  it('clarification without a suggestion offers no ask button', () => {
+    show(ok(exampleWith((r) => r.status === 'clarification_needed')))
+    expect(screen.queryByRole('button', { name: /^Ask:/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('list', { name: 'Not applied' })).not.toBeInTheDocument()
   })
 
   it('clarification with nothing missing: shows the reason and the edit button', () => {

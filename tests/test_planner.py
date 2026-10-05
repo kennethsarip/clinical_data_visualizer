@@ -37,6 +37,8 @@ def reply(
     analysis: str = "distribution.phase",
     cohorts: list[dict[str, str]] | None = None,
     unsupported: str | None = None,
+    constraints: list[dict[str, Any]] | None = None,
+    suggested: str | None = None,
     **filters: Any,
 ) -> dict[str, Any]:
     """An LLM plan as JSON: every filter key present, null unless given."""
@@ -45,7 +47,13 @@ def reply(
         "filters": {key: filters.get(key) for key in RetrievalFilters.model_fields},
         "cohorts": cohorts,
         "unsupported_reason": unsupported,
+        "constraints": constraints or [],
+        "suggested_query": suggested,
     }
+
+
+def constraint(quote: str, applied_as: str | None, reason: str | None = None) -> dict[str, Any]:
+    return {"quote": quote, "applied_as": applied_as, "reason": reason}
 
 
 def build(query: str, llm: dict[str, Any], **fields: Any) -> QueryPlan | Clarification:
@@ -79,7 +87,14 @@ def test_plan_schema_offers_exactly_the_registered_keys() -> None:
 def test_plan_schema_is_strict() -> None:
     schema = plan_schema()
     assert schema["additionalProperties"] is False
-    assert set(schema["required"]) == {"analysis", "filters", "cohorts", "unsupported_reason"}
+    assert set(schema["required"]) == {
+        "analysis",
+        "filters",
+        "cohorts",
+        "unsupported_reason",
+        "constraints",  # Phase 6 step 3
+        "suggested_query",
+    }
 
 
 def test_plan_schema_offers_only_registry_country_names() -> None:
@@ -198,6 +213,106 @@ def test_a_country_variant_mapped_to_its_registry_name_is_inferred() -> None:
 def test_a_country_outside_the_registry_is_an_output_error() -> None:
     with pytest.raises(ValidationError, match="not a ClinicalTrials.gov country name"):
         build("Lung cancer trials in Korea", reply(condition="lung cancer", country="Korea"))
+
+
+# --- constraint accounting (Phase 6 step 3) ---
+
+PEDIATRIC = "How are pediatric asthma trials distributed across phases?"
+ASTHMA = constraint("asthma", "condition")
+
+
+def test_a_constraint_no_filter_expresses_asks_with_a_rephrase() -> None:
+    result = clarify(
+        build(
+            PEDIATRIC,
+            reply(
+                condition="asthma",
+                constraints=[ASTHMA, constraint("Pediatric", None, "no filter for age group")],
+                suggested="How are asthma trials distributed across phases?",
+            ),
+        )
+    )
+    assert result.missing == ()
+    assert result.unapplied == (("Pediatric", "no filter for age group"),)
+    assert result.conflicts == ()
+    assert result.suggested_query == "How are asthma trials distributed across phases?"
+    assert any("Pediatric" in note and "no filter for age group" in note for note in result.notes)
+
+
+def test_a_suggested_query_still_holding_the_unapplied_constraint_is_dropped() -> None:
+    result = clarify(
+        build(
+            PEDIATRIC,
+            reply(
+                condition="asthma",
+                constraints=[ASTHMA, constraint("pediatric", None, "no filter for age group")],
+                suggested="How are pediatric asthma trials split by phase?",
+            ),
+        )
+    )
+    assert result.suggested_query is None
+
+
+def test_two_values_for_one_filter_ask_naming_both() -> None:
+    query = "How are lung cancer trials in Japan and Korea distributed across phases?"
+    result = clarify(
+        build(
+            query,
+            reply(
+                condition="lung cancer",
+                country="Japan",
+                constraints=[
+                    constraint("lung cancer", "condition"),
+                    constraint("Japan", "country"),
+                    constraint("Korea", "country"),
+                ],
+                suggested="How are lung cancer trials in Japan distributed across phases?",
+            ),
+        )
+    )
+    assert result.conflicts == (("country", ("Japan", "Korea")),)
+    assert result.unapplied == ()
+    assert any("Japan" in note and "Korea" in note for note in result.notes)
+
+
+def test_compared_entities_are_cohorts_not_a_conflict() -> None:
+    plan = ok(
+        build(
+            "Compare phases of pembrolizumab and nivolumab trials",
+            reply(
+                "comparison.phase",
+                [cohort("pembrolizumab"), cohort("nivolumab")],
+                constraints=[
+                    constraint("pembrolizumab", "drug_name"),
+                    constraint("nivolumab", "drug_name"),
+                ],
+            ),
+        )
+    )
+    assert len(plan.cohorts) == 2
+
+
+def test_every_applied_constraint_keeps_the_plan() -> None:
+    plan = ok(
+        build(
+            "Phases of melanoma trials",
+            reply(condition="melanoma", constraints=[constraint("Melanoma", "condition")]),
+        )
+    )
+    assert plan.stated == {"condition": "melanoma"}
+
+
+@pytest.mark.parametrize(
+    "bad,error",
+    [
+        (constraint("pediatric melanoma", "condition"), "not in the question"),
+        (constraint("melanoma", "country"), "country"),  # applied as a filter left unset
+        (constraint("phases", None), "reason"),  # not applied, but no reason given
+    ],
+)
+def test_an_inconsistent_constraint_is_an_output_error(bad: dict[str, Any], error: str) -> None:
+    with pytest.raises(LLMOutputError, match=error):
+        build("Phases of melanoma trials", reply(condition="melanoma", constraints=[bad]))
 
 
 def test_stated_match_ignores_case() -> None:

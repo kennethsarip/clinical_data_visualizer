@@ -33,6 +33,9 @@ CLARIFY = ClarificationResponse(
         assumptions=[],
         notes=["Name a drug, condition or sponsor to chart."],
         missing=["drug_name", "condition", "sponsor"],
+        unapplied=[],
+        conflicts=[],
+        suggested_query=None,
     ),
 )
 

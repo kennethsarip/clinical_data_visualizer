@@ -98,6 +98,8 @@ export interface components {
         ClarificationMeta: {
             /** Assumptions */
             assumptions: string[];
+            /** Conflicts */
+            conflicts: components["schemas"]["Conflict"][];
             filters: components["schemas"]["Filters"];
             /** Missing */
             missing: ("drug_name" | "condition" | "sponsor")[];
@@ -108,6 +110,10 @@ export interface components {
              * @constant
              */
             source: "clinicaltrials.gov";
+            /** Suggested Query */
+            suggested_query: string | null;
+            /** Unapplied */
+            unapplied: components["schemas"]["Unapplied"][];
         };
         /** ClarificationResponse */
         ClarificationResponse: {
@@ -132,6 +138,16 @@ export interface components {
             };
             /** Label */
             label: string;
+        };
+        /** Conflict */
+        Conflict: {
+            /**
+             * Filter
+             * @enum {string}
+             */
+            filter: "drug_name" | "condition" | "sponsor" | "country" | "trial_phase" | "overall_status" | "start_year" | "end_year";
+            /** Quotes */
+            quotes: string[];
         };
         /** DegradedMeta */
         DegradedMeta: {
@@ -445,6 +461,13 @@ export interface components {
             sponsor_name: string;
             /** Start Date */
             start_date: string | null;
+        };
+        /** Unapplied */
+        Unapplied: {
+            /** Quote */
+            quote: string;
+            /** Reason */
+            reason: string;
         };
         /** ValidationError */
         ValidationError: {

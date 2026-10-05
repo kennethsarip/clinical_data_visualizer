@@ -39,6 +39,7 @@ from app.schemas import (
     CheckError,
     ClarificationMeta,
     ClarificationResponse,
+    Conflict,
     DegradedMeta,
     DegradedResponse,
     Filters,
@@ -46,6 +47,7 @@ from app.schemas import (
     NoResultsResponse,
     OkResponse,
     RetrievalFilters,
+    Unapplied,
     VisualizeRequest,
 )
 from app.viz import SOURCE, Prose, assemble, default_title, write_prose
@@ -276,6 +278,9 @@ def _clarification(clarification: Clarification) -> ClarificationResponse:
         assumptions=[],
         notes=list(clarification.notes),
         missing=list(clarification.missing),
+        unapplied=[Unapplied(quote=q, reason=r) for q, r in clarification.unapplied],
+        conflicts=[Conflict(filter=k, quotes=list(qs)) for k, qs in clarification.conflicts],
+        suggested_query=clarification.suggested_query,
     )
     return ClarificationResponse(
         status="clarification_needed", visualization=None, trials={}, meta=meta
