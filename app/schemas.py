@@ -217,8 +217,8 @@ class ErrorDetail(_Contract):
 
 
 class StoredTrial(_Contract):
-    """`GET /api/trials/{nct_id}`: the cached record a citation was checked against
-    (SCHEMAS.md §6)."""
+    """`GET /api/trials/{nct_id}`: a cited trial's record as cached now, which a later
+    fetch may have replaced since the citation was checked (SCHEMAS.md §6)."""
 
     nct_id: NctId
     record: dict[str, Any]  # verbatim API record

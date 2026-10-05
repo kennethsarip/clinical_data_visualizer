@@ -408,8 +408,8 @@ export interface components {
         Status: "ACTIVE_NOT_RECRUITING" | "COMPLETED" | "ENROLLING_BY_INVITATION" | "NOT_YET_RECRUITING" | "RECRUITING" | "SUSPENDED" | "TERMINATED" | "WITHDRAWN" | "AVAILABLE" | "NO_LONGER_AVAILABLE" | "TEMPORARILY_NOT_AVAILABLE" | "APPROVED_FOR_MARKETING" | "WITHHELD" | "UNKNOWN";
         /**
          * StoredTrial
-         * @description `GET /api/trials/{nct_id}`: the cached record a citation was checked against
-         *     (SCHEMAS.md §6).
+         * @description `GET /api/trials/{nct_id}`: a cited trial's record as cached now, which a later
+         *     fetch may have replaced since the citation was checked (SCHEMAS.md §6).
          */
         StoredTrial: {
             /**

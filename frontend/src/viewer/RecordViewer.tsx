@@ -12,7 +12,7 @@ interface Props {
 
 const STUDY_URL = 'https://clinicaltrials.gov/study/'
 
-/** The cached record a citation was checked against (SCHEMAS.md §6), cited values highlighted. */
+/** A citation's trial as cached now (SCHEMAS.md §6), cited values highlighted where they still match. */
 export function RecordViewer({ nctId, title, citations }: Props) {
   const [result, setResult] = useState<ApiResult<StoredTrial> | null>(null)
 
@@ -80,9 +80,9 @@ function LoadedRecord({ stored, citations }: { stored: StoredTrial; citations: C
   return (
     <div ref={container} className="viewer-body">
       <p className="viewer-cached">
-        {changed.length > 0
-          ? `Cached ${stored.fetched_at.slice(0, 10)}.`
-          : `Cached ${stored.fetched_at.slice(0, 10)}, the version the answer was checked against.`}
+        {/* One cache row per trial, and citations carry no version: vouch only for the cited values. */}
+        {`Cached ${stored.fetched_at.slice(0, 10)}.`}
+        {changed.length === 0 && citations.length > 0 && ' Its cited values still match this answer.'}
       </p>
       {changed.length > 0 && (
         <p className="viewer-warning" role="alert">

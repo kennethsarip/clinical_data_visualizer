@@ -47,7 +47,10 @@ describe('RecordViewer', () => {
       'href',
       'https://clinicaltrials.gov/study/NCT00000001',
     )
-    expect(screen.getByText('Cached 2026-10-05, the version the answer was checked against.')).toBeInTheDocument()
+    // The cache keeps one row per trial and citations carry no version, so the viewer claims only
+    // what it checked: the cited values still match, not that this is the very version checked.
+    expect(screen.getByText('Cached 2026-10-05. Its cited values still match this answer.')).toBeInTheDocument()
+    expect(screen.queryByText(/version the answer was checked against/)).not.toBeInTheDocument()
   })
 
   it('lists each citation with what was found', async () => {
@@ -71,7 +74,7 @@ describe('RecordViewer', () => {
     // The record now disagrees with the answer, so the viewer must not claim it is that version,
     // and it opens the changed field's module so its current value is visible.
     expect(screen.getByText(/^Cached 2026-10-05\.$/)).toBeInTheDocument()
-    expect(screen.queryByText(/the version the answer was checked against/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/still match/)).not.toBeInTheDocument()
     expect(screen.getByText('designModule').closest('details')).toHaveAttribute('open')
   })
 
@@ -79,6 +82,8 @@ describe('RecordViewer', () => {
     serve(200, stored(RECORD))
     show([])
     expect(await screen.findByText(/counts in this chart but is not quoted/)).toBeInTheDocument()
+    // Nothing cited, so nothing to vouch for.
+    expect(screen.getByText(/^Cached 2026-10-05\.$/)).toBeInTheDocument()
   })
 
   it('points to ClinicalTrials.gov when the record is not cached', async () => {

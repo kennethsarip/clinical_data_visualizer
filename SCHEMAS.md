@@ -309,7 +309,7 @@ An entity that matches no trial on its own:
 
 ## 6. Cached trial record
 
-`GET /api/trials/{nct_id}` returns the record behind a citation, for a record viewer that highlights each excerpt in place. It reads the response cache only and never calls ClinicalTrials.gov, so it serves the record the excerpt check ran against, whatever its age.
+`GET /api/trials/{nct_id}` returns the record behind a citation, for a record viewer that highlights each excerpt in place. It reads the response cache only and never calls ClinicalTrials.gov, so it serves the record as cached, whatever its age: the one the excerpt check ran against, unless a later request replaced it (below).
 
 | Field | Type | Notes |
 |---|---|---|
@@ -319,4 +319,4 @@ An entity that matches no trial on its own:
 
 **HTTP codes:** 200 with the body above; 404 `{"detail": "<nct_id> is not in the cache."}` when no request has fetched the trial; 422 when the ID does not match `^NCT\d{8}$` (matched exactly, so `nct00000001` is a 422, never a lookup of the nearest ID).
 
-**Staleness:** the cache keeps one record per trial and a later request that fetches the same trial replaces it. A viewer should check each excerpt against the value at its `field` before highlighting it and, on a mismatch, say the record has changed since the answer rather than highlight other text.
+**Staleness:** the cache keeps one record per trial and a later request that fetches the same trial replaces it. A viewer should check each excerpt against the value at its `field` before highlighting it and, on a mismatch, say the record has changed since the answer rather than highlight other text. Matching excerpts show the cited values still hold, not that the record is the same version: responses carry no record version.

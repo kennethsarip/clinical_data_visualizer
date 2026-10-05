@@ -1111,7 +1111,7 @@
       },
       "StoredTrial": {
         "additionalProperties": false,
-        "description": "`GET /api/trials/{nct_id}`: the cached record a citation was checked against\n(SCHEMAS.md \u00a76).",
+        "description": "`GET /api/trials/{nct_id}`: a cited trial's record as cached now, which a later\nfetch may have replaced since the citation was checked (SCHEMAS.md \u00a76).",
         "properties": {
           "fetched_at": {
             "format": "date-time",
