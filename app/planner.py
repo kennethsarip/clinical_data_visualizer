@@ -157,10 +157,14 @@ def _bare(word: str) -> str:
     return re.sub(r"['’]s$", "", word).casefold()
 
 
-def unaccounted_names(query: str, accounted: Iterable[str]) -> list[str]:
+def unaccounted_names(
+    query: str, accounted: Iterable[str], unapplied: Iterable[str] = ()
+) -> list[str]:
     """Names in `query` that no accounted string quotes as whole words: capitalized words that do
-    not start a sentence (minus vocab labels), registry country names in any case, and the
-    age and sex words no filter expresses."""
+    not start a sentence (minus vocab labels) and registry country names in any case; plus the
+    age and sex words no filter expresses, which count only when quoted as not applied (a
+    condition search for "pediatric asthma" is not an age filter)."""
+    unapplied_words = {_bare(w) for text in unapplied for w in _WORD.findall(text)}
     quoted = {_bare(w) for text in accounted for w in _WORD.findall(text)}
     names: list[str] = []
     for match in _WORD.finditer(query):
@@ -170,8 +174,12 @@ def unaccounted_names(query: str, accounted: Iterable[str]) -> list[str]:
         if word[0].isupper() and not starts_sentence and _bare(word) not in _LABEL_WORDS:
             names.append(re.sub(r"['’]s$", "", word))
     names += [m.group() for m in _COUNTRY_NAMES.finditer(query)]
-    names += [w for w in _WORD.findall(query) if w.casefold() in UNFILTERABLE_WORDS]
     missing = [n for n in names if not all(_bare(w) in quoted for w in _WORD.findall(n))]
+    missing += [
+        w
+        for w in _WORD.findall(query)
+        if w.casefold() in UNFILTERABLE_WORDS and _bare(w) not in unapplied_words
+    ]
     return list(dict.fromkeys(missing))
 
 
@@ -389,7 +397,8 @@ def _unaccounted(
 ) -> tuple[tuple[str, str], ...]:
     accounted = [c.quote for c in llm_plan.constraints]
     accounted += [t for c in llm_plan.cohorts or [] for t in (c.label, c.value)]
-    names = unaccounted_names(request.query, accounted)
+    unapplied = [c.quote for c in llm_plan.constraints if c.applied_as is None]
+    names = unaccounted_names(request.query, accounted, unapplied)
     if names and not ask:
         raise LLMOutputError(
             f"constraints: the question names {', '.join(map(repr, names))} but no constraint "
