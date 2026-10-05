@@ -177,3 +177,26 @@ def test_malformed_body_is_an_upstream_error(response: httpx.Response) -> None:
     api, _, _ = fake_client(scripted([response]))
     with pytest.raises(UpstreamError):
         api.fetch(RetrievalFilters())
+
+
+# --- count (the §7.8 not-found probe) ---
+
+
+def test_count_asks_for_one_id_only_and_returns_the_total() -> None:
+    client, requests, _ = fake_client(scripted([httpx.Response(200, json=page([1], "t", 4321))]))
+    assert client.count(RetrievalFilters(drug_name="Zorblaxumab")) == 4321
+    params = requests[0].url.params
+    assert params["pageSize"] == "1" and params["fields"] == "NCTId"
+    assert params["countTotal"] == "true" and params["query.intr"] == "Zorblaxumab"
+    assert len(requests) == 1
+
+
+def test_count_of_zero() -> None:
+    client, _, _ = fake_client(scripted([httpx.Response(200, json=page([], None, 0))]))
+    assert client.count(RetrievalFilters(condition="nothing")) == 0
+
+
+def test_count_retries_and_raises_like_fetch() -> None:
+    client, _, _ = fake_client(scripted([httpx.Response(503)] * 3))
+    with pytest.raises(UpstreamError):
+        client.count(RetrievalFilters(condition="x"))

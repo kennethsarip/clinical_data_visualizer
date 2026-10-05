@@ -4,6 +4,52 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ## Shipped
 
+### Phase 3: LLM planning and the endpoint (done 2026-10-04; tagged `phase-3`)
+
+- **Done when, met:** one query per §1 class returns `ok` with every check passing and each §7.8 case returns its behavior (live end to end, 29/29 eval questions); planner tests pass against a stubbed LLM, including malformed output.
+- **3.5 Endpoint** (2026-10-04): `app/main.py` has one route, `POST /api/visualize`, which calls `Pipeline.run`. Every status is 200, `VisualizeRequest` failures are 422 before the pipeline runs, and `DependencyError` is 502 with `{"detail": ...}`.
+  - One DB connection per request (psycopg connections are not thread-safe; sync routes run in a threadpool); settings and the HTTP and LLM clients are built once and shared.
+  - `logging.basicConfig` in `main.py`, because uvicorn configures only its own loggers and the app's INFO logs (cache hits, retries, repairs) were dropped.
+  - 10 offline tests via a dependency override, seen red (10 failures). Live over HTTP: an `ok` pembrolizumab time series (2,000 of 2,968, capped and disclosed) in 7.9 s cold and 4.7 s from the cache; clarification for "Show me trials"; 422 for reversed years.
+
+- **3.4 Pipeline** (2026-10-04): `app/pipeline.py` `Pipeline(llm, fetcher).run(request)` runs the §1 steps and is the one place errors become outcomes.
+  - Plan -> clarification before any fetch; one fetch per cohort through the cache; zero records -> the not-found probe; aggregate; nothing chartable -> `no_results` naming the exclusion rule; prose; assemble; checks; one repair without the LLM prose; else `degraded`.
+  - `DependencyError` (-> 502) wraps ClinicalTrials.gov `UpstreamError`, a batch over 5% unreadable, and `LLMUpstreamError` while planning. `PlanError` -> `degraded` with check "plan" and the request fields as stated filters. The checker is injected so the repair path is tested.
+  - `CtgovClient.count` / `TrialCache.count`: one single-ID page (`fields=NCTId`), uncached, for the probe; skipped when the entity was the only filter, since that search already ran.
+  - Bug found by the tests: building the record lookup before normalizing made one ID-less record abort the request; normalize now runs first. The cache still raises on such a record (Phase 1 decision, pinned by a test), logged in §13.4 rather than changed.
+  - 17 offline tests, seen red (16 failures) against a stub, plus 3 ctgov and 1 cache test for `count`.
+  - **Live end to end** (`tests/test_live_pipeline.py`): 29/29 plannable eval questions return their expected status, analysis, viz type, not-found names and cap on the first run (172 s; comparisons ~8 s each, single-cohort ~4-6 s).
+
+- **3.3 Title and notes** (2026-10-04): `viz.write_prose(llm, query, aggregator, cohorts, filters)` makes the second LLM call (`LLMProse`: a title of up to 120 characters, up to 3 notes) from the question, analysis key, chart type, columns, filters and cohort labels; rows never reach the prompt (a test asserts no trial ID or title is sent).
+  - The §7.6 number rule moved to `viz.stray_numbers`, shared with `checks._title`, so the prose step and the check cannot disagree. A title with a stray number falls back; a note with one is dropped on its own.
+  - Any failure (malformed answer, refusal, upstream error, stray number) returns `default_title` plus a note saying so, with no retry, keeping the response `ok`.
+  - 9 offline tests, seen red (8 failures) against a stub.
+- **Live runs, steps 3.1-3.3** (2026-10-04, after a working key): `test_live_llm` passes, so OpenAI accepts the generated strict schema. Planner on the 29 plannable eval questions, `gpt-5.4-mini` at `low`:
+  - Baseline 27/29. Misses: "last five years" also set `end_year` 2026, which would drop future-dated trials; "distribution of enrollment sizes" went to `distribution.drug` (intermittent).
+  - Prompt fix 1: `end_year` only for an explicit upper bound; any enrollment question is `numeric.*`. 3 runs: 28, 26, 29. New intermittent miss: with a conflicting `drug_name` field, the model sometimes omitted the query's drug, so the override note was lost.
+  - Prompt fix 2: always copy values written in the question; sponsor name vs category made explicit. 3 runs: 29, 28, 28. The remaining miss is only the enrollment histogram.
+  - That question alone, 15 samples each: `low` 12/15 correct (1.5 s mean), `medium` 15/15 (1.7 s). Full set at `medium`, 3 runs: 87/87, ~55-66 s per run vs ~45 s at `low`. The default is now `medium` (user decision); at the new default, `test_live_planner` + `test_live_prose` passed 52/52.
+  - Prose (`tests/test_live_prose.py`): all 23 `ok` questions get an LLM title with no fallback. One note used the field name "drug_name"; the prose prompt now forbids internal field names (rerun 23/23).
+- **Earlier key problems** (same day): the first key returned 401 `invalid_api_key`; the second authenticated but had no credits (429 `insufficient_quota`, which the SDK retries uselessly, ~6 s); the third works.
+
+- **3.2 Planner** (2026-10-04): `app/planner.py` `plan_request(request, llm)` returns a `QueryPlan` or a `Clarification`; `build_plan` holds every rule and needs no LLM.
+  - `plan_schema()` is the strict `LLMPlan` schema with `analysis` narrowed to the 22 registered keys. The prompt lists each key from per-intent and per-dimension guides, so a new aggregator fails a test until it is described. Today's date is in the prompt for relative years.
+  - Rules: fields override the query with a note; stated iff from a field or verbatim in the query (or an enum's display label, "recruiting" -> `RECRUITING`), else inferred with a Python-written assumption; 2-4 cohorts of one kind, overriding the shared filters; the anchor rule; `unsupported_reason` -> clarification. A rule only the LLM can fix (unknown key, cohorts outside a comparison, reversed merged years) raises `LLMOutputError`, retried once with the error, then `PlanError`. `LLMUpstreamError` is never retried by the planner.
+  - Plan shape change: `missing_anchor` became `unsupported_reason`, since Python owns the anchor rule. Named cohorts count as anchors, which the first implementation missed (5 drugs gave `missing` anchors; the eval expectation caught it).
+  - `llm.complete` gained an optional `schema` override for the runtime enum. `is_stated` is now the one copy of the §7.3 test; `test_eval_questions.py` uses it.
+  - 61 offline tests, seen red (61 failures) against a stub: rules, retry loop, and 26 eval questions with the LLM's part stubbed. `tests/test_live_planner.py` runs all 29 planned questions on the real LLM; blocked by the rejected key.
+
+- **3.1 LLM client** (2026-10-04): `app/llm.py` `LLMClient.complete(instructions, user_input, name, output_type)` makes one Responses API call in strict structured-output mode and returns a validated Pydantic model.
+  - `gpt-5.4-mini` checked against OpenAI's model page: Responses API, structured outputs, reasoning effort `none` (the default), `low`, `medium`, `high` or `xhigh`. `OPENAI_REASONING_EFFORT` defaults to `low`. Timeout 30 s, 2 SDK retries, 4,000 output tokens.
+  - `strict_json_schema` turns a model's schema into strict form (every property required, no extras, null unions kept) and drops keywords strict mode may reject (lengths, defaults, titles), which Pydantic re-checks after the call.
+  - Typed errors for the §7.7 mapping: `LLMUpstreamError` (HTTP error or unreachable -> 502) and `LLMOutputError` (refusal, incomplete reply, non-JSON or invalid output; keeps the raw text and a compact `field: message` summary for the retry prompt).
+  - 17 offline tests on an `httpx2.MockTransport` fake, seen red (16 failures) against a stub. The OpenAI SDK 3.x uses its own `httpx2`, not `httpx`, so passing an `httpx` client only worked by duck typing; the fakes now use `httpx2`.
+  - The live smoke test `tests/test_live_llm.py` is blocked: OpenAI rejects the key in `.env` with 401 `invalid_api_key`. `OPENAI_MODEL` was blank in `.env` and is now `gpt-5.4-mini`.
+
+- **3.0 Eval questions first** (2026-10-04): `eval/questions.json` holds 30 questions with the expected status, `analysis` key, viz type, stated and inferred filters, cohorts, missing anchors and not-found entities, each with a written `why`. All 9 appendix examples are included (the unanchored drug-drug one expects `clarification_needed`), plus every question class, every viz type and each §7.8 edge case.
+  - `tests/test_eval_questions.py` checks every expectation against the registry, the request model and the §7.2/§7.3/§7.8 rules, so a wrong expectation cannot certify a wrong planner. Breaking four expectations (viz type, stated vs inferred, cohort count, anchor) failed 6 tests for those reasons.
+  - Inferred filters list every acceptable value ("last five years" -> 2021 or 2022), since inference is ambiguous by definition. An enum filter counts as stated when its display label appears ("recruiting" -> `RECRUITING`), which the planner's stated test must match.
+
 ### Phase 2: Aggregation, citations, checks (done 2026-10-04; merged and tagged `phase-2`)
 
 - **Done when, met:** every §1 row has a registered aggregator (22); all six viz types assemble specs that pass every check, offline on the fixture and live on real records; each aggregator test matches hand-computed rows; each check has a passing and a failing fixture.

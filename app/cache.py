@@ -44,6 +44,10 @@ class TrialCache:
         self._write(result)
         return result
 
+    def count(self, filters: RetrievalFilters) -> int:
+        """Uncached: a count is one tiny request, and caching it would need a second key space."""
+        return self._client.count(filters)
+
     def records_by_id(self, nct_ids: Iterable[str]) -> dict[str, dict[str, Any]]:
         """Cached records for the given NCT IDs, matched exactly; unknown IDs are absent."""
         rows = self._conn.execute(

@@ -7,8 +7,12 @@ required; an empty value counts as unset, so a blank line in `.env` falls back t
 
 import os
 from collections.abc import Mapping
+from typing import Literal
 
 from pydantic import BaseModel, PositiveInt, SecretStr, ValidationError
+
+# The values gpt-5.4-mini accepts (verified against OpenAI's model page, 2026-10-04).
+ReasoningEffort = Literal["none", "low", "medium", "high", "xhigh"]
 
 
 class ConfigError(RuntimeError):
@@ -18,6 +22,9 @@ class ConfigError(RuntimeError):
 class Settings(BaseModel):
     openai_api_key: SecretStr
     openai_model: str
+    # medium, not low: low misrouted 3/15 enrollment questions, medium 0/15, for ~0.2 s more
+    # (live eval, 2026-10-04; CLAUDE.md §3).
+    openai_reasoning_effort: ReasoningEffort = "medium"
     database_url: SecretStr  # may embed the DB password
     ctgov_base_url: str = "https://clinicaltrials.gov/api/v2"
     fetch_cap: PositiveInt = 2000  # max records fetched per request (CLAUDE.md §7.3)
