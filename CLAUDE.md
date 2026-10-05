@@ -165,6 +165,7 @@ app/
   schemas.py         # SINGLE SOURCE: request, plan, LLM-output and response models (§8)
   vocab.py           # SINGLE SOURCE: API enums + display labels (§8.4)
   migrate.py         # applies unapplied migrations in order; idempotent
+  export_openapi.py  # prints the OpenAPI schema the frontend types are generated from
   llm.py             # the only module that calls the LLM; returns validated models
   planner.py         # request -> plan (prompt + validation)
   viz.py             # row shape -> viz type table; spec + meta assembly; LLM title + notes
@@ -181,7 +182,7 @@ tests/               # unit + contract tests; small synthetic fixtures (§9)
 eval/                # eval questions, runner, baseline + after results (§9)
 examples/            # 3-5 real request/response JSON pairs from the running system
 docker-compose.yml   # local Postgres
-frontend/            # Vite + React + TS app; renders specs from SCHEMAS.md (Phase 4)
+frontend/            # Vite + React + TS app; renders specs from SCHEMAS.md. src/api/: generated types.ts + client.ts (the only backend caller)
 docs/                # GITIGNORED, local only: project_details/ (assignment screenshots + assignment.md, source of truth for requirements); product_frontend/ (product reference screenshots, Phase 4)
 ```
 
@@ -198,6 +199,7 @@ docs/                # GITIGNORED, local only: project_details/ (assignment scre
 | Add a dependency | `uv add <pkg>` (dev only: `uv add --dev <pkg>`); state why in the commit (§11) |
 | Start Postgres | `docker compose up -d` |
 | Migrate | `uv run --env-file .env python -m app.migrate` (idempotent; needs only `DATABASE_URL`) |
+| Frontend types | `cd frontend && npm run gen:types` after any `schemas.py` or route change (rewrites `frontend/openapi.json` and `src/api/types.ts`); `npm run check:types` fails on drift (CI) |
 | Frontend | `cd frontend && npm install && npm run dev` (http://localhost:5173; proxies `/api` to port 8000). Checks: `npm run lint && npm run typecheck && npm test` |
 | Eval run | TBD (Phase 5) |
 
@@ -495,7 +497,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) makes results visible for the demo.
 
-**Next move:** Phase 4 step 3 (types and client).
+**Next move:** Phase 4 step 4 (search page).
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
@@ -513,7 +515,6 @@ Goal: a search-first app where a user asks a question, sees the chart as the ans
 **Decided from the reference pass** (user, 2026-10-04; patterns in `BUILD_HISTORY.md` → Decisions): a right panel with **Sources | Viewer** tabs; numbered source cards; a datum tooltip of "N trials, click to see sources"; reverse highlight (hovering a card highlights every row whose `nct_ids` holds that trial); a Viewer showing the cached record with the cited field highlighted; export as chart SVG/PNG plus response JSON. Two of these changed the backend contract (step 1, shipped: `BUILD_HISTORY.md`).
 
 Steps, in order:
-3. **Types and client.** Dump the OpenAPI schema from the app object (no running server) and generate `frontend/src/api/types.ts` from it with `openapi-typescript`; a small `fetch` client. CI regenerates the types and fails on a diff, so `schemas.py` stays the single source.
 4. **Search page.** One large query box, example-question chips (one per §1 class, which also shows coverage), and the optional filters in a collapsible row; client-side checks mirror request validation, and the server stays authoritative.
 5. **Status views.** `clarification_needed` (the missing anchor, with suggestion chips), `no_results` and not found (the filters applied), `degraded` (the errors), and loading (spinner, elapsed time, cancel). HTTP errors as well: 422 shows the field errors, and 502 says a dependency is down and offers a retry. No response ever renders as a blank page.
 6. **Renderer dispatch.** One map from `type` to renderer. Vega-Lite renders the five chart types by translating `encoding` (fields, channel types, scale) + `data`; Cytoscape.js renders `network_graph`, de-emphasizing `is_anchor` nodes. Renderers read only `encoding` and never hardcode a column. Each renderer takes a `highlighted` NCT ID set (for reverse highlight) and exposes SVG/PNG export (Vega `view.toSVG()`/`toImageURL()`, Cytoscape `png()`).
@@ -526,7 +527,7 @@ Done when:
 - A Vitest test renders every `SCHEMAS.md` example per viz type without error.
 - Every status view, plus the 422 and 502 views, is reachable from the running backend.
 - Clicking a datum, then a card, opens the Viewer with that trial's excerpt highlighted in its cached record, for every viz type.
-- `npm run lint && npm run typecheck && npm test` passes (in the Definition of done and CI since step 2), and the type-drift check is in CI.
+- `npm run lint && npm run typecheck && npm test` passes (in the Definition of done and CI since step 2), and the type-drift check is in CI (since step 3).
 
 ### Phase 5: Eval and iteration
 Goal: measured evidence of iteration, including evidence for the bonuses.

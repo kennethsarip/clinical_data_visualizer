@@ -25,6 +25,7 @@ from app.pipeline import DependencyError, Pipeline
 from app.schemas import (
     NCT_ID_PATTERN,
     AnyResponse,
+    ErrorDetail,
     StoredTrial,
     VisualizeRequest,
     VisualizeResponse,
@@ -67,7 +68,11 @@ def get_pipeline(cache: Annotated[TrialCache, Depends(get_cache)]) -> Pipeline:
     return Pipeline(_llm(), cache)
 
 
-@app.post("/api/visualize", response_model=VisualizeResponse)
+@app.post(
+    "/api/visualize",
+    response_model=VisualizeResponse,
+    responses={502: {"model": ErrorDetail, "description": "ClinicalTrials.gov or the LLM failed"}},
+)
 def visualize(
     request: VisualizeRequest, pipeline: Annotated[Pipeline, Depends(get_pipeline)]
 ) -> AnyResponse:
@@ -78,7 +83,11 @@ def visualize(
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
-@app.get("/api/trials/{nct_id}", response_model=StoredTrial)
+@app.get(
+    "/api/trials/{nct_id}",
+    response_model=StoredTrial,
+    responses={404: {"model": ErrorDetail, "description": "The trial is not in the cache"}},
+)
 def stored_trial(
     nct_id: Annotated[str, Path(pattern=NCT_ID_PATTERN)],
     cache: Annotated[TrialCache, Depends(get_cache)],

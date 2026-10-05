@@ -210,6 +210,12 @@ class TrialSummary(_Contract):
     conditions: list[str]  # as registered
 
 
+class ErrorDetail(_Contract):
+    """The body of a 404 or 502 (SCHEMAS.md §1, §6). A 422 uses FastAPI's own validation body."""
+
+    detail: str
+
+
 class StoredTrial(_Contract):
     """`GET /api/trials/{nct_id}`: the cached record a citation was checked against
     (SCHEMAS.md §6)."""

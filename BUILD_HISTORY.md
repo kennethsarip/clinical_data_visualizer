@@ -6,6 +6,10 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ### Phase 4: Frontend (in progress)
 
+- **4.3 Types and client** (2026-10-04): `app/export_openapi.py` prints the app's OpenAPI schema (sorted, no server, DB or key needed); `npm run gen:types` writes `frontend/openapi.json` and `src/api/types.ts` via `openapi-typescript`. Drift is caught twice: CI's `check:types` regenerates and diffs both files, and a pytest compares the committed `openapi.json` with the app, so the backend checks catch it without Node. Both were seen failing on an added model field.
+  - Both routes now document their error bodies (`ErrorDetail`, `{detail}`: 404 on trials, 502 on visualize), so the generated types cover every body the client handles.
+  - `src/api/client.ts` is the only backend caller and maps each HTTP outcome to one `ApiResult` kind (`ok`, `invalid` 422, `not_found` 404, `unavailable` 502, `failed` otherwise); a cancel rethrows its AbortError. Nine red-first tests.
+  - `openapi-typescript` 7.13 (latest) declares a TypeScript 5 peer; a scoped npm `overrides` entry points it at our TypeScript 6 instead of `--legacy-peer-deps`, which would loosen every peer check. The generated file passes our strict typecheck.
 - **4.2 Scaffold** (2026-10-04): `frontend/` from `create-vite` 9.2.1 (`react-ts`): React 19, Vite 8, TypeScript 6 (`strict`), oxlint (the template's linter, replacing the planned ESLint: one fast dev dependency, no config to maintain), Vitest 4 + Testing Library on jsdom. Demo assets removed; a red-first smoke test covers the shell.
   - Design tokens from the reference screenshots are CSS variables in `src/index.css`; Pretendard is self-hosted from npm (dynamic subset), so no third-party font request.
   - The Vite proxy sends `/api` to `127.0.0.1:8000`, checked against a running backend (a cached record came back through the proxy). CI gains a `frontend` job (Node 24 from `.nvmrc`), and the Definition of done gains the npm checks.
