@@ -12,6 +12,7 @@ from app.normalize import (
     Gap,
     Intervention,
     RecordShapeError,
+    UnreadableRecord,
     normalize_record,
     normalize_records,
 )
@@ -171,7 +172,7 @@ def test_no_interventions_is_a_gap() -> None:
 # --- batch counts ---
 
 
-def test_batch_counts_each_gap_and_keeps_every_record() -> None:
+def test_batch_counts_each_gap_and_keeps_every_readable_record() -> None:
     records = [
         _record(),  # no gaps
         _record(statusModule=_status(None), contactsLocationsModule={}),
@@ -230,3 +231,55 @@ def test_input_record_is_not_mutated() -> None:
     snapshot = deepcopy(record)
     normalize_record(record)
     assert record == snapshot
+
+
+# --- unreadable records: set aside up to 5% of a batch, else the batch fails ---
+
+
+def _numbered(n: int) -> dict[str, Any]:
+    return _record(identificationModule={"nctId": f"NCT{n:08d}", "briefTitle": "A trial"})
+
+
+def _unreadable(n: int) -> dict[str, Any]:
+    return _record(
+        identificationModule={"nctId": f"NCT{n:08d}", "briefTitle": "A trial"},
+        statusModule={"overallStatus": "OPEN"},  # not a Status value
+    )
+
+
+def test_all_readable_batch_sets_nothing_aside() -> None:
+    assert normalize_records([_numbered(1), _numbered(2)]).unreadable == []
+
+
+def test_one_in_twenty_is_set_aside_at_exactly_five_percent() -> None:
+    records = [_numbered(n) for n in range(1, 20)] + [_unreadable(20)]
+    batch = normalize_records(records)
+    assert [t.nct_id for t in batch.trials] == [f"NCT{n:08d}" for n in range(1, 20)]
+    assert [u.nct_id for u in batch.unreadable] == ["NCT00000020"]
+    assert "overall_status" in batch.unreadable[0].reason
+
+
+def test_two_in_twenty_fails_the_batch() -> None:
+    records = [_numbered(n) for n in range(1, 19)] + [_unreadable(19), _unreadable(20)]
+    with pytest.raises(RecordShapeError, match="2 of 20 records are unreadable"):
+        normalize_records(records)
+
+
+def test_a_lone_unreadable_record_fails_a_small_batch() -> None:
+    # 1 of 10 is 10%: in a small batch one bad record is already a large share.
+    records = [_numbered(n) for n in range(1, 10)] + [_unreadable(10)]
+    with pytest.raises(RecordShapeError, match="1 of 10"):
+        normalize_records(records)
+
+
+def test_set_aside_records_are_not_in_the_gap_counts() -> None:
+    no_dates = [_record(statusModule=_status(None)) for _ in range(19)]
+    batch = normalize_records([*no_dates, _unreadable(99)])
+    assert batch.gap_counts[Gap.MISSING_START_DATE] == 19
+
+
+def test_unreadable_record_without_an_nct_id_is_reported_as_none() -> None:
+    records = [_numbered(n) for n in range(1, 20)]
+    records.append({"protocolSection": {}})
+    batch = normalize_records(records)
+    assert batch.unreadable == [UnreadableRecord(None, batch.unreadable[0].reason)]

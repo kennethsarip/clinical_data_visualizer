@@ -1,12 +1,17 @@
 """Record -> normalized trial, plus counts of the gaps the counting rules act on (CLAUDE.md §6).
 
-Normalization never drops a record: messy values are data. It reports, per gap, how many records
-have it; the aggregators decide which gaps exclude a record from which chart and disclose those
-counts in `meta.excluded`. A record missing a field that live data always has (title, status,
-study type, lead sponsor), or holding an enum value outside `vocab.py`, means the API changed, so
-it raises instead of guessing.
+Messy values are data: a record with gaps is kept, and the batch counts how many records have
+each gap. The aggregators decide which gaps exclude a record from which chart and disclose those
+counts in `meta.excluded`.
+
+A record missing a field that live data always has (title, status, study type, lead sponsor), or
+holding a value outside `vocab.py`, is unreadable: guessing would put it in the wrong bar. One odd
+record should not cost the user the other 1,999, so an unreadable record is set aside, logged and
+counted. Above `MAX_UNREADABLE_SHARE` the API format has probably changed, so the batch raises
+rather than chart a skewed remainder.
 """
 
+import logging
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -16,6 +21,14 @@ from typing import Annotated, Any
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from app.vocab import AgencyClass, InterventionType, Phase, Status, StudyType, phase_label
+
+logger = logging.getLogger(__name__)
+
+# More unreadable records than this share of a batch fails it (user decision, 2026-10-04).
+MAX_UNREADABLE_SHARE = 0.05
+
+# The `meta.excluded` rule name for records set aside as unreadable.
+UNREADABLE_RULE = "unreadable record"
 
 # The two precisions the API uses (§6); anything else is a shape change, not a messy value.
 _START_DATE = re.compile(r"^(\d{4})-\d{2}(-\d{2})?$")
@@ -77,15 +90,39 @@ class NormalizedTrial(BaseModel):
 
 
 @dataclass(frozen=True)
+class UnreadableRecord:
+    nct_id: str | None  # None when the record has no usable nctId
+    reason: str
+
+
+@dataclass(frozen=True)
 class NormalizedBatch:
-    trials: list[NormalizedTrial]  # one per input record, in input order
+    trials: list[NormalizedTrial]  # every readable record, in input order
     gap_counts: dict[Gap, int]  # every Gap is a key, so a zero count is explicit
+    unreadable: list[UnreadableRecord]  # disclosed in `meta.excluded` as UNREADABLE_RULE
 
 
 def normalize_records(records: Iterable[dict[str, Any]]) -> NormalizedBatch:
-    trials = [normalize_record(record) for record in records]
+    """Normalize every record, setting unreadable ones aside unless there are too many."""
+    trials: list[NormalizedTrial] = []
+    unreadable: list[UnreadableRecord] = []
+    for record in records:
+        try:
+            trials.append(normalize_record(record))
+        except RecordShapeError as exc:
+            nct_id = _get(record, "protocolSection", "identificationModule", "nctId")
+            skipped = UnreadableRecord(nct_id if isinstance(nct_id, str) else None, str(exc))
+            logger.warning("Setting aside unreadable record %s: %s", skipped.nct_id, exc)
+            unreadable.append(skipped)
+    total = len(trials) + len(unreadable)
+    if unreadable and len(unreadable) > MAX_UNREADABLE_SHARE * total:
+        raise RecordShapeError(
+            f"{len(unreadable)} of {total} records are unreadable (over "
+            f"{MAX_UNREADABLE_SHARE:.0%}); the API format may have changed. "
+            f"First: {unreadable[0].reason}"
+        )
     counts = {gap: sum(gap in trial.gaps for trial in trials) for gap in Gap}
-    return NormalizedBatch(trials, counts)
+    return NormalizedBatch(trials, counts, unreadable)
 
 
 def normalize_record(record: dict[str, Any]) -> NormalizedTrial:

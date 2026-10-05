@@ -9,6 +9,7 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 - **1.8 Normalize** (2026-10-04): `app/normalize.py` maps a record to a frozen `NormalizedTrial` (§6 fields); multi-phase records get one category via `vocab.phase_label`; countries are deduped and sorted.
 - It never drops a record: `normalize_records` returns every trial plus a count per `Gap` (missing start date or enrollment, no locations, no interventions, unnamed intervention). Phase 2 aggregators choose which gaps exclude a record from a chart.
 - Enrollment 0 is data, not missing. A missing always-present field, an unknown enum value or an unexpected date format raises `RecordShapeError`, naming the NCT ID.
+- Unreadable records (user decision): set aside, logged and counted as `unreadable record` in `meta.excluded`; if more than 5% of a batch is unreadable, the batch raises `RecordShapeError`, because the API format has probably changed.
 - Live check: 6,000 records (pembrolizumab, diabetes, COVID-19) normalize with no shape errors, and the gap counts match an independent probe. The live test now normalizes its sample too.
 - **1.7 Cache** (2026-10-04): `TrialCache` in `app/cache.py` serves pages for a `params_key` written within `CACHE_TTL_HOURS`, otherwise fetches live. Pages and trial upserts are written in one transaction.
 - The key doesn't include the cap, so a cache hit must cover the current cap (`covers_cap`, shared with the client), or a larger cap would get a short copy.
