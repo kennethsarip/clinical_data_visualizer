@@ -45,7 +45,7 @@ your cached data is never touched.
 ## Still to write
 
 - Request and response schema (locked in [SCHEMAS.md](SCHEMAS.md))
-- Bonuses: deep citations, condition-anchored networks, the model comparison and the demo video
+- Bonuses: deep citations, condition-anchored networks and the demo video
 - Key design decisions and tradeoffs
 - Limitations and what more time would improve
 - Example runs (3-5 queries with actual JSON outputs)

@@ -113,7 +113,7 @@ Happy path (LLM steps marked):
 - Deep citations on every row, including network edges.
 - Explicit statuses and handling of the edge cases in §7.8.
 - A Vite + React + TypeScript frontend with citation and `meta` panels (§14 Phase 4).
-- An eval set of ~20-25 questions with a baseline run and an after run, both kept (§9), plus a run of the same set on a second model (§14 Phase 5).
+- An eval set of ~20-25 questions with a baseline run and an after run, both kept (§9).
 - Bonuses, shown off in the README (§14 Phase 6): deep citations, condition-anchored networks, a 2-3 min demo video.
 - The submission zip: code; the README (how to run, schemas, design decisions and tradeoffs, limitations and what more time would improve, AI tools used, how correctness was validated, and what was designed deliberately versus generated and adapted); and 3-5 example runs with the actual JSON outputs.
 
@@ -132,7 +132,7 @@ Happy path (LLM steps marked):
 | API framework | FastAPI | Request and response models use Pydantic, FastAPI's model layer |
 | Database | Postgres, run with Docker Compose | Response cache only (§6) |
 | Data source | ClinicalTrials.gov Data API v2 | The authoritative source. No API key needed (verified 2026-10-04). Facts in §8.4 |
-| LLM | OpenAI `gpt-5.4-mini`, low reasoning effort | The company supplied the key and an allowed-model list. Planning is enum classification, so a current mini model gives accuracy at low latency; `gpt-4.1` is the eval comparison (§14 Phase 5). Set in `OPENAI_MODEL`. Used only for planning and prose (§7.2) |
+| LLM | OpenAI `gpt-5.4-mini`, low reasoning effort | The company supplied the key and an allowed-model list. Planning is enum classification, so a current mini model gives accuracy at low latency. No model benchmarking (user decision, 2026-10-04). Set in `OPENAI_MODEL`. Used only for planning and prose (§7.2) |
 | Orchestration | Hand-rolled Python | No agent framework (§13.3) |
 | Vector DB | None | Rejected (§13.3) |
 | HTTP client | httpx (sync) | FastAPI runs sync routes in a threadpool and requests are sequential, so async adds complexity without need; `MockTransport` serves test fixtures without a mocking dependency |
@@ -549,17 +549,15 @@ Goal: measured evidence of iteration, including evidence for the bonuses.
 1. **Question set.** 20-25 questions (§9), each with its expected intent, viz type and status written before any run. Include condition-anchored network questions and a drug-anchored one (the star case).
 2. **Runner.** Calls the pipeline directly and records per question: intent, viz type, status, record count, check pass/fail, latency, failure mode, plus citation metrics (share of rows fully cited, excerpt-check pass rate) and network metrics (nodes and edges after pruning, whether the fallback fired, placebo and non-drug exclusions).
 3. **Baseline, fix, rerun.** Baseline on `gpt-5.4-mini`; fix the largest failure class; rerun. Keep both result sets.
-4. **Model comparison.** Run the same set on `gpt-4.1` and record accuracy and latency side by side.
-5. The frontend is used to eyeball each chart the runner flags.
+4. The frontend is used to eyeball each chart the runner flags.
 
-Done when: the baseline, after and comparison results are saved in `eval/` with per-question metrics, and the README cites only comparisons that were actually run.
+Done when: the baseline and after results are saved in `eval/` with per-question metrics, and the README cites only comparisons that were actually run.
 
 ### Phase 6: Submission and bonuses
 Goal: the zip, with the bonuses made obvious to a reviewer.
 1. **README** (§2 In scope sections, linking `SCHEMAS.md`), with a "Bonuses" section that leads:
    - **Deep citations:** how every bar, bucket, point, node and edge carries `nct_ids` and verbatim `{nct_id, excerpt, field}` citations; how the excerpt check proves them; the Phase 5 citation metrics; a screenshot of the sources panel filtering on a clicked edge.
    - **Richer networks:** the drug rule, name normalization, pruning with fallback and the anchor hub, shown on a condition-anchored drug-drug network (screenshot + the example JSON); the Phase 5 network metrics; brand <-> generic merging listed as a limitation.
-   - **Model comparison:** the Phase 5 table, cited only as run.
    - **Demo video** link.
 2. **Examples.** 3-5 runs captured from the live system into `examples/`, including one condition-anchored network and one non-`ok` status.
 3. **Demo video** (2-3 min): one question per class, click a datum to show its citations, open the drawer, and show a failure case (clarification or not found).
