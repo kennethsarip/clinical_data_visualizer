@@ -5,21 +5,18 @@ planner. Each rule below comes from CLAUDE.md (§1 coverage, §7.2 plan shape, �
 inferred, §7.8 anchor rule) or the assignment (§9 coverage), never from system output.
 """
 
-from enum import StrEnum
-
 import pytest
 from pydantic import ValidationError
 
 import app.aggregators  # noqa: F401  (registers every aggregator)
 from app.aggregators.registry import REGISTRY, Dimension, Intent
+from app.planner import is_stated
 from app.schemas import VisualizeRequest
 from app.viz import VIZ_TYPE
-from app.vocab import Phase, Status, label
 from tests.eval_questions import EvalQuestion, load_questions
 
 QUESTIONS = load_questions()
 ANCHORS = ("drug_name", "condition", "sponsor")
-ENUM_FILTERS: dict[str, type[StrEnum]] = {"trial_phase": Phase, "overall_status": Status}
 
 
 def _ids(questions: list[EvalQuestion]) -> list[str]:
@@ -32,15 +29,7 @@ def _registered_key(analysis: str) -> tuple[Intent, Dimension]:
 
 
 def _is_stated(question: EvalQuestion, key: str, value: str | int) -> bool:
-    """§7.3: stated iff the value comes from a request field or appears verbatim in the query.
-    An enum value also counts when its display label (e.g. "Phase 3") appears."""
-    if question.request.get(key) == value:
-        return True
-    query = str(question.request["query"]).casefold()
-    spellings = {str(value)}
-    if key in ENUM_FILTERS:
-        spellings.add(label(ENUM_FILTERS[key](str(value))))
-    return any(s.casefold() in query for s in spellings)
+    return is_stated(VisualizeRequest.model_validate(question.request), key, value)
 
 
 def test_set_size_and_unique_ids() -> None:

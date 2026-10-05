@@ -6,6 +6,13 @@ The shipped log, newest phase first. Each shipped step gets a few 1-2 line bulle
 
 ### Phase 3: LLM planning and the endpoint (in progress)
 
+- **3.2 Planner** (2026-10-04): `app/planner.py` `plan_request(request, llm)` returns a `QueryPlan` or a `Clarification`; `build_plan` holds every rule and needs no LLM.
+  - `plan_schema()` is the strict `LLMPlan` schema with `analysis` narrowed to the 22 registered keys. The prompt lists each key from per-intent and per-dimension guides, so a new aggregator fails a test until it is described. Today's date is in the prompt for relative years.
+  - Rules: fields override the query with a note; stated iff from a field or verbatim in the query (or an enum's display label, "recruiting" -> `RECRUITING`), else inferred with a Python-written assumption; 2-4 cohorts of one kind, overriding the shared filters; the anchor rule; `unsupported_reason` -> clarification. A rule only the LLM can fix (unknown key, cohorts outside a comparison, reversed merged years) raises `LLMOutputError`, retried once with the error, then `PlanError`. `LLMUpstreamError` is never retried by the planner.
+  - Plan shape change: `missing_anchor` became `unsupported_reason`, since Python owns the anchor rule. Named cohorts count as anchors, which the first implementation missed (5 drugs gave `missing` anchors; the eval expectation caught it).
+  - `llm.complete` gained an optional `schema` override for the runtime enum. `is_stated` is now the one copy of the §7.3 test; `test_eval_questions.py` uses it.
+  - 61 offline tests, seen red (61 failures) against a stub: rules, retry loop, and 26 eval questions with the LLM's part stubbed. `tests/test_live_planner.py` runs all 29 planned questions on the real LLM; blocked by the rejected key.
+
 - **3.1 LLM client** (2026-10-04): `app/llm.py` `LLMClient.complete(instructions, user_input, name, output_type)` makes one Responses API call in strict structured-output mode and returns a validated Pydantic model.
   - `gpt-5.4-mini` checked against OpenAI's model page: Responses API, structured outputs, reasoning effort `none` (the default), `low`, `medium`, `high` or `xhigh`. `OPENAI_REASONING_EFFORT` defaults to `low`. Timeout 30 s, 2 SDK retries, 4,000 output tokens.
   - `strict_json_schema` turns a model's schema into strict form (every property required, no extras, null unions kept) and drops keywords strict mode may reject (lengths, defaults, titles), which Pydantic re-checks after the call.

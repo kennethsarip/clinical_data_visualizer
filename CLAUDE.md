@@ -268,7 +268,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 
 **Calls** (decided 2026-10-04): two per request. (1) The plan, via OpenAI structured outputs with a JSON schema generated from the registry, so only registered (intent, dimension) pairs can be chosen. (2) Title and notes, after aggregation; the model sees the plan, row shape, columns and filters, never row values. A title containing a number that is not in the filters fails a check. If the plan fails validation, retry once with the validation error; if it fails again, return `degraded` (`errors[].check = "plan"`). If the title call fails or its title fails the `title` check, the response stays `ok` with `viz.default_title`, no LLM notes and a note saying so: the data is already verified, so prose never costs the user the chart.
 
-**Plan shape** (decided 2026-10-04): `analysis`, a single enum of registered keys (`"distribution.phase"`, `"network.drug_drug"`, ...) generated from `REGISTRY.registered()`, so an unregistered pair is unrepresentable rather than retried; `filters` (the `RetrievalFilters` fields, values only); `cohorts` (comparison only, else null): 2-4 entries, each a `label` plus exactly one entity override (drug, condition or sponsor) on the shared filters, one fetch per cohort, anything else -> `clarification_needed`; `missing_anchor`. The LLM never labels a filter stated or inferred (§7.3).
+**Plan shape** (decided 2026-10-04): `analysis`, a single enum of registered keys (`"distribution.phase"`, `"network.drug_drug"`, ...) generated from `REGISTRY.registered()`, so an unregistered pair is unrepresentable rather than retried; `filters` (the `RetrievalFilters` fields, values only); `cohorts` (comparison only, else null): 2-4 entries, each a `label` plus exactly one entity override (drug, condition or sponsor) on the shared filters, one fetch per cohort, anything else -> `clarification_needed` (named cohorts count as anchors, so too many cohorts gives `missing: []`); `unsupported_reason`, set when no analysis fits (-> `clarification_needed` with the reason). The anchor rule itself is Python, so the LLM reports no missing anchor (changed from `missing_anchor` in Phase 3.2). The LLM copies filter values from the query text only; request fields are merged in by Python. The LLM never labels a filter stated or inferred (§7.3). Code: `LLMPlan` in `schemas.py`; `planner.build_plan` holds every rule and needs no LLM.
 
 ### 7.3 Retrieval
 - API params come only from the validated plan, never from raw LLM text.
@@ -375,7 +375,7 @@ Why: in a visualization agent, the hallucination-prone step is letting the model
 | API client | Param building, pagination and the cap, against small recorded fixtures |
 | Planner / viz | Parsing and validation of LLM output with a stubbed LLM, including malformed output |
 | Frontend | Each viz renderer against the `SCHEMAS.md` examples; status views (Vitest; Phase 4) |
-| Live LLM | `tests/test_live_llm.py` (`-m live`): OpenAI accepts the strict schema `llm.strict_json_schema` generates and the reply validates |
+| Live LLM | `tests/test_live_llm.py` (`-m live`): OpenAI accepts the strict schema `llm.strict_json_schema` generates and the reply validates. `tests/test_live_planner.py`: the real planner against every eval expectation, one test per question |
 | Live core | `tests/test_live_core.py` (`-m live`): every registered aggregator plus citations on real records; checks provenance, retrieved IDs, excerpts, §8.5 reconciliation and network edges. Extended by each later step |
 | Eval | `eval/questions.json` (30 questions, loaded by `tests/eval_questions.py`, coherence-tested by `tests/test_eval_questions.py`): every §1 class plus ambiguous input, a zero-result combination, a nonexistent entity, a contradictory date range, multi-phase or missing-field records, and a very broad condition. For each question, record the intent, viz type, record count, check pass/fail, latency and failure mode |
 
@@ -492,7 +492,7 @@ Each decision is recorded in the section it governs (§3, §6, §7), with its re
 
 The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) makes results visible for the demo.
 
-**Next move:** replace the rejected `OPENAI_API_KEY` in `.env` and pass `tests/test_live_llm.py`; then Phase 3 step 2 (the planner).
+**Next move:** replace the rejected `OPENAI_API_KEY` in `.env`, then run `tests/test_live_llm.py` and `tests/test_live_planner.py` (`-m live`) and fix the prompt against any failing eval question; then Phase 3 step 3 (title and notes).
 
 **Rules**
 - **Breadth first** (Objectives): each phase delivers its piece for every §1 question class and every viz type before any phase refines one of them.
@@ -504,7 +504,6 @@ The backend (Phases 1-3) is what the assignment grades; the frontend (Phase 4) m
 Goal: a natural-language request returns the right status and a checked spec over HTTP. Decided: §3 model, §7.2 calls and retry, §7.3 stated vs inferred, §7.8 anchor rule and not-found probe, §8.1 endpoint and HTTP codes, §7.2 plan shape, cohorts and title fallback, §7.7 error mapping.
 
 Steps, in order:
-2. **Planner.** `planner.py`: the plan's JSON schema is generated from the registry, so the planner can only choose what exists. Validate, retry once with the error, then apply the anchor rule and classify filters as stated or inferred.
 3. **Title and notes.** The LLM part of `viz.py`: title and notes from plan, shape, columns and filters; never data. The `title` check guards it.
 4. **Pipeline.** `pipeline.py`: the §1 steps, per-cohort fetches, the not-found probe, repair-once, and typed error -> status mapping in one place. A result with no trials in any row (or a network with no edges) becomes `no_results` naming the exclusions, before the checks (which would block it as an empty chart). `assemble` refuses `meta.filters` that differ from the filters a single cohort was fetched with, so the planner's stated/inferred split must cover exactly the applied filters.
 5. **Endpoint.** `main.py`: `POST /api/visualize`, one route that calls the pipeline; no branching.

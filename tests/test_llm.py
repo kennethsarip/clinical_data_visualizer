@@ -167,3 +167,14 @@ def test_strict_schema_keeps_enums_and_null_unions() -> None:
     schema = strict_json_schema(Answer)
     assert schema["$defs"]["Color"]["enum"] == ["red", "blue"]
     assert {"type": "null"} in schema["properties"]["note"]["anyOf"]
+
+
+def test_an_explicit_schema_replaces_the_generated_one() -> None:
+    """The planner narrows `analysis` to the registered keys, which a static model cannot."""
+    client, bodies = fake_llm(replies(json_reply(GOOD)))
+    schema = strict_json_schema(Answer)
+    schema["properties"]["color"] = {"type": "string", "enum": ["red"]}
+    client.complete(
+        instructions="i", user_input="u", name="answer", output_type=Answer, schema=schema
+    )
+    assert bodies[0]["text"]["format"]["schema"]["properties"]["color"]["enum"] == ["red"]

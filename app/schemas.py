@@ -61,6 +61,37 @@ class VisualizeRequest(_FilterFields):
     ]
 
 
+# --- LLM output (CLAUDE.md §7.2): parsed and validated before any code uses it ---
+
+PlanEntity = Literal["drug_name", "condition", "sponsor"]
+
+
+class LLMCohort(BaseModel):
+    """One side of a comparison: the shared filters with one entity overridden."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    label: FilterText
+    entity: PlanEntity
+    value: FilterText
+
+
+class LLMPlan(BaseModel):
+    """The planner call's answer (CLAUDE.md §7.2 plan shape).
+
+    `analysis` is a registered "<intent>.<dimension>" key: `planner.plan_schema` narrows it to an
+    enum at runtime and `planner` re-checks it. `filters` holds only values written in the query;
+    request fields are merged in by Python. The LLM never labels a filter stated or inferred.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    analysis: str
+    filters: RetrievalFilters
+    cohorts: list[LLMCohort] | None
+    unsupported_reason: str | None  # set when no analysis fits the question
+
+
 # --- response (SCHEMAS.md §2-§5) ---
 # Models check structure only. Rules that compare values (encoding fields exist in rows,
 # trial_count == len(nct_ids), excerpts match records, ...) are the §7.6 checks in `checks.py`,

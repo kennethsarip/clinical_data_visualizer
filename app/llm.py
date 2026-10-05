@@ -64,9 +64,19 @@ class LLMClient:
         return cls(sdk, settings.openai_model, settings.openai_reasoning_effort)
 
     def complete[M: BaseModel](
-        self, *, instructions: str, user_input: str, name: str, output_type: type[M]
+        self,
+        *,
+        instructions: str,
+        user_input: str,
+        name: str,
+        output_type: type[M],
+        schema: dict[str, Any] | None = None,
     ) -> M:
-        """One structured-output call; `name` labels the schema and every error message."""
+        """One structured-output call; `name` labels the schema and every error message.
+
+        `schema` overrides the one generated from `output_type`, for constraints known only at
+        runtime (the registered analysis keys). The reply is still validated by `output_type`.
+        """
         try:
             response = self._sdk.responses.create(
                 model=self._model,
@@ -79,7 +89,7 @@ class LLMClient:
                         "type": "json_schema",
                         "name": name,
                         "strict": True,
-                        "schema": strict_json_schema(output_type),
+                        "schema": schema or strict_json_schema(output_type),
                     }
                 },
             )
