@@ -309,11 +309,15 @@ def test_network_metrics_read_pruning_and_drug_exclusions() -> None:
         "nodes_removed": 7,
         "edges_removed": 9,
     }
+
+    def ids(n: int) -> list[str]:
+        return [f"NCT{i:08d}" for i in range(n, 0, -1)]
+
     body["meta"]["excluded"] = [
-        {"rule": "placebo", "count": 3},
-        {"rule": "non-drug intervention", "count": 5},
-        {"rule": "no drug intervention", "count": 2},
-        {"rule": "no locations", "count": 4},
+        {"rule": "placebo", "count": 3, "nct_ids": ids(3)},
+        {"rule": "non-drug intervention", "count": 5, "nct_ids": ids(5)},
+        {"rule": "no drug intervention", "count": 2, "nct_ids": ids(2)},
+        {"rule": "no locations", "count": 4, "nct_ids": ids(4)},
     ]
     m = network_metrics(ok_response(**body))
     assert m is not None

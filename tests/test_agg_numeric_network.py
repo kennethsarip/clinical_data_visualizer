@@ -65,7 +65,10 @@ def test_scatter_has_one_point_per_trial_sorted_by_start_date() -> None:
     ]
     assert all(r.nct_ids == {r.values["nct_id"]} for r in result.rows)
     # T3 lacks both values; it is counted under each rule.
-    assert result.excluded == {"missing enrollment": 1, "missing start date": 1}
+    assert result.excluded == {
+        "missing enrollment": frozenset({"NCT00000003"}),
+        "missing start date": frozenset({"NCT00000003"}),
+    }
     assert result.rows[0].evidence["NCT00000001"] == (
         Evidence("designModule.enrollmentInfo.count", "120"),
         Evidence("statusModule.startDateStruct.date", "2015-03"),
@@ -95,7 +98,7 @@ def test_histogram_bins_are_fixed_half_open_and_split_by_enrollment_type() -> No
         ("100-249", "Actual"): ["NCT00000001"],
         ("5000+", "Type not reported"): ["NCT00000005"],
     }
-    assert result.excluded == {"missing enrollment": 1}
+    assert result.excluded == {"missing enrollment": frozenset({"NCT00000003"})}
 
 
 def test_histogram_bin_edges() -> None:
@@ -166,10 +169,10 @@ def test_drug_drug_falls_back_to_weight_one_when_weight_two_empties_the_graph() 
         min_edge_weight=1, top_n_nodes=50, fallback_used=True, nodes_removed=0, edges_removed=0
     )
     assert graph.excluded == {
-        "placebo": 1,
-        "non-drug intervention": 1,
-        "no drug intervention": 1,
-        "no interventions": 1,
+        "placebo": frozenset({"NCT00000001"}),
+        "non-drug intervention": frozenset({"NCT00000003"}),
+        "no drug intervention": frozenset({"NCT00000003"}),
+        "no interventions": frozenset({"NCT00000005"}),
     }
 
 
@@ -271,3 +274,18 @@ def test_every_coverage_matrix_class_is_registered() -> None:
         }
     )
     assert set(REGISTRY.registered()) == expected
+
+
+def test_trials_whose_nodes_were_all_pruned_are_listed() -> None:
+    """Accounting by ID. Weighted degrees: ipilimumab 2, nivolumab 1, pembrolizumab 1; the top 2
+    (ties alphabetical) keep ipilimumab-nivolumab {T4}. T2 stays on the ipilimumab node; T1's
+    only drug, pembrolizumab, was pruned, so T1 is on no node or edge."""
+    from dataclasses import replace
+
+    from app.aggregators.network import CooccurrenceAggregator
+
+    base = REGISTRY.get(Intent.NETWORK, Dimension.DRUG_DRUG)
+    assert isinstance(base, CooccurrenceAggregator)
+    graph = replace(base, top_n_nodes=2).aggregate([cohort(FIXTURE)])
+    assert [n.values["id"] for n in graph.nodes] == ["drug:ipilimumab", "drug:nivolumab"]
+    assert graph.excluded["pruned from the network"] == frozenset({"NCT00000001"})

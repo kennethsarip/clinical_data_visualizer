@@ -54,6 +54,7 @@ def trial_summaries(
 def _summary(trial: NormalizedTrial) -> TrialSummary:
     return TrialSummary(
         brief_title=trial.brief_title,
+        official_title=trial.official_title,
         overall_status=label(trial.overall_status),
         phase=trial.phase_label,
         start_date=trial.start_date,

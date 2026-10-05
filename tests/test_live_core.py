@@ -103,7 +103,9 @@ def test_every_aggregator_on_live_data(
     if intent is Intent.DISTRIBUTION and dimension in SINGLE_VALUED:
         # §8.5: a single-valued dimension's rows sum to the trials minus the exclusions.
         trials = len(sources[0].cohort.batch.trials)
-        assert sum(len(r.nct_ids) for r in result.rows) == trials - sum(result.excluded.values())
+        assert sum(len(r.nct_ids) for r in result.rows) == trials - sum(
+            len(ids) for ids in result.excluded.values()
+        )
 
     all_ids = {n for r in result.rows for n in r.nct_ids}
     trials_in_sources = [t for s in sources for t in s.cohort.batch.trials]

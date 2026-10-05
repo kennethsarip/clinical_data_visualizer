@@ -18,7 +18,7 @@ describe('selectedRow (SCHEMAS.md §3 examples)', () => {
   })
 
   it('a node is labelled by its label channel', () => {
-    expect(selectedRow(example('network_graph'), { kind: 'node', index: 1 }).label).toBe('Ipilimumab')
+    expect(selectedRow(example('network_graph'), { kind: 'node', index: 0 }).label).toBe('Ipilimumab')
   })
 
   it('an edge is labelled by both end labels', () => {
@@ -45,8 +45,9 @@ describe('trialCitations', () => {
   it('collects one trial\'s citations across every datum, without duplicates', () => {
     // NCT00000007 is cited on both nodes and the edge; the edge repeats the node excerpts.
     expect(trialCitations(example('network_graph'), 'NCT00000007')).toEqual([
-      { nct_id: 'NCT00000007', excerpt: 'Pembrolizumab (MK-3475)', field: 'armsInterventionsModule.interventions.name' },
+      // Node order (SCHEMAS.md §3.6: trial_count desc, ties by id): ipilimumab first.
       { nct_id: 'NCT00000007', excerpt: 'Ipilimumab', field: 'armsInterventionsModule.interventions.name' },
+      { nct_id: 'NCT00000007', excerpt: 'Pembrolizumab (MK-3475)', field: 'armsInterventionsModule.interventions.name' },
     ])
   })
 

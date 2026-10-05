@@ -239,6 +239,7 @@ VisualizationSpec = Annotated[
 
 class TrialSummary(_Contract):
     brief_title: str
+    official_title: str | None  # verbatim; the card's description line (None: not registered)
     overall_status: str  # display label
     phase: str  # display label, e.g. "Phase 1/Phase 2"
     start_date: str | None  # as registered
@@ -296,7 +297,8 @@ class SampleEntry(_Contract):
 
 class Exclusion(_Contract):
     rule: str
-    count: Count
+    count: Count  # == len(nct_ids), except unreadable records that had no usable NCT ID
+    nct_ids: list[NctId]  # every trial the rule acted on, sorted descending (Phase 7 step 3)
 
 
 class TopN(_Contract):
@@ -317,11 +319,30 @@ class CheckError(_Contract):
     message: str
 
 
+LedgerStep = Literal[
+    "request", "plan", "retrieval", "records", "aggregation", "citations", "prose", "response"
+]
+
+
+class VerificationStep(_Contract):
+    """One pipeline step in `meta.verification` (Phase 7 step 5), written by Python."""
+
+    step: LedgerStep
+    # passed: every check held. stopped: the step ran and rightly refused to go on (a
+    # clarification, no results). failed: a check failed (degraded). not_reached: never ran.
+    status: Literal["passed", "stopped", "failed", "not_reached"]
+    checks: list[str]  # the checks this step ran (names as in CHECK_RULES, or planner rules)
+    verified: Count  # items that held, of `total` (units in `result`)
+    total: Count
+    result: str  # one line, written by Python from counts, never by the LLM
+
+
 class _MetaBase(_Contract):
     source: Literal["clinicaltrials.gov"]
     filters: Filters
     assumptions: list[str]
     notes: list[str]
+    verification: list[VerificationStep]  # every step, in pipeline order
 
 
 class OkMeta(_MetaBase):

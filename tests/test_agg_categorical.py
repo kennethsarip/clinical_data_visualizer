@@ -93,7 +93,7 @@ def test_intervention_types_count_each_trial_once_per_type() -> None:
         ("Biological", 1, ["NCT00000002"]),
         ("Other", 1, ["NCT00000003"]),
     ]
-    assert result.excluded == {"no interventions": 1}
+    assert result.excluded == {"no interventions": frozenset({"NCT00000005"})}  # T5
     _check_provenance(result)
 
 
@@ -104,7 +104,7 @@ def test_unnamed_intervention_is_left_out_and_counted() -> None:
     )
     result = _run(Intent.DISTRIBUTION, Dimension.INTERVENTION_TYPE, cohort([unnamed]))
     assert result.rows == ()
-    assert result.excluded == {"unnamed intervention": 1}
+    assert result.excluded == {"unnamed intervention": frozenset({"NCT00000009"})}
 
 
 def test_sponsor_class_rows() -> None:
@@ -122,11 +122,12 @@ def test_top_drugs_apply_the_drug_rule_and_merge_registrations() -> None:
         ("Pembrolizumab", 2, ["NCT00000001", "NCT00000002"]),
         ("Nivolumab", 1, ["NCT00000004"]),
     ]
+    # T1 dropped a placebo; T3's only item is a lab test (non-drug, so no drug); T5 has none.
     assert result.excluded == {
-        "placebo": 1,
-        "non-drug intervention": 1,
-        "no drug intervention": 1,
-        "no interventions": 1,
+        "placebo": frozenset({"NCT00000001"}),
+        "non-drug intervention": frozenset({"NCT00000003"}),
+        "no drug intervention": frozenset({"NCT00000003"}),
+        "no interventions": frozenset({"NCT00000005"}),
     }
     assert result.top_n == TopN(limit=20, categories_total=3)
     pembro = result.rows[1]
@@ -175,7 +176,7 @@ def test_countries_dedupe_per_trial_and_exclude_trials_without_sites() -> None:
         ("Germany", 2, ["NCT00000001", "NCT00000005"]),
         ("United States", 2, ["NCT00000001", "NCT00000002"]),
     ]
-    assert result.excluded == {"no locations": 1}
+    assert result.excluded == {"no locations": frozenset({"NCT00000003"})}  # T3 lists no sites
     assert result.top_n == TopN(limit=20, categories_total=3)
 
 
@@ -190,7 +191,7 @@ def test_start_years_are_zero_filled_and_missing_dates_counted() -> None:
         (2017, 2, ["NCT00000002", "NCT00000004"]),
         (2018, 1, ["NCT00000005"]),
     ]
-    assert result.excluded == {"missing start date": 1}
+    assert result.excluded == {"missing start date": frozenset({"NCT00000003"})}
     assert result.rows[2].evidence["NCT00000002"] == (
         Evidence("statusModule.startDateStruct.date", "2017-06-01"),
     )
@@ -243,7 +244,7 @@ def test_comparison_exclusions_name_their_cohort() -> None:
         cohort([T1], label="Pembrolizumab"),
         cohort([T4], label="Nivolumab"),
     )
-    assert result.excluded == {"placebo (Pembrolizumab)": 1}
+    assert result.excluded == {"placebo (Pembrolizumab)": frozenset({"NCT00000001"})}
 
 
 # --- input guards ---
@@ -274,3 +275,20 @@ def test_result_types_match_the_declared_shape() -> None:
         result = aggregator.aggregate(cohorts)
         expected = GraphAggregation if intent is Intent.NETWORK else Aggregation
         assert isinstance(result, expected), (intent, dimension)
+
+
+def test_trials_on_no_shown_bar_are_listed_under_the_top_n_cutoff() -> None:
+    """Accounting by ID (Phase 7 step 3). Top 1 country by count, ties alphabetical: France
+    (T4, T5). T1 (Germany, US) and T2 (US) are on no bar; T3 has no sites (its own rule)."""
+    from dataclasses import replace
+
+    from app.aggregators.categorical import CategoricalAggregator
+    from app.aggregators.common import COUNTRY
+
+    aggregator = CategoricalAggregator(Intent.GEOGRAPHIC, replace(COUNTRY, top_n=1))
+    result = aggregator.aggregate([cohort(FIXTURE)])
+    assert _rows(result, "country") == [("France", 2, ["NCT00000004", "NCT00000005"])]
+    assert result.excluded == {
+        "no locations": frozenset({"NCT00000003"}),
+        "not in the top 1": frozenset({"NCT00000001", "NCT00000002"}),
+    }

@@ -189,6 +189,13 @@
             },
             "title": "Unapplied",
             "type": "array"
+          },
+          "verification": {
+            "items": {
+              "$ref": "#/components/schemas/VerificationStep"
+            },
+            "title": "Verification",
+            "type": "array"
           }
         },
         "required": [
@@ -196,6 +203,7 @@
           "filters",
           "assumptions",
           "notes",
+          "verification",
           "missing",
           "unapplied",
           "conflicts",
@@ -343,6 +351,13 @@
             "const": "clinicaltrials.gov",
             "title": "Source",
             "type": "string"
+          },
+          "verification": {
+            "items": {
+              "$ref": "#/components/schemas/VerificationStep"
+            },
+            "title": "Verification",
+            "type": "array"
           }
         },
         "required": [
@@ -350,6 +365,7 @@
           "filters",
           "assumptions",
           "notes",
+          "verification",
           "errors"
         ],
         "title": "DegradedMeta",
@@ -455,6 +471,14 @@
             "title": "Count",
             "type": "integer"
           },
+          "nct_ids": {
+            "items": {
+              "pattern": "^NCT\\d{8}$",
+              "type": "string"
+            },
+            "title": "Nct Ids",
+            "type": "array"
+          },
           "rule": {
             "title": "Rule",
             "type": "string"
@@ -462,7 +486,8 @@
         },
         "required": [
           "rule",
-          "count"
+          "count",
+          "nct_ids"
         ],
         "title": "Exclusion",
         "type": "object"
@@ -712,6 +737,13 @@
             "const": "clinicaltrials.gov",
             "title": "Source",
             "type": "string"
+          },
+          "verification": {
+            "items": {
+              "$ref": "#/components/schemas/VerificationStep"
+            },
+            "title": "Verification",
+            "type": "array"
           }
         },
         "required": [
@@ -719,6 +751,7 @@
           "filters",
           "assumptions",
           "notes",
+          "verification",
           "not_found"
         ],
         "title": "NoResultsMeta",
@@ -907,6 +940,13 @@
             },
             "title": "Units",
             "type": "object"
+          },
+          "verification": {
+            "items": {
+              "$ref": "#/components/schemas/VerificationStep"
+            },
+            "title": "Verification",
+            "type": "array"
           }
         },
         "required": [
@@ -914,6 +954,7 @@
           "filters",
           "assumptions",
           "notes",
+          "verification",
           "interpretation",
           "units",
           "sort",
@@ -1232,6 +1273,17 @@
             "title": "Conditions",
             "type": "array"
           },
+          "official_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Official Title"
+          },
           "overall_status": {
             "title": "Overall Status",
             "type": "string"
@@ -1258,6 +1310,7 @@
         },
         "required": [
           "brief_title",
+          "official_title",
           "overall_status",
           "phase",
           "start_date",
@@ -1324,6 +1377,67 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "VerificationStep": {
+        "additionalProperties": false,
+        "description": "One pipeline step in `meta.verification` (Phase 7 step 5), written by Python.",
+        "properties": {
+          "checks": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Checks",
+            "type": "array"
+          },
+          "result": {
+            "title": "Result",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "passed",
+              "stopped",
+              "failed",
+              "not_reached"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "step": {
+            "enum": [
+              "request",
+              "plan",
+              "retrieval",
+              "records",
+              "aggregation",
+              "citations",
+              "prose",
+              "response"
+            ],
+            "title": "Step",
+            "type": "string"
+          },
+          "total": {
+            "minimum": 0.0,
+            "title": "Total",
+            "type": "integer"
+          },
+          "verified": {
+            "minimum": 0.0,
+            "title": "Verified",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "step",
+          "status",
+          "checks",
+          "verified",
+          "total",
+          "result"
+        ],
+        "title": "VerificationStep",
         "type": "object"
       },
       "VisualizeRequest": {
@@ -1824,6 +1938,26 @@
     {
       "name": "conformance",
       "rule": "Every charted trial meets each exact filter; the filters shown are those sent."
+    },
+    {
+      "name": "membership",
+      "rule": "Each trial's own record puts it in its datum, and no matching trial is missing."
+    },
+    {
+      "name": "coverage",
+      "rule": "Every datum cites as many distinct trials as it holds, up to the citation cap."
+    },
+    {
+      "name": "summaries",
+      "rule": "Every trial card field equals the value in the trial's own record."
+    },
+    {
+      "name": "accounting",
+      "rule": "Every retrieved trial is on the chart or listed under the reason it is not."
+    },
+    {
+      "name": "recount",
+      "rule": "Every datum and exclusion is rebuilt from the raw records and matches."
     }
   ]
 }

@@ -317,6 +317,42 @@ def test_a_compared_item_marked_not_applied_is_applied_by_its_cohort() -> None:
     assert [c.label for c in plan.cohorts] == ["lung cancer", "colorectal cancer"]
 
 
+def test_words_that_describe_the_analysis_are_applied_by_it() -> None:
+    """Seen live (2 in 15): "combination studies" quoted as not applicable, though co-occurrence
+    in one trial is what network.drug_drug charts."""
+    plan = ok(
+        build(
+            "Which drugs frequently co-occur in combination studies for melanoma?",
+            reply(
+                "network.drug_drug",
+                condition="melanoma",
+                constraints=[
+                    constraint("melanoma", "condition"),
+                    constraint("combination studies", None, "no filter for combination studies"),
+                ],
+            ),
+        )
+    )
+    assert plan.analysis == "network.drug_drug"
+
+
+def test_analysis_words_do_not_cover_a_real_constraint() -> None:
+    result = clarify(
+        build(
+            "Which drugs co-occur in pediatric combination studies for melanoma?",
+            reply(
+                "network.drug_drug",
+                condition="melanoma",
+                constraints=[
+                    constraint("melanoma", "condition"),
+                    constraint("pediatric combination studies", None, "no filter for age group"),
+                ],
+            ),
+        )
+    )
+    assert result.unapplied
+
+
 def test_every_applied_constraint_keeps_the_plan() -> None:
     plan = ok(
         build(
@@ -387,11 +423,14 @@ def test_an_age_or_sex_word_no_constraint_quotes_is_an_output_error() -> None:
         build("Melanoma trials in women by phase", reply(condition="melanoma"))
 
 
-def test_an_age_word_inside_a_condition_quote_is_accounted_for() -> None:
-    llm = reply(
-        condition="pediatric asthma", constraints=[constraint("pediatric asthma", "condition")]
-    )
-    ok(build(PEDIATRIC, llm))
+def test_an_age_word_absorbed_into_an_applied_quote_is_not_accounted_for() -> None:
+    """Seen live in the Phase 7 eval: "pediatric asthma" quoted as the condition while the
+    condition was set to "asthma", so asthma was charted for every age. No filter expresses age,
+    so an age or sex word counts only when quoted as not applied."""
+    for condition in ("asthma", "pediatric asthma"):
+        llm = reply(condition=condition, constraints=[constraint("pediatric asthma", "condition")])
+        with pytest.raises(LLMOutputError, match="pediatric"):
+            build(PEDIATRIC, llm)
 
 
 @pytest.mark.parametrize(

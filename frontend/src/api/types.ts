@@ -114,6 +114,8 @@ export interface components {
             suggested_query: string | null;
             /** Unapplied */
             unapplied: components["schemas"]["Unapplied"][];
+            /** Verification */
+            verification: components["schemas"]["VerificationStep"][];
         };
         /** ClarificationResponse */
         ClarificationResponse: {
@@ -163,6 +165,8 @@ export interface components {
              * @constant
              */
             source: "clinicaltrials.gov";
+            /** Verification */
+            verification: components["schemas"]["VerificationStep"][];
         };
         /** DegradedResponse */
         DegradedResponse: {
@@ -204,6 +208,8 @@ export interface components {
         Exclusion: {
             /** Count */
             count: number;
+            /** Nct Ids */
+            nct_ids: string[];
             /** Rule */
             rule: string;
         };
@@ -283,6 +289,8 @@ export interface components {
              * @constant
              */
             source: "clinicaltrials.gov";
+            /** Verification */
+            verification: components["schemas"]["VerificationStep"][];
         };
         /** NoResultsResponse */
         NoResultsResponse: {
@@ -348,6 +356,8 @@ export interface components {
             units: {
                 [key: string]: string;
             };
+            /** Verification */
+            verification: components["schemas"]["VerificationStep"][];
         };
         /** OkResponse */
         OkResponse: {
@@ -453,6 +463,8 @@ export interface components {
             brief_title: string;
             /** Conditions */
             conditions: string[];
+            /** Official Title */
+            official_title: string | null;
             /** Overall Status */
             overall_status: string;
             /** Phase */
@@ -481,6 +493,30 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /**
+         * VerificationStep
+         * @description One pipeline step in `meta.verification` (Phase 7 step 5), written by Python.
+         */
+        VerificationStep: {
+            /** Checks */
+            checks: string[];
+            /** Result */
+            result: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "passed" | "stopped" | "failed" | "not_reached";
+            /**
+             * Step
+             * @enum {string}
+             */
+            step: "request" | "plan" | "retrieval" | "records" | "aggregation" | "citations" | "prose" | "response";
+            /** Total */
+            total: number;
+            /** Verified */
+            verified: number;
         };
         /**
          * VisualizeRequest

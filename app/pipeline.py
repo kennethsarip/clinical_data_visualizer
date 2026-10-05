@@ -20,6 +20,7 @@ from datetime import date
 from typing import Any, Protocol
 from urllib.parse import parse_qsl
 
+from app import verification
 from app.aggregators.registry import (
     REGISTRY,
     Aggregation,
@@ -48,9 +49,10 @@ from app.schemas import (
     OkResponse,
     RetrievalFilters,
     Unapplied,
+    VerificationStep,
     VisualizeRequest,
 )
-from app.viz import SOURCE, Prose, assemble, default_title, write_prose
+from app.viz import PROSE_FALLBACK_NOTE, SOURCE, Prose, assemble, default_title, write_prose
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +85,7 @@ class _Fetched:
     cohorts: list[CohortTrials]
     records: dict[str, dict[str, Any]]  # nct_id -> raw record, the retrieved set the checks use
     sent: list[dict[str, str]]  # the API params each cohort was fetched with
+    cohort_ids: list[frozenset[str]]  # the readable NCT IDs each cohort fetched, for recount
 
 
 @dataclass(frozen=True)
@@ -106,7 +109,9 @@ class Pipeline:
             planned = plan_request(request, self.llm, self.today(), self.registry)
         except PlanError as exc:
             stated = request.model_dump(mode="json", exclude={"query"}, exclude_none=True)
-            return _degraded(Filters(stated=stated, inferred={}), (), [_plan_error(exc)])
+            error = _plan_error(exc)
+            ledger = verification.for_plan_error(error.message)
+            return _degraded(Filters(stated=stated, inferred={}), (), [error], ledger)
         if isinstance(planned, Clarification):
             return _clarification(planned)
         aggregator = self.registry.get(planned.intent, planned.dimension)
@@ -141,9 +146,9 @@ class Pipeline:
         try:
             fetched = self._fetch(targets)
         except OffFilterBatchError as exc:
-            return _degraded(
-                _filters(plan), plan.assumptions, [CheckError(check="retrieval", message=str(exc))]
-            )
+            error = CheckError(check="retrieval", message=str(exc))
+            ledger = verification.for_retrieval_error(plan, str(exc))
+            return _degraded(_filters(plan), plan.assumptions, [error], ledger)
         if not fetched.records:
             return self._zero_results(plan)
         result = aggregator.aggregate(fetched.cohorts)
@@ -157,11 +162,13 @@ class Pipeline:
         results = self.fetcher.fetch_many([t.filters for t in targets])
         cohorts: list[CohortTrials] = []
         records: dict[str, dict[str, Any]] = {}
+        cohort_ids: list[frozenset[str]] = []
         for target, result in zip(targets, results, strict=True):
             # Normalize first: a record without an nctId is unreadable and set aside (counted
             # in meta), so it must not abort the request while building the lookup.
             batch = normalize_records(result.records)
             readable = {t.nct_id for t in batch.trials}
+            cohort_ids.append(frozenset(readable))
             records |= {nct_id: r for r in result.records if (nct_id := _nct_id(r)) in readable}
             kept, off_filter = conform(batch.trials, target.filters)
             batch = batch_of(kept, batch.unreadable)
@@ -169,7 +176,7 @@ class Pipeline:
                 CohortTrials(target.label, batch, target.filters, result.total, off_filter)
             )
         sent = [dict(parse_qsl(result.params_key)) for result in results]
-        return _Fetched(cohorts, records, sent)
+        return _Fetched(cohorts, records, sent, cohort_ids)
 
     def _checked(
         self,
@@ -181,7 +188,17 @@ class Pipeline:
     ) -> AnyResponse:
         """§1 steps 7-9: prose, assembly, checks, one repair without the prose, else degraded."""
         filters = _filters(plan)
-        context = CheckContext(aggregator.shape, fetched.records, fetched.sent)
+        # Chart aggregators expose their categorizer so `membership` can re-derive each trial's
+        # category; networks and numeric charts have none.
+        categorizer = getattr(aggregator, "categorizer", None)
+        context = CheckContext(
+            aggregator.shape,
+            fetched.records,
+            fetched.sent,
+            categorizer,
+            aggregator=aggregator,
+            cohort_ids=fetched.cohort_ids,
+        )
 
         def build(title: str, notes: Sequence[str]) -> OkResponse:
             return assemble(
@@ -197,14 +214,15 @@ class Pipeline:
         response = build(prose.title, prose.notes)
         errors = self.checker(response, context)
         if not errors:
-            return response
+            return _with_ledger(response, plan)
         logger.warning("checks failed, repairing once without LLM prose: %s", errors)
         repaired = build(default_title(aggregator, fetched.cohorts), ())
         errors = self.checker(repaired, context)
         if not errors:
-            return repaired
+            return _with_ledger(repaired, plan)
         logger.error("checks still failing after the repair: %s", errors)
-        return _degraded(filters, plan.assumptions, errors)
+        ledger = verification.for_answer(repaired, plan, prose_fallback=True, errors=errors)
+        return _degraded(filters, plan.assumptions, errors, ledger)
 
     def _zero_results(self, plan: QueryPlan) -> NoResultsResponse:
         """§7.8: tell "not found" from "over-filtered" by probing each entity alone. A search on
@@ -221,6 +239,15 @@ class Pipeline:
             for name in not_found
         ] or [NOT_WIDENED_NOTE]
         return _no_results(plan, not_found, notes)
+
+
+def _with_ledger(response: OkResponse, plan: QueryPlan) -> OkResponse:
+    """Attach the ledger after the checks pass: it reports their outcome, so it is not one of
+    the things they check."""
+    fallback = PROSE_FALLBACK_NOTE in response.meta.notes
+    ledger = verification.for_answer(response, plan, prose_fallback=fallback)
+    meta = response.meta.model_copy(update={"verification": ledger})
+    return response.model_copy(update={"meta": meta})
 
 
 def _log_title_failure(future: "Future[Prose]") -> None:
@@ -254,19 +281,26 @@ def _charts_nothing(result: Aggregation | GraphAggregation) -> bool:
 def _nothing_charted(
     plan: QueryPlan, result: Aggregation | GraphAggregation, retrieved: int
 ) -> NoResultsResponse:
-    reasons = ", ".join(f"{count} {rule}" for rule, count in result.excluded.items() if count)
+    reasons = ", ".join(f"{len(ids)} {rule}" for rule, ids in result.excluded.items() if ids)
     note = f"{retrieved} trials matched, but none could be charted"
     note += f" ({reasons})." if reasons else "."
-    return _no_results(plan, [], [note])
+    ledger = verification.for_nothing_charted(plan, retrieved, note)
+    return _no_results(plan, [], [note], ledger)
 
 
-def _no_results(plan: QueryPlan, not_found: list[str], notes: list[str]) -> NoResultsResponse:
+def _no_results(
+    plan: QueryPlan,
+    not_found: list[str],
+    notes: list[str],
+    ledger: list[VerificationStep] | None = None,
+) -> NoResultsResponse:
     meta = NoResultsMeta(
         source=SOURCE,
         filters=_filters(plan),
         assumptions=list(plan.assumptions),
         notes=[*plan.notes, *notes],
         not_found=not_found,
+        verification=ledger or verification.for_no_results(plan, notes),
     )
     return NoResultsResponse(status="no_results", visualization=None, trials={}, meta=meta)
 
@@ -281,6 +315,7 @@ def _clarification(clarification: Clarification) -> ClarificationResponse:
         unapplied=[Unapplied(quote=q, reason=r) for q, r in clarification.unapplied],
         conflicts=[Conflict(filter=k, quotes=list(qs)) for k, qs in clarification.conflicts],
         suggested_query=clarification.suggested_query,
+        verification=verification.for_clarification(clarification),
     )
     return ClarificationResponse(
         status="clarification_needed", visualization=None, trials={}, meta=meta
@@ -288,9 +323,17 @@ def _clarification(clarification: Clarification) -> ClarificationResponse:
 
 
 def _degraded(
-    filters: Filters, assumptions: Sequence[str], errors: list[CheckError]
+    filters: Filters,
+    assumptions: Sequence[str],
+    errors: list[CheckError],
+    ledger: list[VerificationStep],
 ) -> DegradedResponse:
     meta = DegradedMeta(
-        source=SOURCE, filters=filters, assumptions=list(assumptions), notes=[], errors=errors
+        source=SOURCE,
+        filters=filters,
+        assumptions=list(assumptions),
+        notes=[],
+        errors=errors,
+        verification=ledger,
     )
     return DegradedResponse(status="degraded", visualization=None, trials={}, meta=meta)

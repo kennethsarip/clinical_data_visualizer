@@ -63,7 +63,8 @@ def raw_record(trial: NormalizedTrial) -> dict[str, Any]:
     if trial.start_date is not None:
         status["startDateStruct"] = {"date": trial.start_date}
     section: dict[str, Any] = {
-        "identificationModule": {"nctId": trial.nct_id, "briefTitle": trial.brief_title},
+        "identificationModule": {"nctId": trial.nct_id, "briefTitle": trial.brief_title}
+        | ({"officialTitle": trial.official_title} if trial.official_title is not None else {}),
         "statusModule": status,
         "designModule": design,
         "sponsorCollaboratorsModule": {

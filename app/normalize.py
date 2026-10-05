@@ -68,6 +68,7 @@ class NormalizedTrial(BaseModel):
 
     nct_id: Annotated[str, Field(pattern=r"^NCT\d{8}$")]
     brief_title: str
+    official_title: str | None = None  # verbatim; not every record registers one
     phases: tuple[Phase, ...]
     overall_status: Status
     start_date: str | None  # verbatim, `YYYY-MM-DD` or `YYYY-MM`
@@ -148,6 +149,7 @@ def normalize_record(record: dict[str, Any]) -> NormalizedTrial:
     fields = {
         "nct_id": nct_id,
         "brief_title": _get(section, "identificationModule", "briefTitle"),
+        "official_title": _get(section, "identificationModule", "officialTitle"),
         "phases": _get(section, "designModule", "phases") or (),
         "overall_status": _get(section, "statusModule", "overallStatus"),
         "start_date": start_date,

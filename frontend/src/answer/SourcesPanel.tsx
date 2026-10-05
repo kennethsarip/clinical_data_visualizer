@@ -72,6 +72,7 @@ function SourceList({ trials, selection, onClearSelection, onHover, onOpen }: Pr
           <h3>
             {selection.label} · {count(selection.nctIds.length)}
           </h3>
+          <Markers ids={ids} numbers={numbers} />
           <button type="button" className="link-button" onClick={onClearSelection}>
             Show all sources
           </button>
@@ -100,6 +101,23 @@ function SourceList({ trials, selection, onClearSelection, onHover, onOpen }: Pr
         </button>
       )}
     </>
+  )
+}
+
+const MARKERS = 3
+
+/** The datum's first trials as numbered markers, like inline citations, each jumping to its card. */
+function Markers({ ids, numbers }: { ids: string[]; numbers: Map<string, number> }) {
+  const rest = ids.length - MARKERS
+  return (
+    <nav className="markers" aria-label="Trials in this datum">
+      {ids.slice(0, MARKERS).map((nctId) => (
+        <a key={nctId} href={`#source-${nctId}`} className="marker">
+          [{numbers.get(nctId)}]
+        </a>
+      ))}
+      {rest > 0 && <span className="marker-more">… +{rest}</span>}
+    </nav>
   )
 }
 

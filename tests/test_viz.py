@@ -133,7 +133,9 @@ def test_time_series_spec() -> None:
     meta = response.meta
     assert meta.time_granularity == "year"
     assert meta.sort.model_dump() == {"field": "start_year", "order": "asc"}
-    assert [e.model_dump() for e in meta.excluded] == [{"rule": "missing start date", "count": 1}]
+    assert [e.model_dump() for e in meta.excluded] == [
+        {"rule": "missing start date", "count": 1, "nct_ids": ["NCT00000003"]}
+    ]
 
 
 def test_scatter_spec_uses_a_log_enrollment_axis() -> None:
@@ -188,7 +190,8 @@ def test_unreadable_records_are_disclosed_and_reconcile() -> None:
     cohorts = [cohort(FIXTURE, unreadable=1)]
     response = _assemble(Intent.DISTRIBUTION, Dimension.PHASE, cohorts)
     assert response.meta.sample[0].fetched == 6
-    assert {"rule": "unreadable record", "count": 1} in [
+    # The synthetic unreadable record has no usable NCT ID: counted, but no ID to list.
+    assert {"rule": "unreadable record", "count": 1, "nct_ids": []} in [
         e.model_dump() for e in response.meta.excluded
     ]
     shape = REGISTRY.get(Intent.DISTRIBUTION, Dimension.PHASE).shape
@@ -198,11 +201,12 @@ def test_unreadable_records_are_disclosed_and_reconcile() -> None:
 def test_comparison_unreadable_exclusion_names_its_cohort() -> None:
     cohorts = [cohort([T1, T2], label="A", unreadable=1), cohort([T4], label="B")]
     response = _assemble(Intent.COMPARISON, Dimension.PHASE, cohorts)
-    assert {"rule": "unreadable record (A)", "count": 1} in [
+    assert {"rule": "unreadable record (A)", "count": 1, "nct_ids": []} in [
         e.model_dump() for e in response.meta.excluded
     ]
     shape = REGISTRY.get(Intent.COMPARISON, Dimension.PHASE).shape
-    assert run_checks(response, CheckContext(shape=shape, records=RECORDS)) == []
+    retrieved = {t.nct_id: RECORDS[t.nct_id] for t in (T1, T2, T4)}  # what the cohorts fetched
+    assert run_checks(response, CheckContext(shape=shape, records=retrieved)) == []
 
 
 def test_capped_sample_is_disclosed() -> None:

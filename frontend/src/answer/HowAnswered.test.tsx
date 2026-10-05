@@ -36,11 +36,33 @@ describe('HowAnswered (SCHEMAS.md §4 meta)', () => {
     expect(within(drawer).getByText('No trials were excluded.')).toBeInTheDocument()
   })
 
+  it('shows the verification ledger, one line per step with what it verified', async () => {
+    const drawer = await open(META)
+    const ledger = within(drawer).getByRole('list', { name: 'Verification' })
+    const steps = within(ledger).getAllByRole('listitem')
+    expect(steps).toHaveLength(8)
+    expect(steps[4]).toHaveTextContent('aggregation')
+    expect(steps[4]).toHaveTextContent('4 / 4')
+    expect(steps[4]).toHaveTextContent('All 4 trials accounted for')
+    expect(steps[5]).toHaveTextContent('5 citations verified')
+  })
+
+  it('lists excluded trials by reason, with their IDs', async () => {
+    const meta = {
+      ...META,
+      excluded: [{ rule: 'outside the country filter', count: 2, nct_ids: ['NCT00000009', 'NCT00000008'] }],
+    } as OkMeta
+    const drawer = await open(meta)
+    const reason = within(drawer).getByText('outside the country filter: 2 trials')
+    await userEvent.click(reason)
+    expect(within(drawer).getByText('NCT00000009, NCT00000008')).toBeInTheDocument()
+  })
+
   it('lists every check the answer passed', async () => {
     const drawer = await open(META)
     const checks = within(drawer).getByRole('list', { name: 'Checks passed' })
     const items = within(checks).getAllByRole('listitem')
-    expect(items).toHaveLength(10) // CLAUDE.md §7.6, conformance added in Phase 6 step 4
+    expect(items).toHaveLength(15) // CLAUDE.md §7.6: + conformance (6.4); membership, coverage, summaries, accounting, recount (7)
     expect(items[0]).toHaveTextContent('schema: The response matches the documented schema.')
     expect(items[9]).toHaveTextContent('conformance: Every charted trial meets each exact filter')
   })
@@ -63,7 +85,7 @@ describe('HowAnswered (SCHEMAS.md §4 meta)', () => {
   it('describes exclusions, top-N and network pruning', async () => {
     const meta = {
       ...META,
-      excluded: [{ rule: 'missing start date', count: 2 }],
+      excluded: [{ rule: 'missing start date', count: 2, nct_ids: ['NCT00000002', 'NCT00000001'] }],
       top_n: { limit: 20, categories_total: 63 },
       pruning: { min_edge_weight: 2, top_n_nodes: 50, fallback_used: false, nodes_removed: 12, edges_removed: 40 },
     } as OkMeta

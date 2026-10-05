@@ -301,3 +301,15 @@ def test_unreadable_record_without_an_nct_id_is_reported_as_none() -> None:
     records.append({"protocolSection": {}})
     batch = normalize_records(records)
     assert batch.unreadable == [UnreadableRecord(None, batch.unreadable[0].reason)]
+
+
+def test_the_official_title_is_read_verbatim_and_may_be_absent() -> None:
+    record = _record(
+        identificationModule={
+            "nctId": "NCT00000001",
+            "briefTitle": "A trial",
+            "officialTitle": "A Randomized, Double-Blind Study of X  in Y",
+        }
+    )
+    assert normalize_record(record).official_title == "A Randomized, Double-Blind Study of X  in Y"
+    assert normalize_record(_record()).official_title is None

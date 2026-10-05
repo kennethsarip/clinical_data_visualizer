@@ -11,21 +11,41 @@ The §7.6 WARN items (capped sample, counting-rule exclusions, network pruning) 
 
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from typing import Any
 
 from pydantic import ValidationError
 
 from app.aggregators.common import (
+    F_CONDITION,
     F_ENROLLMENT,
     F_ENROLLMENT_TYPE,
+    F_INTERVENTION_NAME,
     F_INTERVENTION_TYPE,
     F_PHASES,
+    F_SPONSOR,
     F_SPONSOR_CLASS,
     F_START_DATE,
     F_STATUS,
+    Categorizer,
 )
-from app.aggregators.registry import RowShape
+from app.aggregators.registry import (
+    Aggregator,
+    AggRow,
+    CohortTrials,
+    GraphAggregation,
+    RowShape,
+)
+from app.conformance import OffFilterBatchError, conform
 from app.ctgov import build_params
+from app.entities import EntityType, entity_key
+from app.normalize import (
+    UNREADABLE_RULE,
+    NormalizedTrial,
+    RecordShapeError,
+    batch_of,
+    normalize_record,
+)
 from app.schemas import (
     RESPONSE_ADAPTER,
     ChartVisualization,
@@ -36,7 +56,9 @@ from app.schemas import (
     Provenance,
     RetrievalFilters,
 )
-from app.viz import VIZ_TYPE, stray_numbers
+from app.viz import VIZ_TYPE, exclusions, stray_numbers
+from app.vocab import Phase, Status, phase_label
+from app.vocab import label as display_label
 
 # Dimensions where every trial lands in exactly one row, so rows must sum to the trials charted
 # (§8.5). Multi-valued ones (country, drug, ...) may sum higher, and top-N drops categories.
@@ -68,6 +90,25 @@ class CheckContext:
     # The API params each cohort was fetched with. The pipeline always passes them; None (unit
     # tests of other checks) skips only the "filters equal the params sent" half of conformance.
     sent: Sequence[Mapping[str, str]] | None = None
+    # The aggregator's categorizer, for re-deriving each trial's category from its raw record
+    # (membership); None for shapes without one (networks, numeric charts).
+    categorizer: Categorizer | None = None
+    # For `recount`: the aggregator that built the answer and the NCT IDs each cohort fetched.
+    aggregator: Aggregator | None = None
+    cohort_ids: Sequence[frozenset[str]] | None = None
+    # Each raw record normalized once per answer and shared by membership and recount (None:
+    # unreadable). Built from `records` only, so it adds no input a check could be fooled by.
+    _trials: dict[str, NormalizedTrial | None] = dataclass_field(
+        default_factory=dict, compare=False
+    )
+
+    def trial(self, nct_id: str) -> NormalizedTrial | None:
+        if nct_id not in self._trials:
+            try:
+                self._trials[nct_id] = normalize_record(self.records[nct_id])
+            except RecordShapeError:
+                self._trials[nct_id] = None
+        return self._trials[nct_id]
 
 
 Check = Callable[[OkResponse, CheckContext], list[str]]
@@ -371,6 +412,258 @@ def _param_terms(params: Mapping[str, str]) -> set[tuple[str, str]]:
     return terms
 
 
+def _membership(response: OkResponse, context: CheckContext) -> list[str]:
+    """Phase 7 steps 1-2: every trial in every row belongs there by its own raw record, re-derived
+    with the aggregator's categorizer for all `nct_ids` (not only the cited ones), so a trial on
+    the wrong bar fails even when its excerpt is real. With one cohort, the reverse holds too: no
+    retrieved trial that meets the filters and belongs to a shown row is missing from it."""
+    spec = response.visualization
+    if isinstance(spec, NetworkVisualization):
+        return _network_support(spec)
+    categorizer = context.categorizer
+    if categorizer is None:
+        return []
+    rows = [r.model_dump() for r in spec.data]
+    charted = {n for row in rows for n in row["nct_ids"]}
+    one_cohort = response.meta.interpretation.cohorts is None
+    filters = {**response.meta.filters.stated, **response.meta.filters.inferred}
+    pool = {
+        n: r
+        for n, r in context.records.items()
+        if n in charted
+        or (
+            one_cohort
+            and all(_meets_raw(r.get("protocolSection", {}), k, v) for k, v in filters.items())
+        )
+    }
+    keys, unreadable = _categories(categorizer, context, pool)
+    messages = [f"{n} cannot be re-read to verify its category" for n in sorted(unreadable)]
+    label_keys: dict[object, set[object]] = {}
+    for assigned in keys.values():
+        for key, label in assigned:
+            label_keys.setdefault(label, set()).add(key)
+    for row in rows:
+        label = row[categorizer.column]
+        row_keys = label_keys.get(label, set())
+        for n in row["nct_ids"]:
+            if n in keys and not {k for k, _ in keys[n]} & row_keys:
+                found = ", ".join(str(lbl) for _, lbl in keys[n]) or "no category"
+                messages.append(f"{n} is in {label!r} but its record puts it in {found}")
+        if one_cohort and row_keys:
+            belong = {n for n, assigned in keys.items() if {k for k, _ in assigned} & row_keys}
+            for n in sorted(belong - set(row["nct_ids"]), reverse=True):
+                messages.append(f"{n} belongs in {label!r} by its record but is missing from it")
+    return messages
+
+
+def _categories(
+    categorizer: Categorizer, context: CheckContext, nct_ids: Iterable[str]
+) -> tuple[dict[str, list[tuple[object, object]]], set[str]]:
+    """nct_id -> its (key, label) categories, from each raw record normalized afresh."""
+    trials, unreadable = [], set()
+    for nct_id in nct_ids:
+        trial = context.trial(nct_id)
+        if trial is None:
+            unreadable.add(nct_id)
+        else:
+            trials.append(trial)
+    by_trial = categorizer.assign(trials).by_trial
+    return {n: [(a.key, a.label) for a in assigned] for n, assigned in by_trial.items()}, unreadable
+
+
+# Record path -> the entity type its values name, for re-deriving a cited node's key.
+_FIELD_ENTITY = {
+    F_INTERVENTION_NAME: EntityType.DRUG,
+    F_SPONSOR: EntityType.SPONSOR,
+    F_CONDITION: EntityType.CONDITION,
+}
+
+
+def _network_support(spec: NetworkVisualization) -> list[str]:
+    """A node's every excerpt normalizes (§6 name rules) to that node, and an edge cites both of
+    its ends for every trial it cites, so a citation cannot vouch for a different entity."""
+    messages = []
+    for node in spec.data.nodes:
+        for c in node.citations:
+            kind = _FIELD_ENTITY.get(c.field)
+            got = f"{kind}:{entity_key(kind, c.excerpt)}" if kind and c.excerpt else None
+            if got != node.id:
+                messages.append(f"node {node.id} cites {c.nct_id} with {c.excerpt!r} ({got})")
+    for edge in spec.data.edges:
+        cited: dict[str, set[str]] = {}
+        for c in edge.citations:
+            kind = _FIELD_ENTITY.get(c.field)
+            if kind and c.excerpt:
+                cited.setdefault(c.nct_id, set()).add(f"{kind}:{entity_key(kind, c.excerpt)}")
+        for nct_id, ends in cited.items():
+            if not {edge.source, edge.target} <= ends:
+                messages.append(
+                    f"edge {edge.source} - {edge.target} cites {nct_id} without both ends"
+                )
+    return messages
+
+
+def _summaries(response: OkResponse, context: CheckContext) -> list[str]:
+    """Phase 7 step 4: every field of every trial card equals its raw record value (labels for
+    codes, verbatim otherwise), read straight from the record, so a card cannot describe a
+    different trial than the one cited."""
+    messages = []
+    for nct_id, summary in response.trials.items():
+        record = context.records.get(nct_id)
+        if record is None:
+            continue  # the citation ids check reports a trial that was never retrieved
+        expected = _summary_from_raw(record.get("protocolSection", {}))
+        shown = summary.model_dump()
+        for field, value in expected.items():
+            if shown[field] != value:
+                messages.append(f"{nct_id} card shows {field}={shown[field]!r}, record {value!r}")
+    return messages
+
+
+def _summary_from_raw(section: Mapping[str, Any]) -> dict[str, Any]:
+    ident = section.get("identificationModule", {})
+    status = section.get("statusModule", {})
+    code = status.get("overallStatus")
+    phases = section.get("designModule", {}).get("phases", [])
+    try:
+        status_label = display_label(Status(code))
+        phase = phase_label([Phase(p) for p in phases])
+    except ValueError:
+        status_label, phase = f"unknown {code}", f"unknown {phases}"
+    return {
+        "brief_title": ident.get("briefTitle"),
+        "official_title": ident.get("officialTitle"),
+        "overall_status": status_label,
+        "phase": phase,
+        "start_date": status.get("startDateStruct", {}).get("date"),
+        "sponsor_name": section.get("sponsorCollaboratorsModule", {})
+        .get("leadSponsor", {})
+        .get("name"),
+        "conditions": list(section.get("conditionsModule", {}).get("conditions", [])),
+    }
+
+
+def _coverage(response: OkResponse, context: CheckContext) -> list[str]:
+    """Every row, node and edge cites min(trial_count, citation_cap) distinct trials (§7.5)."""
+    cap = response.meta.citation_cap
+    messages = []
+    for item in _provenance(response):
+        cited = len({c.nct_id for c in item.citations})
+        wanted = min(item.trial_count, cap)
+        if cited < wanted:
+            messages.append(f"{_name(item)} cites {cited} of {wanted} trials it should")
+    return messages
+
+
+def _name(item: Provenance) -> str:
+    values = item.model_dump(exclude={"trial_count", "nct_ids", "citations"})
+    if "source" in values:
+        return f"edge {values['source']} - {values['target']}"
+    return repr(values.get("id") or next(iter(values.values()), "datum"))
+
+
+def _accounting(response: OkResponse, context: CheckContext) -> list[str]:
+    """Phase 7 step 3: every retrieved trial is on some datum or listed under a reason in
+    `meta.excluded` (a counting rule, off-filter, a top-N cutoff, network pruning), and each
+    reason's count is its IDs (an unreadable record may lack an ID to list)."""
+    messages = []
+    listed: set[str] = set()
+    for e in response.meta.excluded:
+        listed |= set(e.nct_ids)
+        unreadable = e.rule.startswith(UNREADABLE_RULE)
+        if e.count != len(e.nct_ids) and not (unreadable and e.count > len(e.nct_ids)):
+            messages.append(f"{e.rule!r} counts {e.count} but lists {len(e.nct_ids)} trials")
+    charted = {n for item in _provenance(response) for n in item.nct_ids}
+    for nct_id in sorted(set(context.records) - charted - listed, reverse=True):
+        messages.append(f"{nct_id} was retrieved but is on no datum and under no reason")
+    return messages
+
+
+def _recount(response: OkResponse, context: CheckContext) -> list[str]:
+    """Phase 7 step 2: rebuild every cohort from its raw cached records (normalize, the exact
+    filters, the same aggregator) and require every row, node, edge, point and bin, and every
+    exclusion, to match the answer: one code path for every shape. It proves the answer is what
+    the declared rules make of the records; the rules themselves are unit-tested."""
+    if context.aggregator is None or context.cohort_ids is None:
+        return []
+    try:
+        cohorts = _rebuilt_cohorts(response, context, context.cohort_ids)
+    except (RecordShapeError, OffFilterBatchError, ValueError) as exc:
+        return [f"the records could not be recounted: {exc}"]
+    result = context.aggregator.aggregate(cohorts)
+    messages = _compare_data(response, result, context.aggregator.columns)
+    shown = {e.rule: set(e.nct_ids) for e in response.meta.excluded}
+    rebuilt = {e.rule: set(e.nct_ids) for e in exclusions(result, cohorts)}
+    for rule in sorted(set(shown) | set(rebuilt)):
+        if rule.startswith(UNREADABLE_RULE):
+            continue  # unreadable records never reach the cache lookup, so they cannot recount
+        if shown.get(rule, set()) != rebuilt.get(rule, set()):
+            messages.append(f"exclusion {rule!r} lists other trials than the records give")
+    return messages
+
+
+def _rebuilt_cohorts(
+    response: OkResponse, context: CheckContext, cohort_ids: Sequence[frozenset[str]]
+) -> list[CohortTrials]:
+    meta = response.meta
+    shared = {**meta.filters.stated, **meta.filters.inferred}
+    listed = meta.interpretation.cohorts
+    specs = [(c.label, c.filters) for c in listed] if listed else [(None, shared)]
+    if not len(specs) == len(cohort_ids) == len(meta.sample):
+        raise ValueError(f"{len(specs)} cohorts described, {len(cohort_ids)} fetched")
+    cohorts = []
+    for (label, values), nct_ids, sample in zip(specs, cohort_ids, meta.sample, strict=True):
+        # The cache's order, as the pipeline saw it, so label votes break ties the same way.
+        trials = [context.trial(n) for n in context.records if n in nct_ids]
+        readable = [t for t in trials if t is not None]
+        if len(readable) < len(trials):
+            raise ValueError(f"{len(trials) - len(readable)} records could not be re-read")
+        filters = RetrievalFilters.model_validate(values)
+        kept, off_filter = conform(readable, filters)
+        cohorts.append(CohortTrials(label, batch_of(kept, []), filters, sample.total, off_filter))
+    return cohorts
+
+
+def _compare_data(response: OkResponse, result: Any, columns: Sequence[str]) -> list[str]:
+    spec = response.visualization
+    if isinstance(spec, NetworkVisualization):
+        if not isinstance(result, GraphAggregation):
+            return ["a network answer recounts as a chart"]
+        nodes = [n.model_dump() for n in spec.data.nodes]
+        edges = [e.model_dump() for e in spec.data.edges]
+        node_cols = ("id", "label", "entity_type", "is_anchor")
+        return [
+            *_compare_items("node", nodes, result.nodes, node_cols),
+            *_compare_items("edge", edges, result.edges, ("source", "target")),
+        ]
+    if isinstance(result, GraphAggregation):
+        return ["a chart answer recounts as a network"]
+    rows = [r.model_dump(mode="json") for r in spec.data]
+    return _compare_items("row", rows, result.rows, columns)
+
+
+def _compare_items(
+    kind: str, shown: list[dict[str, Any]], rebuilt: Sequence[AggRow], columns: Sequence[str]
+) -> list[str]:
+    def key(values: Mapping[str, Any]) -> tuple[Any, ...]:
+        return tuple(values.get(c) for c in columns)
+
+    have = {key(item): set(item["nct_ids"]) for item in shown}
+    want = {key(row.values): set(row.nct_ids) for row in rebuilt}
+    messages = []
+    for k in [*want, *(k for k in have if k not in want)]:
+        if k not in have:
+            messages.append(f"{kind} {k} is missing; the records give {len(want[k])} trials")
+        elif k not in want:
+            messages.append(f"{kind} {k} is not in what the records give")
+        elif have[k] != want[k]:
+            extra, lost = sorted(have[k] - want[k]), sorted(want[k] - have[k])
+            messages.append(f"{kind} {k} differs from the records: +{extra} -{lost}")
+    if [key(item) for item in shown] != [key(r.values) for r in rebuilt] and not messages:
+        messages.append(f"{kind}s are not in the order the records give")
+    return messages
+
+
 CHECKS: tuple[tuple[str, Check], ...] = (
     ("schema", _schema),
     ("encoding", _encoding),
@@ -382,6 +675,11 @@ CHECKS: tuple[tuple[str, Check], ...] = (
     ("title", _title),
     ("disclosures", _disclosures),
     ("conformance", _conformance),
+    ("membership", _membership),
+    ("coverage", _coverage),
+    ("summaries", _summaries),
+    ("accounting", _accounting),
+    ("recount", _recount),
 )
 
 
@@ -398,4 +696,9 @@ CHECK_RULES: Mapping[str, str] = {
     "title": "The title contains no number that is not in the filters.",
     "disclosures": "Sample caps, pruning and top-N limits are disclosed consistently.",
     "conformance": "Every charted trial meets each exact filter; the filters shown are those sent.",
+    "membership": "Each trial's own record puts it in its datum, and no matching trial is missing.",
+    "coverage": "Every datum cites as many distinct trials as it holds, up to the citation cap.",
+    "summaries": "Every trial card field equals the value in the trial's own record.",
+    "accounting": "Every retrieved trial is on the chart or listed under the reason it is not.",
+    "recount": "Every datum and exclusion is rebuilt from the raw records and matches.",
 }

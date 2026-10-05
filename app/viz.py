@@ -162,10 +162,11 @@ def assemble(
         grouping=Grouping(dimension=str(aggregator.dimension), series=_series(aggregator)),
         sample=[_sample(c) for c in cohorts],
         citation_cap=CITATION_CAP,
-        excluded=_excluded(result, cohorts),
+        excluded=exclusions(result, cohorts),
         top_n=None if isinstance(result, GraphAggregation) else result.top_n,
         pruning=result.pruning if isinstance(result, GraphAggregation) else None,
         notes=list(notes),
+        verification=[],  # the pipeline attaches the ledger once the checks have run
     )
     return OkResponse(
         status="ok",
@@ -325,28 +326,41 @@ def _series(aggregator: Aggregator) -> str | None:
 
 
 def _sample(cohort: CohortTrials) -> SampleEntry:
-    fetched = (
-        len(cohort.batch.trials) + len(cohort.batch.unreadable) + sum(cohort.off_filter.values())
-    )
+    off_filter = sum(len(ids) for ids in cohort.off_filter.values())
+    fetched = len(cohort.batch.trials) + len(cohort.batch.unreadable) + off_filter
     # totalCount is read from the first page; trials registered while later pages are fetched
     # can push `fetched` past it, and a total below what was fetched is never true.
     total = max(cohort.total, fetched)
     return SampleEntry(cohort=cohort.label, fetched=fetched, total=total, capped=fetched < total)
 
 
-def _excluded(
+def exclusions(
     result: Aggregation | GraphAggregation, cohorts: Sequence[CohortTrials]
 ) -> list[Exclusion]:
-    counts = dict(result.excluded)
+    ids: dict[str, set[str]] = {rule: set(nct_ids) for rule, nct_ids in result.excluded.items()}
+    # An unreadable record may have no usable NCT ID, so its count can exceed its IDs.
+    unknown: dict[str, int] = {}
     for c in cohorts:
-        set_aside = dict(c.off_filter)
+        set_aside = {rule: set(nct_ids) for rule, nct_ids in c.off_filter.items()}
         if c.batch.unreadable:
-            set_aside[UNREADABLE_RULE] = len(c.batch.unreadable)
-        for rule, n in set_aside.items():
+            set_aside[UNREADABLE_RULE] = {u.nct_id for u in c.batch.unreadable if u.nct_id}
+        for rule, nct_ids in set_aside.items():
             # A comparison names the cohort, as the aggregator does for its own rules.
             key = rule if len(cohorts) == 1 else f"{rule} ({c.label})"
-            counts[key] = counts.get(key, 0) + n
-    return [Exclusion(rule=rule, count=n) for rule, n in counts.items() if n]
+            ids.setdefault(key, set()).update(nct_ids)
+        nameless = sum(u.nct_id is None for u in c.batch.unreadable)
+        if nameless:
+            key = UNREADABLE_RULE if len(cohorts) == 1 else f"{UNREADABLE_RULE} ({c.label})"
+            unknown[key] = unknown.get(key, 0) + nameless
+    return [
+        Exclusion(
+            rule=rule,
+            count=len(ids.get(rule, ())) + unknown.get(rule, 0),
+            nct_ids=sorted(ids.get(rule, ()), reverse=True),
+        )
+        for rule in dict.fromkeys([*ids, *unknown])
+        if ids.get(rule) or unknown.get(rule)
+    ]
 
 
 def _assumptions(

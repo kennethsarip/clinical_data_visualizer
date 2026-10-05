@@ -119,15 +119,16 @@ One row per category. Sort: count descending, ties alphabetical; phase uses its 
      {"phase": "Not specified", "trial_count": 1, "nct_ids": ["NCT00000004"],
       "citations": [{"nct_id": "NCT00000004", "excerpt": null, "field": "designModule.phases"}]}]},
  "trials": {
-   "NCT00000001": {"brief_title": "Pembrolizumab in Advanced Melanoma", "overall_status": "Completed", "phase": "Phase 3", "start_date": "2015-03",
+   "NCT00000001": {"brief_title": "Pembrolizumab in Advanced Melanoma", "official_title": "A Phase 3, Randomized Study of Pembrolizumab in Participants With Advanced Melanoma", "overall_status": "Completed", "phase": "Phase 3", "start_date": "2015-03",
                    "sponsor_name": "Merck Sharp & Dohme LLC", "conditions": ["Melanoma"]},
-   "NCT00000002": {"brief_title": "Pembrolizumab Versus Chemotherapy in NSCLC", "overall_status": "Active, not recruiting", "phase": "Phase 3", "start_date": "2016-07-12",
+   "NCT00000002": {"brief_title": "Pembrolizumab Versus Chemotherapy in NSCLC", "official_title": null, "overall_status": "Active, not recruiting", "phase": "Phase 3", "start_date": "2016-07-12",
                    "sponsor_name": "Merck Sharp & Dohme LLC", "conditions": ["Non-small Cell Lung Cancer"]},
-   "NCT00000003": {"brief_title": "Pembrolizumab Plus Lenvatinib in Solid Tumors", "overall_status": "Recruiting", "phase": "Phase 1/Phase 2", "start_date": "2019-01",
+   "NCT00000003": {"brief_title": "Pembrolizumab Plus Lenvatinib in Solid Tumors", "official_title": null, "overall_status": "Recruiting", "phase": "Phase 1/Phase 2", "start_date": "2019-01",
                    "sponsor_name": "Eisai Inc.", "conditions": ["Solid Tumor", "Endometrial Cancer"]},
-   "NCT00000004": {"brief_title": "Real-World Outcomes of Pembrolizumab", "overall_status": "Completed", "phase": "Not specified", "start_date": "2018-05",
+   "NCT00000004": {"brief_title": "Real-World Outcomes of Pembrolizumab", "official_title": null, "overall_status": "Completed", "phase": "Not specified", "start_date": "2018-05",
                    "sponsor_name": "University of Texas MD Anderson Cancer Center", "conditions": ["Melanoma", "Lung Cancer"]}},
- "meta": {
+ "meta": {"verification": [{"step": "request", "status": "passed", "checks": ["request schema", "year range"], "verified": 1, "total": 1, "result": "The request fields are valid."}, {"step": "plan", "status": "passed", "checks": ["plan schema", "registered analysis", "constraint quotes", "name coverage", "anchor"], "verified": 1, "total": 1, "result": "Read as distribution.phase; 1 filter or cohort applied."}, {"step": "retrieval", "status": "passed", "checks": ["conformance"], "verified": 4, "total": 4, "result": "Fetched 4 of 4 matching trials."}, {"step": "records", "status": "passed", "checks": ["normalize"], "verified": 4, "total": 4, "result": "4 of 4 records readable."}, {"step": "aggregation", "status": "passed", "checks": ["membership", "recount", "reconciliation", "accounting"], "verified": 4, "total": 4, "result": "All 4 trials accounted for: 4 charted in 3 data; each datum recounted from its records."}, {"step": "citations", "status": "passed", "checks": ["citation ids", "excerpts", "coverage", "summaries"], "verified": 5, "total": 5, "result": "5 citations verified: each excerpt is its record's value at its field."}, {"step": "prose", "status": "passed", "checks": ["title"], "verified": 1, "total": 1, "result": "Title written by the LLM; it holds no number outside the filters."}, {"step": "response", "status": "passed", "checks": ["schema", "encoding", "shape", "assumptions", "disclosures"], "verified": 5, "total": 5, "result": "The response matches the documented schema and its disclosures."}],
+          
    "source": "clinicaltrials.gov",
    "interpretation": {"intent": "distribution", "dimension": "phase", "cohorts": null},
    "filters": {"stated": {"drug_name": "Pembrolizumab"}, "inferred": {}},
@@ -229,12 +230,12 @@ Fixed bins, because enrollment is heavily skewed: 0, 1-9, 10-49, 50-99, 100-249,
              "weight": {"field": "trial_count", "type": "quantitative"}}},
  "data": {
    "nodes": [
-     {"id": "drug:pembrolizumab", "label": "Pembrolizumab", "entity_type": "drug", "is_anchor": false,
-      "trial_count": 1, "nct_ids": ["NCT00000007"],
-      "citations": [{"nct_id": "NCT00000007", "excerpt": "Pembrolizumab (MK-3475)", "field": "armsInterventionsModule.interventions.name"}]},
      {"id": "drug:ipilimumab", "label": "Ipilimumab", "entity_type": "drug", "is_anchor": false,
       "trial_count": 1, "nct_ids": ["NCT00000007"],
-      "citations": [{"nct_id": "NCT00000007", "excerpt": "Ipilimumab", "field": "armsInterventionsModule.interventions.name"}]}],
+      "citations": [{"nct_id": "NCT00000007", "excerpt": "Ipilimumab", "field": "armsInterventionsModule.interventions.name"}]},
+     {"id": "drug:pembrolizumab", "label": "Pembrolizumab", "entity_type": "drug", "is_anchor": false,
+      "trial_count": 1, "nct_ids": ["NCT00000007"],
+      "citations": [{"nct_id": "NCT00000007", "excerpt": "Pembrolizumab (MK-3475)", "field": "armsInterventionsModule.interventions.name"}]}],
    "edges": [
      {"source": "drug:ipilimumab", "target": "drug:pembrolizumab", "trial_count": 1, "nct_ids": ["NCT00000007"],
       "citations": [{"nct_id": "NCT00000007", "excerpt": "Ipilimumab", "field": "armsInterventionsModule.interventions.name"},
@@ -259,10 +260,11 @@ The full `meta` of an `ok` response is in §3.1.
 | grouping | when `ok` | `{dimension, series}`; `series` is `null` when there is none |
 | sample | when `ok` | One entry per cohort (`cohort: null` when there is one): `capped: true` means the chart covers `fetched` of `total` trials |
 | citation_cap | when `ok` | Maximum trials cited per row (25); `nct_ids` is never capped |
-| excluded | when `ok` | `[{rule, count}]`: trials a counting rule acted on. In a comparison each rule ends with its cohort, `"<rule> (<cohort>)"`. Most rules leave the trial out (`missing start date`, `no drug intervention`, `unreadable record`, and `outside the <filter> filter` for a fetched trial that fails an exact filter sent: phase, status, start year, end year or country); `placebo` and `non-drug intervention` count trials that had such an intervention dropped but may still appear through their other drugs |
+| excluded | when `ok` | `[{rule, count, nct_ids}]`: trials a counting rule acted on, each listed by NCT ID (sorted descending; `count == len(nct_ids)`, except an unreadable record with no usable ID). Together with the chart, these account for every retrieved trial: `not in the top <N>` lists trials on no shown bar of a top-N chart, `pruned from the network` trials whose every node was pruned. In a comparison each rule ends with its cohort, `"<rule> (<cohort>)"`. Most rules leave the trial out (`missing start date`, `no drug intervention`, `unreadable record`, and `outside the <filter> filter` for a fetched trial that fails an exact filter sent: phase, status, start year, end year or country); `placebo` and `non-drug intervention` count trials that had such an intervention dropped but may still appear through their other drugs |
 | top_n | when `ok` | `null`, or `{limit, categories_total}` for a top-N bar chart |
 | pruning | when `ok` | `null` unless network: `{min_edge_weight, top_n_nodes, fallback_used, nodes_removed, edges_removed}` |
 | notes | always | LLM-written prose about the interpretation |
+| verification | always | The verification ledger: one entry per pipeline step in order (`request`, `plan`, `retrieval`, `records`, `aggregation`, `citations`, `prose`, `response`), each `{step, status, checks, verified, total, result}`. `status` is `passed` (every check held), `stopped` (the step ran and rightly refused to go on: a clarification stops at `plan`, no results at `retrieval`), `failed` (a check failed: `degraded`) or `not_reached`. `checks` names what the step ran; `verified` of `total` counts what held, in the units `result` names. Written by Python from counts, never by the LLM, and attached after the checks run |
 | missing | `clarification_needed` only | The anchors the request lacks |
 | unapplied | `clarification_needed` only | `[{quote, reason}]`: parts of the question no filter can express (an age group, a city, a region), quoted verbatim from `query`, so the chart would silently ignore them |
 | conflicts | `clarification_needed` only | `[{filter, quotes}]`: a filter the question gives more than one value (`"Japan"`, `"Korea"`), each quoted verbatim |
@@ -276,7 +278,8 @@ Network `pruning` example: `{"min_edge_weight": 2, "top_n_nodes": 50, "fallback_
 
 ```json
 {"status": "clarification_needed", "visualization": null, "trials": {},
- "meta": {"source": "clinicaltrials.gov", "filters": {"stated": {}, "inferred": {}}, "assumptions": [],
+ "meta": {"verification": [{"step": "request", "status": "passed", "checks": ["request schema", "year range"], "verified": 1, "total": 1, "result": "The request fields are valid."}, {"step": "plan", "status": "stopped", "checks": ["plan schema", "registered analysis", "constraint quotes", "name coverage", "anchor"], "verified": 0, "total": 3, "result": "Stopped: Name a drug, condition or sponsor to chart."}, {"step": "retrieval", "status": "not_reached", "checks": ["conformance"], "verified": 0, "total": 0, "result": "Not reached."}, {"step": "records", "status": "not_reached", "checks": ["normalize"], "verified": 0, "total": 0, "result": "Not reached."}, {"step": "aggregation", "status": "not_reached", "checks": ["membership", "recount", "reconciliation", "accounting"], "verified": 0, "total": 0, "result": "Not reached."}, {"step": "citations", "status": "not_reached", "checks": ["citation ids", "excerpts", "coverage", "summaries"], "verified": 0, "total": 0, "result": "Not reached."}, {"step": "prose", "status": "not_reached", "checks": ["title"], "verified": 0, "total": 0, "result": "Not reached."}, {"step": "response", "status": "not_reached", "checks": ["schema", "encoding", "shape", "assumptions", "disclosures"], "verified": 0, "total": 0, "result": "Not reached."}],
+          "source": "clinicaltrials.gov", "filters": {"stated": {}, "inferred": {}}, "assumptions": [],
           "missing": ["drug_name", "condition", "sponsor"], "unapplied": [], "conflicts": [], "suggested_query": null,
           "notes": ["Name a drug, condition or sponsor to chart."]}}
 ```
@@ -287,7 +290,8 @@ A constraint no filter expresses (CLAUDE.md §14 Phase 6 step 3). Charting asthm
 
 ```json
 {"status": "clarification_needed", "visualization": null, "trials": {},
- "meta": {"source": "clinicaltrials.gov", "filters": {"stated": {"condition": "asthma"}, "inferred": {}}, "assumptions": [],
+ "meta": {"verification": [{"step": "request", "status": "passed", "checks": ["request schema", "year range"], "verified": 1, "total": 1, "result": "The request fields are valid."}, {"step": "plan", "status": "stopped", "checks": ["plan schema", "registered analysis", "constraint quotes", "name coverage", "anchor"], "verified": 0, "total": 1, "result": "Stopped: \"pediatric\" cannot be applied: no filter for age group."}, {"step": "retrieval", "status": "not_reached", "checks": ["conformance"], "verified": 0, "total": 0, "result": "Not reached."}, {"step": "records", "status": "not_reached", "checks": ["normalize"], "verified": 0, "total": 0, "result": "Not reached."}, {"step": "aggregation", "status": "not_reached", "checks": ["membership", "recount", "reconciliation", "accounting"], "verified": 0, "total": 0, "result": "Not reached."}, {"step": "citations", "status": "not_reached", "checks": ["citation ids", "excerpts", "coverage", "summaries"], "verified": 0, "total": 0, "result": "Not reached."}, {"step": "prose", "status": "not_reached", "checks": ["title"], "verified": 0, "total": 0, "result": "Not reached."}, {"step": "response", "status": "not_reached", "checks": ["schema", "encoding", "shape", "assumptions", "disclosures"], "verified": 0, "total": 0, "result": "Not reached."}],
+          "source": "clinicaltrials.gov", "filters": {"stated": {"condition": "asthma"}, "inferred": {}}, "assumptions": [],
           "missing": [], "unapplied": [{"quote": "pediatric", "reason": "no filter for age group"}], "conflicts": [],
           "suggested_query": "How are asthma trials distributed across phases?",
           "notes": ["\"pediatric\" cannot be applied: no filter for age group."]}}
@@ -297,7 +301,8 @@ Zero results with every entity found (the filters together match nothing):
 
 ```json
 {"status": "no_results", "visualization": null, "trials": {},
- "meta": {"source": "clinicaltrials.gov", "filters": {"stated": {"condition": "Melanoma", "trial_phase": "PHASE4", "country": "Iceland"}, "inferred": {}},
+ "meta": {"verification": [{"step": "request", "status": "passed", "checks": ["request schema", "year range"], "verified": 1, "total": 1, "result": "The request fields are valid."}, {"step": "plan", "status": "passed", "checks": ["plan schema", "registered analysis", "constraint quotes", "name coverage", "anchor"], "verified": 3, "total": 3, "result": "Read as distribution.phase; 3 filters or cohorts applied."}, {"step": "retrieval", "status": "stopped", "checks": ["conformance"], "verified": 0, "total": 0, "result": "Stopped: No trials match all applied filters. The search was not widened."}, {"step": "records", "status": "not_reached", "checks": ["normalize"], "verified": 0, "total": 0, "result": "Not reached."}, {"step": "aggregation", "status": "not_reached", "checks": ["membership", "recount", "reconciliation", "accounting"], "verified": 0, "total": 0, "result": "Not reached."}, {"step": "citations", "status": "not_reached", "checks": ["citation ids", "excerpts", "coverage", "summaries"], "verified": 0, "total": 0, "result": "Not reached."}, {"step": "prose", "status": "not_reached", "checks": ["title"], "verified": 0, "total": 0, "result": "Not reached."}, {"step": "response", "status": "not_reached", "checks": ["schema", "encoding", "shape", "assumptions", "disclosures"], "verified": 0, "total": 0, "result": "Not reached."}],
+          "source": "clinicaltrials.gov", "filters": {"stated": {"condition": "Melanoma", "trial_phase": "PHASE4", "country": "Iceland"}, "inferred": {}},
           "assumptions": [], "not_found": [],
           "notes": ["No trials match all applied filters. The search was not widened."]}}
 ```
@@ -306,14 +311,16 @@ An entity that matches no trial on its own:
 
 ```json
 {"status": "no_results", "visualization": null, "trials": {},
- "meta": {"source": "clinicaltrials.gov", "filters": {"stated": {"drug_name": "Zorblaxumab"}, "inferred": {}},
+ "meta": {"verification": [{"step": "request", "status": "passed", "checks": ["request schema", "year range"], "verified": 1, "total": 1, "result": "The request fields are valid."}, {"step": "plan", "status": "passed", "checks": ["plan schema", "registered analysis", "constraint quotes", "name coverage", "anchor"], "verified": 1, "total": 1, "result": "Read as distribution.phase; 1 filter or cohort applied."}, {"step": "retrieval", "status": "stopped", "checks": ["conformance"], "verified": 0, "total": 0, "result": "Stopped: No trial on ClinicalTrials.gov lists Zorblaxumab. No similar drug was substituted."}, {"step": "records", "status": "not_reached", "checks": ["normalize"], "verified": 0, "total": 0, "result": "Not reached."}, {"step": "aggregation", "status": "not_reached", "checks": ["membership", "recount", "reconciliation", "accounting"], "verified": 0, "total": 0, "result": "Not reached."}, {"step": "citations", "status": "not_reached", "checks": ["citation ids", "excerpts", "coverage", "summaries"], "verified": 0, "total": 0, "result": "Not reached."}, {"step": "prose", "status": "not_reached", "checks": ["title"], "verified": 0, "total": 0, "result": "Not reached."}, {"step": "response", "status": "not_reached", "checks": ["schema", "encoding", "shape", "assumptions", "disclosures"], "verified": 0, "total": 0, "result": "Not reached."}],
+          "source": "clinicaltrials.gov", "filters": {"stated": {"drug_name": "Zorblaxumab"}, "inferred": {}},
           "assumptions": [], "not_found": ["Zorblaxumab"],
           "notes": ["No trial on ClinicalTrials.gov lists Zorblaxumab. No similar drug was substituted."]}}
 ```
 
 ```json
 {"status": "degraded", "visualization": null, "trials": {},
- "meta": {"source": "clinicaltrials.gov", "filters": {"stated": {"drug_name": "Pembrolizumab"}, "inferred": {}}, "assumptions": [],
+ "meta": {"verification": [{"step": "request", "status": "passed", "checks": ["request schema", "year range"], "verified": 1, "total": 1, "result": "The request fields are valid."}, {"step": "plan", "status": "passed", "checks": ["plan schema", "registered analysis", "constraint quotes", "name coverage", "anchor"], "verified": 1, "total": 1, "result": "Read as distribution.phase; 1 filter or cohort applied."}, {"step": "retrieval", "status": "passed", "checks": ["conformance"], "verified": 1, "total": 1, "result": "Passed."}, {"step": "records", "status": "passed", "checks": ["normalize"], "verified": 1, "total": 1, "result": "Passed."}, {"step": "aggregation", "status": "passed", "checks": ["membership", "recount", "reconciliation", "accounting"], "verified": 1, "total": 1, "result": "Passed."}, {"step": "citations", "status": "passed", "checks": ["citation ids", "excerpts", "coverage", "summaries"], "verified": 1, "total": 1, "result": "Passed."}, {"step": "prose", "status": "passed", "checks": ["title"], "verified": 1, "total": 1, "result": "Passed."}, {"step": "response", "status": "failed", "checks": ["schema", "encoding", "shape", "assumptions", "disclosures"], "verified": 4, "total": 5, "result": "encoding: Field 'phase' is missing from row 3."}],
+          "source": "clinicaltrials.gov", "filters": {"stated": {"drug_name": "Pembrolizumab"}, "inferred": {}}, "assumptions": [],
           "errors": [{"check": "encoding", "message": "Field 'phase' is missing from row 3."}],
           "notes": []}}
 ```

@@ -35,6 +35,7 @@ MAX_RETRY_AFTER_SECONDS = 10.0
 RECORD_FIELDS = (
     "protocolSection.identificationModule.nctId",
     "protocolSection.identificationModule.briefTitle",
+    "protocolSection.identificationModule.officialTitle",
     "protocolSection.designModule.phases",
     "protocolSection.designModule.studyType",
     "protocolSection.designModule.enrollmentInfo.count",

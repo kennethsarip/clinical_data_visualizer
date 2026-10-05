@@ -65,6 +65,10 @@ INTENT_SHAPES: Mapping[Intent, frozenset[RowShape]] = {
     Intent.NETWORK: frozenset({RowShape.GRAPH}),
 }
 
+# Counting-rule name -> the NCT IDs it acted on (Phase 7 step 3: accounting by ID). A count in
+# `meta.excluded` is the size of its set, so the two cannot disagree.
+Excluded = Mapping[str, frozenset[str]]
+
 # Fields every row, node and edge already carries (SCHEMAS.md §2).
 PROVENANCE_FIELDS = frozenset(Provenance.model_fields)
 
@@ -81,9 +85,9 @@ class CohortTrials:
     batch: NormalizedBatch
     filters: RetrievalFilters
     total: int  # trials matching `filters` per the API's totalCount; more than fetched if capped
-    # Fetched trials dropped for failing an exact filter (app/conformance.py): rule -> count.
+    # Fetched trials dropped for failing an exact filter (app/conformance.py): rule -> NCT IDs.
     # Not in `batch`, but fetched, so `meta.sample` and `meta.excluded` count them.
-    off_filter: Mapping[str, int] = field(default_factory=dict)
+    off_filter: Excluded = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -106,7 +110,7 @@ class AggRow:
 @dataclass(frozen=True)
 class Aggregation:
     rows: tuple[AggRow, ...]  # in render order (SCHEMAS.md §4 `sort`)
-    excluded: Mapping[str, int]  # counting-rule name -> records left out (`meta.excluded`)
+    excluded: Excluded  # counting-rule name -> the trials it acted on (`meta.excluded`)
     top_n: TopN | None = None
 
 
@@ -114,7 +118,7 @@ class Aggregation:
 class GraphAggregation:
     nodes: tuple[AggRow, ...]
     edges: tuple[AggRow, ...]
-    excluded: Mapping[str, int]
+    excluded: Excluded
     pruning: Pruning
 
 
