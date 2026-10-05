@@ -7,7 +7,7 @@ so it can only pick what exists. Each aggregator declares its row shape, which f
 """
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Protocol
 
@@ -81,6 +81,9 @@ class CohortTrials:
     batch: NormalizedBatch
     filters: RetrievalFilters
     total: int  # trials matching `filters` per the API's totalCount; more than fetched if capped
+    # Fetched trials dropped for failing an exact filter (app/conformance.py): rule -> count.
+    # Not in `batch`, but fetched, so `meta.sample` and `meta.excluded` count them.
+    off_filter: Mapping[str, int] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

@@ -18,6 +18,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import date
 from typing import Any, Protocol
+from urllib.parse import parse_qsl
 
 from app.aggregators.registry import (
     REGISTRY,
@@ -28,9 +29,10 @@ from app.aggregators.registry import (
     Registry,
 )
 from app.checks import CheckContext, run_checks
+from app.conformance import OffFilterBatchError, conform
 from app.ctgov import FetchResult, UpstreamError
 from app.llm import LLMClient, LLMUpstreamError
-from app.normalize import RecordShapeError, normalize_records
+from app.normalize import RecordShapeError, batch_of, normalize_records
 from app.planner import ANCHORS, Clarification, PlanError, QueryPlan, plan_request
 from app.schemas import (
     AnyResponse,
@@ -78,6 +80,7 @@ class _Target:
 class _Fetched:
     cohorts: list[CohortTrials]
     records: dict[str, dict[str, Any]]  # nct_id -> raw record, the retrieved set the checks use
+    sent: list[dict[str, str]]  # the API params each cohort was fetched with
 
 
 @dataclass(frozen=True)
@@ -133,7 +136,12 @@ class Pipeline:
         targets: list["_Target"],
         prose: "Future[Prose]",
     ) -> AnyResponse:
-        fetched = self._fetch(targets)
+        try:
+            fetched = self._fetch(targets)
+        except OffFilterBatchError as exc:
+            return _degraded(
+                _filters(plan), plan.assumptions, [CheckError(check="retrieval", message=str(exc))]
+            )
         if not fetched.records:
             return self._zero_results(plan)
         result = aggregator.aggregate(fetched.cohorts)
@@ -153,8 +161,13 @@ class Pipeline:
             batch = normalize_records(result.records)
             readable = {t.nct_id for t in batch.trials}
             records |= {nct_id: r for r in result.records if (nct_id := _nct_id(r)) in readable}
-            cohorts.append(CohortTrials(target.label, batch, target.filters, result.total))
-        return _Fetched(cohorts, records)
+            kept, off_filter = conform(batch.trials, target.filters)
+            batch = batch_of(kept, batch.unreadable)
+            cohorts.append(
+                CohortTrials(target.label, batch, target.filters, result.total, off_filter)
+            )
+        sent = [dict(parse_qsl(result.params_key)) for result in results]
+        return _Fetched(cohorts, records, sent)
 
     def _checked(
         self,
@@ -166,7 +179,7 @@ class Pipeline:
     ) -> AnyResponse:
         """§1 steps 7-9: prose, assembly, checks, one repair without the prose, else degraded."""
         filters = _filters(plan)
-        context = CheckContext(aggregator.shape, fetched.records)
+        context = CheckContext(aggregator.shape, fetched.records, fetched.sent)
 
         def build(title: str, notes: Sequence[str]) -> OkResponse:
             return assemble(

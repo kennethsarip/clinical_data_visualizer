@@ -15,7 +15,7 @@ The renderer contract: a frontend engineer should be able to implement a rendere
 | condition | string | no | 1-200 chars after trimming whitespace | `query.cond` |
 | trial_phase | Phase enum | no | One of NA, EARLY_PHASE1, PHASE1, PHASE2, PHASE3, PHASE4 | `filter.advanced=AREA[Phase]...` |
 | sponsor | string | no | 1-200 chars after trimming whitespace | `query.spons` |
-| country | string | no | One of the registry's 226 country names (`app/vocab.py` `COUNTRIES`, the OpenAPI enum), matched ignoring case and stored in the registry spelling; a variant such as `Korea` or `USA` is rejected | `query.locn` |
+| country | string | no | One of the registry's 226 country names (`app/vocab.py` `COUNTRIES`, the OpenAPI enum), matched ignoring case and stored in the registry spelling; a variant such as `Korea` or `USA` is rejected | `filter.advanced=AREA[LocationCountry]"<name>"` |
 | start_year | int | no | `start_year <= end_year` | `filter.advanced=AREA[StartDate]RANGE[...]` |
 | end_year | int | no | `start_year <= end_year` | same |
 
@@ -259,7 +259,7 @@ The full `meta` of an `ok` response is in §3.1.
 | grouping | when `ok` | `{dimension, series}`; `series` is `null` when there is none |
 | sample | when `ok` | One entry per cohort (`cohort: null` when there is one): `capped: true` means the chart covers `fetched` of `total` trials |
 | citation_cap | when `ok` | Maximum trials cited per row (25); `nct_ids` is never capped |
-| excluded | when `ok` | `[{rule, count}]`: trials a counting rule acted on. In a comparison each rule ends with its cohort, `"<rule> (<cohort>)"`. Most rules leave the trial out (`missing start date`, `no drug intervention`, `unreadable record`); `placebo` and `non-drug intervention` count trials that had such an intervention dropped but may still appear through their other drugs |
+| excluded | when `ok` | `[{rule, count}]`: trials a counting rule acted on. In a comparison each rule ends with its cohort, `"<rule> (<cohort>)"`. Most rules leave the trial out (`missing start date`, `no drug intervention`, `unreadable record`, and `outside the <filter> filter` for a fetched trial that fails an exact filter sent: phase, status, start year, end year or country); `placebo` and `non-drug intervention` count trials that had such an intervention dropped but may still appear through their other drugs |
 | top_n | when `ok` | `null`, or `{limit, categories_total}` for a top-N bar chart |
 | pruning | when `ok` | `null` unless network: `{min_edge_weight, top_n_nodes, fallback_used, nodes_removed, edges_removed}` |
 | notes | always | LLM-written prose about the interpretation |
@@ -305,7 +305,7 @@ An entity that matches no trial on its own:
           "notes": []}}
 ```
 
-`degraded` has two causes, named by `errors[].check`: `plan` when the LLM's plan still fails validation after one retry (`visualization` is null and `filters` holds only the request fields), or a §7.6 check name when the spec still fails after one repair. A failed title is not a cause: the response stays `ok` with a plain generated title and a note.
+`degraded` has three causes, named by `errors[].check`: `plan` when the LLM's plan still fails validation after one retry (`visualization` is null and `filters` holds only the request fields); `retrieval` when over 5% of a fetched batch fails an exact filter that was sent, so the chart would show the wrong trials; or a §7.6 check name when the spec still fails after one repair. A failed title is not a cause: the response stays `ok` with a plain generated title and a note.
 
 ## 6. Cached trial record
 

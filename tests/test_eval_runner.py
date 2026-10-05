@@ -3,12 +3,13 @@ fake LLM and fetcher, scored against expectations written here from §1, §7.7 a
 
 from collections.abc import Callable, Iterator
 from datetime import date
-from typing import Any
+from typing import Any, cast
 
 import httpx2
 import pytest
 
 import app.aggregators  # noqa: F401  (registers every aggregator)
+from app.aggregators.registry import RowShape
 from app.checks import CheckContext
 from app.ctgov import UpstreamError
 from app.pipeline import Pipeline
@@ -405,24 +406,38 @@ def test_a_charted_trial_missing_from_the_records_is_off_filter() -> None:
     assert (m.off_filter, m.by_filter) == (1, {"no_record": 1})
 
 
+class _ChartsOffFilter:
+    """A pipeline with a conformance bug: it charts the ok example's trials under a Germany filter
+    although only one of them has a site there. The runner must catch it from raw records alone,
+    since the real pipeline now drops such trials (Phase 6 step 4)."""
+
+    def __init__(self, checker: Checker) -> None:
+        self.checker = checker
+
+    def run(self, request: Any) -> OkResponse:
+        response = _filtered({"drug_name": "Pembrolizumab", "country": "Germany"})
+        first = _charted(response)[0]
+        records = _records({first: {"countries": ["Germany"]}})  # the rest list no sites
+        self.checker(response, CheckContext(RowShape.CATEGORICAL, records))
+        return response
+
+
 def test_an_off_filter_trial_fails_the_question() -> None:
-    """FIXTURE sites by hand: T1 and T5 have a site in Germany; T2 (US), T3 (none), T4 (France)
-    do not, and all five are charted on the phase bars."""
-    germany = RetrievalFilters(condition="melanoma", country="Germany")
     expected = question(
-        {"query": "Phases of melanoma trials in Germany"},
+        {"query": "Phases of pembrolizumab trials in Germany"},
         status="ok",
         analysis="distribution.phase",
         viz_type="bar_chart",
-        stated={"condition": "melanoma", "country": "Germany"},
+        stated={"drug_name": "Pembrolizumab", "country": "Germany"},
     )
-    pipeline = factory(
-        [json_reply(reply(condition="melanoma", country="Germany")), json_reply(PROSE)],
-        FakeFetcher({germany: FIXTURE}),
-    )
-    result = run_question(expected, pipeline, clock=clock(0.0, 1.0))
+    make = cast(Callable[[Checker], Pipeline], _ChartsOffFilter)
+    result = run_question(expected, make, clock=clock(0.0, 1.0), inner=lambda r, c: [])
+    charted = len(_charted(_filtered({})))
     assert result.off_filter is not None
-    assert (result.off_filter.trials_checked, result.off_filter.off_filter) == (5, 3)
+    assert (result.off_filter.trials_checked, result.off_filter.off_filter) == (
+        charted,
+        charted - 1,
+    )
     assert result.failures == ["off_filter"]
     assert run_phases().off_filter is not None and run_phases().off_filter.off_filter == 0  # type: ignore[union-attr]
 

@@ -12,7 +12,8 @@ from typing import Any
 
 from app.aggregators.registry import RowShape
 from app.checks import CheckContext, run_checks
-from app.schemas import RESPONSE_ADAPTER, OkResponse
+from app.ctgov import build_params
+from app.schemas import RESPONSE_ADAPTER, OkResponse, RetrievalFilters
 from app.viz import VIZ_TYPE
 
 SCHEMAS_MD = Path(__file__).resolve().parents[1] / "SCHEMAS.md"
@@ -292,9 +293,53 @@ def test_duplicate_nct_ids_in_a_row_fail() -> None:
 
 def test_inferred_filter_without_an_assumption_fails() -> None:
     payload = _bar()
-    payload["meta"]["filters"]["inferred"] = {"overall_status": "RECRUITING"}
+    payload["meta"]["filters"]["inferred"] = {"condition": "melanoma"}  # a search: no conformance
     payload["meta"]["assumptions"] = []
     assert _checks(_errors(payload)) == {"assumptions"}
+
+
+# --- conformance (Phase 6 step 4) ---
+
+
+def test_a_charted_trial_outside_a_country_filter_fails() -> None:
+    payload = _bar()
+    payload["meta"]["filters"]["stated"]["country"] = "Japan"
+    japan = {"locations": [{"country": "Japan"}]}
+    records = {
+        n: r | {"protocolSection": r["protocolSection"] | {"contactsLocationsModule": japan}}
+        for n, r in BAR_RECORDS.items()
+    }
+    assert _errors(payload, records=records) == []
+    beijing = {"locations": [{"facility": "China-Japan Friendship Hospital", "country": "China"}]}
+    records["NCT00000002"]["protocolSection"]["contactsLocationsModule"] = beijing
+    errors = _errors(payload, records=records)
+    assert _checks(errors) == {"conformance"}
+    assert "NCT00000002" in errors[0][1] and "country" in errors[0][1]
+
+
+def test_a_charted_trial_outside_the_phase_filter_fails() -> None:
+    payload = _bar()
+    payload["meta"]["filters"]["inferred"] = {"trial_phase": "PHASE3"}
+    payload["meta"]["assumptions"].append("Phase 3 was inferred.")
+    assert _checks(_errors(payload)) == {"conformance"}  # NCT00000003, NCT00000004 are not
+
+
+def _sent(**filters: Any) -> list[dict[str, str]]:
+    return [build_params(RetrievalFilters(**filters), 1000)]
+
+
+def test_meta_filters_must_equal_the_params_sent() -> None:
+    def errors(sent: list[dict[str, str]]) -> set[str]:
+        response = RESPONSE_ADAPTER.validate_python(_bar())
+        assert isinstance(response, OkResponse)
+        context = CheckContext(RowShape.CATEGORICAL, BAR_RECORDS, sent=sent)
+        return {e.check for e in run_checks(response, context)}
+
+    assert errors(_sent(drug_name="Pembrolizumab")) == set()
+    assert errors(_sent(drug_name="Nivolumab")) == {"conformance"}  # meta shows another value
+    assert errors(_sent()) == {"conformance"}  # meta shows a filter never sent
+    hidden = _sent(drug_name="Pembrolizumab", country="Japan")
+    assert errors(hidden) == {"conformance"}  # a filter was sent that meta does not show
 
 
 # --- title ---
@@ -312,7 +357,11 @@ def test_title_numbers_from_the_filters_pass() -> None:
     payload = _bar()
     payload["meta"]["filters"]["stated"] = {"drug_name": "MK-3475", "start_year": 2015}
     payload["visualization"]["title"] = "MK-3475 Trials by Phase since 2015"
-    assert _errors(payload) == []
+    started = {"statusModule": {"startDateStruct": {"date": "2016-03"}}}
+    records = {
+        n: {"protocolSection": r["protocolSection"] | started} for n, r in BAR_RECORDS.items()
+    }
+    assert _errors(payload, records=records) == []
 
 
 # --- disclosures (the §7.6 WARN items must be disclosed consistently) ---

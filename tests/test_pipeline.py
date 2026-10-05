@@ -16,7 +16,7 @@ import pytest
 
 import app.aggregators  # noqa: F401  (registers every aggregator)
 from app.checks import CheckContext, run_checks
-from app.ctgov import FetchResult, UpstreamError
+from app.ctgov import FetchResult, UpstreamError, build_params, params_key
 from app.normalize import NormalizedTrial
 from app.pipeline import DependencyError, Pipeline
 from app.planner import ANCHOR_NOTE, PLAN_SCHEMA_NAME
@@ -58,7 +58,7 @@ class FakeFetcher:
         if self.error:
             raise self.error
         records = [raw_record(t) for t in self.data.get(filters, [])]
-        return FetchResult("key", [], records, len(records))
+        return FetchResult(params_key(build_params(filters, 1000)), [], records, len(records))
 
     def fetch_many(self, filters: Sequence[RetrievalFilters]) -> list[FetchResult]:
         return [self.fetch(f) for f in filters]
@@ -86,6 +86,62 @@ def run(
 MELANOMA = RetrievalFilters(condition="melanoma")
 
 
+# --- retrieval conformance (Phase 6 step 4) ---
+
+GERMANY = RetrievalFilters(condition="melanoma", country="Germany")
+IN_GERMANY = [
+    make_trial(f"NCT{n:08d}", phases=["PHASE2"], countries=["Germany"]) for n in range(10, 29)
+]  # 19 trials, so one off-filter trial is 5% of the batch
+
+
+def test_an_off_filter_trial_is_dropped_and_counted() -> None:
+    off = make_trial("NCT00000099", phases=["PHASE2"], countries=["United States"])
+    response, _ = run(
+        "Phases of melanoma trials in Germany",
+        [json_reply(reply(condition="melanoma", country="Germany")), json_reply(PROSE)],
+        FakeFetcher({GERMANY: [*IN_GERMANY, off]}),
+    )
+    assert isinstance(response, OkResponse)
+    charted = {n for row in response.visualization.data for n in row.nct_ids}  # type: ignore[union-attr]
+    assert charted == {t.nct_id for t in IN_GERMANY}
+    assert "NCT00000099" not in response.trials
+    excluded = {e.rule: e.count for e in response.meta.excluded}
+    assert excluded["outside the country filter"] == 1
+    assert response.meta.sample[0].fetched == 20
+
+
+def test_mostly_off_filter_records_are_degraded_not_charted() -> None:
+    """FIXTURE by hand: T2 (US), T3 (no sites) and T4 (France) have no site in Germany."""
+    response, _ = run(
+        "Phases of melanoma trials in Germany",
+        [json_reply(reply(condition="melanoma", country="Germany")), json_reply(PROSE)],
+        FakeFetcher({GERMANY: FIXTURE}),
+    )
+    assert isinstance(response, DegradedResponse)
+    [error] = response.meta.errors
+    assert error.check == "retrieval"
+    assert "3 of 5" in error.message and "country" in error.message
+
+
+class _WrongParamsFetcher(FakeFetcher):
+    """Reports the params of a different search than the one meta describes."""
+
+    def fetch(self, filters: RetrievalFilters) -> FetchResult:
+        result = super().fetch(filters)
+        other = params_key(build_params(RetrievalFilters(condition="lung cancer"), 1000))
+        return FetchResult(other, result.pages, result.records, result.total)
+
+
+def test_meta_filters_that_were_not_sent_fail_conformance() -> None:
+    response, _ = run(
+        "Phases of melanoma trials",
+        [json_reply(reply(condition="melanoma")), json_reply(PROSE)],
+        _WrongParamsFetcher({MELANOMA: FIXTURE}),
+    )
+    assert isinstance(response, DegradedResponse)
+    assert {e.check for e in response.meta.errors} == {"conformance"}
+
+
 # --- ok (§1 step 9) ---
 
 
@@ -110,7 +166,10 @@ def test_ok_response_with_llm_title_and_checked_spec() -> None:
 
 
 def test_planner_notes_and_assumptions_reach_meta() -> None:
-    fetcher = FakeFetcher({RetrievalFilters(condition="melanoma", start_year=2021): FIXTURE})
+    since_2021 = [
+        t.model_copy(update={"start_date": "2022-01", "start_year": 2022}) for t in FIXTURE
+    ]
+    fetcher = FakeFetcher({RetrievalFilters(condition="melanoma", start_year=2021): since_2021})
     response, _ = run(
         "melanoma trials started each year over the last five years",
         [
@@ -328,7 +387,9 @@ def test_llm_failure_while_planning_is_a_dependency_error() -> None:
 def test_mostly_unreadable_records_are_a_dependency_error() -> None:
     class Garbage(FakeFetcher):
         def fetch(self, filters: RetrievalFilters) -> FetchResult:
-            return FetchResult("key", [], [{"protocolSection": {}}] * 10, 10)
+            return FetchResult(
+                params_key(build_params(filters, 1000)), [], [{"protocolSection": {}}] * 10, 10
+            )
 
     with pytest.raises(DependencyError, match="unreadable"):
         run("Phases of melanoma trials", [json_reply(reply(condition="melanoma"))], Garbage())
@@ -342,7 +403,7 @@ def test_one_record_without_an_id_is_set_aside_not_fatal() -> None:
     class OneBad(FakeFetcher):
         def fetch(self, filters: RetrievalFilters) -> FetchResult:
             records = [raw_record(t) for t in trials] + [{"protocolSection": {}}]
-            return FetchResult("key", [], records, len(records))
+            return FetchResult(params_key(build_params(filters, 1000)), [], records, len(records))
 
     response, _ = run(
         "Phases of melanoma trials",

@@ -131,6 +131,11 @@ def normalize_records(records: Iterable[dict[str, Any]]) -> NormalizedBatch:
             f"{MAX_UNREADABLE_SHARE:.0%}); the API format may have changed. "
             f"First: {unreadable[0].reason}"
         )
+    return batch_of(trials, unreadable)
+
+
+def batch_of(trials: list[NormalizedTrial], unreadable: list[UnreadableRecord]) -> NormalizedBatch:
+    """A batch with its gap counts computed from `trials` (also after some are dropped)."""
     counts = {gap: sum(gap in trial.gaps for trial in trials) for gap in Gap}
     return NormalizedBatch(trials, counts, unreadable)
 
