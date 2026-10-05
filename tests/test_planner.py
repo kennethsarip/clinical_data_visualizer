@@ -317,6 +317,42 @@ def test_a_compared_item_marked_not_applied_is_applied_by_its_cohort() -> None:
     assert [c.label for c in plan.cohorts] == ["lung cancer", "colorectal cancer"]
 
 
+def test_words_that_describe_the_analysis_are_applied_by_it() -> None:
+    """Seen live (2 in 15): "combination studies" quoted as not applicable, though co-occurrence
+    in one trial is what network.drug_drug charts."""
+    plan = ok(
+        build(
+            "Which drugs frequently co-occur in combination studies for melanoma?",
+            reply(
+                "network.drug_drug",
+                condition="melanoma",
+                constraints=[
+                    constraint("melanoma", "condition"),
+                    constraint("combination studies", None, "no filter for combination studies"),
+                ],
+            ),
+        )
+    )
+    assert plan.analysis == "network.drug_drug"
+
+
+def test_analysis_words_do_not_cover_a_real_constraint() -> None:
+    result = clarify(
+        build(
+            "Which drugs co-occur in pediatric combination studies for melanoma?",
+            reply(
+                "network.drug_drug",
+                condition="melanoma",
+                constraints=[
+                    constraint("melanoma", "condition"),
+                    constraint("pediatric combination studies", None, "no filter for age group"),
+                ],
+            ),
+        )
+    )
+    assert result.unapplied
+
+
 def test_every_applied_constraint_keeps_the_plan() -> None:
     plan = ok(
         build(

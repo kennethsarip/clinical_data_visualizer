@@ -139,6 +139,18 @@ UNFILTERABLE_WORDS = frozenset(
 )  # fmt: skip
 UNACCOUNTED_REASON = "the plan did not account for it"
 
+# Words that describe what an analysis charts. A quote made only of these (plus generic words)
+# is applied by the analysis itself, so the LLM calling it "not applicable" is not a dropped
+# constraint (seen live: "combination studies" for network.drug_drug).
+ANALYSIS_WORDS: Mapping[Dimension, frozenset[str]] = {
+    Dimension.DRUG_DRUG: frozenset(
+        {"combination", "combinations", "combined", "co-occur", "co-occurring", "together"}
+    ),
+    Dimension.SPONSOR_DRUG: frozenset({"network", "linked", "together"}),
+    Dimension.CONDITION_DRUG: frozenset({"network", "linked", "together"}),
+}
+_GENERIC_WORDS = frozenset({"studies", "study", "trials", "trial", "in", "of", "the", "a"})
+
 
 def _bare(word: str) -> str:
     """A word without a possessive, case-folded: "Pfizer's" -> "pfizer"."""
@@ -343,7 +355,12 @@ def build_plan(
     # so the clarification is about the count, not a missing anchor.
     has_anchor = bool(llm_plan.cohorts) or any(getattr(filters, key) for key in ANCHORS)
     missing = () if has_anchor else ANCHORS
-    unapplied, conflicts = _account(request, llm_plan, cohort_entity=_cohort_entity(llm_plan))
+    unapplied, conflicts = _account(
+        request,
+        llm_plan,
+        cohort_entity=_cohort_entity(llm_plan),
+        analysis_words=ANALYSIS_WORDS.get(dimension, frozenset()),
+    )
     unapplied += _unaccounted(request, llm_plan, ask_unaccounted)
     problems = [p for p in (llm_plan.unsupported_reason, cohort_problem) if p]
     problems += [f'"{quote}" cannot be applied: {reason}.' for quote, reason in unapplied]
@@ -407,7 +424,10 @@ def _cohort_entity(llm_plan: LLMPlan) -> FilterKey | None:
 
 
 def _account(
-    request: VisualizeRequest, llm_plan: LLMPlan, cohort_entity: FilterKey | None
+    request: VisualizeRequest,
+    llm_plan: LLMPlan,
+    cohort_entity: FilterKey | None,
+    analysis_words: frozenset[str] = frozenset(),
 ) -> tuple[tuple[tuple[str, str], ...], tuple[tuple[FilterKey, tuple[str, ...]], ...]]:
     """Phase 6 step 3: every constraint the LLM quoted is in the question and, if applied, set a
     filter. Returns the constraints no filter expresses and the filters quoted with several
@@ -422,7 +442,7 @@ def _account(
             raise LLMOutputError(
                 f"constraints: {c.quote!r} is not in the question; quote it exactly"
             )
-        if c.quote.casefold() in compared:
+        if c.quote.casefold() in compared or _describes_analysis(c.quote, analysis_words):
             continue
         if c.applied_as is None:
             unapplied.append((c.quote, _reason(c)))
@@ -441,6 +461,11 @@ def _account(
         if len({q.casefold() for q in quotes}) > 1
     )
     return tuple(unapplied), conflicts
+
+
+def _describes_analysis(quote: str, analysis_words: frozenset[str]) -> bool:
+    words = {w.casefold() for w in _WORD.findall(quote)} - _GENERIC_WORDS
+    return bool(words) and words <= analysis_words
 
 
 def _reason(constraint: LLMConstraint) -> str:
