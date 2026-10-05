@@ -44,4 +44,4 @@ def test_top_n_keeps_the_heaviest_nodes_with_an_alphabetical_tie_break() -> None
 def test_two_type_edges_run_from_the_first_named_type() -> None:
     trials = [_trial("NCT00000001", "Zeta"), _trial("NCT00000002", "Zeta")]
     graph = recount_network(Dimension.SPONSOR_DRUG, trials)
-    assert set(graph.edges) == {("sponsor:merck sharp & dohme llc", "drug:zeta")}
+    assert set(graph.edges) == {("sponsor:merck sharp dohme", "drug:zeta")}

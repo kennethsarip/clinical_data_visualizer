@@ -217,7 +217,7 @@ Fixed bins, because enrollment is heavily skewed: 0, 1-9, 10-49, 50-99, 100-249,
 
 ### 3.6 `network_graph` (network)
 
-`data` is `{nodes, edges}`. Edges are undirected. A node `id` is `<entity_type>:<normalized name>`; `label` is the most common registered spelling. In a two-type network (sponsor-drug, condition-drug), `source` is the first-named type; in a one-type network (drug-drug), `source < target` alphabetically. An edge's `trial_count` is the number of trials containing both ends, and its citations give one entry per end per trial. `is_anchor` marks the entity the query named: it is in every trial, so renderers should de-emphasize it. Nodes sort by `trial_count` descending, edges by `trial_count` descending, ties by id.
+`data` is `{nodes, edges}`. Edges are undirected. A node `id` is `<entity_type>:<normalized name>`, an opaque key (the name's words, lowercased, without punctuation, sorted for drugs and conditions; CLAUDE.md §6) that renderers should not display; `label` is the most common registered spelling. In a two-type network (sponsor-drug, condition-drug), `source` is the first-named type; in a one-type network (drug-drug), `source < target` alphabetically. An edge's `trial_count` is the number of trials containing both ends, and its citations give one entry per end per trial. `is_anchor` marks the entity the query named: it is in every trial, so renderers should de-emphasize it. Nodes sort by `trial_count` descending, edges by `trial_count` descending, ties by id.
 
 ```json
 {"type": "network_graph",
